@@ -18,6 +18,5 @@ cscope*
 **/*.txt
 glide.lock
 *.iml
-*.pb.go
 *.test/
 *.toml
