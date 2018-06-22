@@ -1,0 +1,24 @@
+{
+  "author": "mattn",
+  "bugs": {
+    "url": "https://github.com/mattn/go-colorable"
+  },
+  "gx": {
+    "dvcsimport": "github.com/mattn/go-colorable"
+  },
+  "gxDependencies": [
+    {
+      "author": "mattn",
+      "hash": "QmRRr1zSEeFmjPWJeDAdhhQBRM2kYuPFC4T1QVwXKg7UrG",
+      "name": "go-isatty",
+      "version": "0.1.0"
+    }
+  ],
+  "gxVersion": "0.12.1",
+  "language": "go",
+  "license": "MIT",
+  "name": "go-colorable",
+  "releaseCmd": "git commit -a -m \"gx publish $VERSION\"",
+  "version": "0.1.0"
+}
+

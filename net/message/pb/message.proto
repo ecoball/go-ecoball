@@ -1,0 +1,8 @@
+syntax = "proto3";
+package pb;
+
+message Message {
+	uint32 chainId = 1;
+	uint32 type    = 2;
+	bytes  data    = 3;
+}

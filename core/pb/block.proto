@@ -1,0 +1,143 @@
+// Copyright 2018 The go-ecoball Authors
+// This file is part of the go-ecoball library.
+//
+// The go-ecoball library is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The go-ecoball library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the go-ecoball library. If not, see <http://www.gnu.org/licenses/>.
+
+syntax = "proto3";
+package pb;
+
+/**
+** Header info for compute hash
+*/
+message Header {
+    uint32      version             = 1;
+    int64       timestamp           = 2;
+    uint64      height              = 3;
+    ConsensusData ConsensusData     = 8;
+    bytes       prev_hash           = 4;
+    bytes       merkle_hash         = 5;
+    bytes       state_hash          = 6;
+    bytes       Bloom               = 10;
+}
+/**
+** Header info for sync with nodes
+*/
+message HeaderTx {
+    uint32      version             = 1;
+    int64       timestamp           = 2;
+    uint64      height              = 3;
+    ConsensusData ConsensusData     = 8;
+    bytes       prev_hash           = 4;
+    bytes       merkle_hash         = 5;
+    bytes       state_hash          = 9;
+    bytes       Bloom               = 10;
+
+    repeated    Signature   sign    = 6;
+    bytes       block_hash          = 7;
+}
+/**
+** Block info for sync with nodes
+*/
+message BlockTx {
+    HeaderTx    header                   = 1;
+    repeated    Transaction transactions = 4;
+}
+/**
+** Consensus Data
+*/
+message ConsensusData {
+    uint32      Type                = 1;
+    bytes       Data                = 2;
+}
+/**
+** Aba Consensus Data
+*/
+message AbaBftData {
+    uint32      NumberRound         = 1;
+    repeated    Signature   sign    = 2;
+}
+/**
+** Transaction info for compute hash
+*/
+message TransferPayload {
+    uint32      version     = 1;
+    uint32      type        = 7;
+    bytes       from        = 2;
+    bytes       addr        = 3;
+    bytes       payload     = 4;
+    uint64      nonce       = 5;
+    int64       timestamp   = 6;
+}
+
+message DeployInfo {
+    uint32      TypeVm      = 5;
+    bytes       Author      = 1;
+	bytes       Name        = 2;
+	bytes       Email       = 3;
+	bytes       Describe    = 4;
+	bytes       Code        = 6;
+}
+
+message InvokeInfo {
+    uint32      TypeVm      = 5;
+    bytes       Method      = 1;
+    bytes       Param       = 2;
+}
+
+/**
+** Transaction Info for Sync with nodes
+*/
+message Transaction {
+    TransferPayload         payload     = 1;
+    repeated    Signature   sign        = 2;
+    bytes                   hash        = 3;
+}
+/**
+** Signature Info
+*/
+message Signature {
+    bytes       PubKey      = 1;
+    bytes       SigData     = 2;
+}
+/**
+** Account Object
+*/
+message stateObject {
+    bytes       address     = 1;
+    bytes       addrHash    = 2;
+    repeated    Account     account = 3;
+}
+/**
+** Account Info
+*/
+message Account {
+    bytes       Address     = 3;
+    bytes       Name        = 4;
+    uint64      Nonce       = 1;
+    bytes       Balance     = 2;
+}
+
+/**
+** Smart Contract
+*/
+message Contract {
+    uint32      ActionType  = 1;
+    bytes       Config      = 2;
+}
+
+message BlockCt {
+    HeaderTx    header                  = 1;
+    repeated    Contract contracts      = 4;
+}
+

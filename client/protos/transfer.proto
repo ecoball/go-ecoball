@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+import "github.com/ecoball/go-ecoball/core/pb/block.proto";
+
+package protos;
+
+//转账交易结构体
+message Transfer
+{
+    int32 Version = 1;
+    string From = 2;
+    string To = 3;
+    int64 Value = 4;
+}
+
+//虚拟机类型
+enum Vmtype
+{
+    NATIVE = 0;
+    WASM = 1;
+}
+
+//合约结构体
+message Contract
+{
+    int32 Version = 1;
+    Vmtype Vmtype = 2; //虚拟机类型
+    bytes Address = 3; //合约地址
+    string Method = 4; //合约方法
+    bytes Args = 5;    //合约参数
+}
+
+//交易结构体
+message Transaction
+{
+    int32 Version = 1;
+    Contract Contract = 2;
+    uint32 Time = 3;
+}
+
+//签名交易
+message SignedTransaction
+{
+    Transaction Transaction = 1;
+    repeated pb.Signature Sign = 2;
+    bytes Hash = 3;
+}

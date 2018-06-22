@@ -1,0 +1,98 @@
+// Copyright 2018 The go-ecoball Authors
+// This file is part of the go-ecoball.
+//
+// The go-ecoball is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The go-ecoball is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
+
+package commands
+
+import (
+	"github.com/ecoball/go-ecoball/core/types"
+	"math/big"
+	"time"
+
+	inner "github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/event"
+	"github.com/ecoball/go-ecoball/http/common"
+)
+
+//transfer handle
+func Transfer(params []interface{}) *common.Response {
+	if len(params) < 1 {
+		return common.NewResponse(common.INVALID_PARAMS, nil)
+	}
+
+	switch {
+	case len(params) == 3:
+		if errCode := handleTransfer(params); errCode != common.SUCCESS {
+			return common.NewResponse(errCode, nil)
+		}
+
+	default:
+		return common.NewResponse(common.INVALID_PARAMS, nil)
+	}
+
+	return common.NewResponse(common.SUCCESS, "")
+}
+
+func handleTransfer(params []interface{}) common.Errcode {
+	var (
+		from    inner.Address
+		to      inner.Address
+		value   *big.Int
+		invalid bool = false
+	)
+
+	if v, ok := params[0].(string); ok {
+		from = inner.NewAddress([]byte(v))
+	} else {
+		invalid = true
+	}
+
+	if v, ok := params[1].(string); ok {
+		to = inner.NewAddress([]byte(v))
+	} else {
+		invalid = true
+	}
+
+	if v, ok := params[2].(int64); ok {
+		value = big.NewInt(v)
+	} else {
+		invalid = true
+	}
+
+	if invalid {
+		return common.INVALID_PARAMS
+	}
+
+	//time
+	time := time.Now().Unix()
+
+	transaction, err := types.NewTransfer(from, to, value, 0, time)
+	if nil != err {
+		return common.INVALID_PARAMS
+	}
+
+	err = transaction.SetSignature(&common.Account)
+	if err != nil {
+		return common.INVALID_ACCOUNT
+	}
+
+	//send to txpool
+	err = event.Send(event.ActorNil, event.ActorTxPool, transaction)
+	if nil != err {
+		return common.INTERNAL_ERROR
+	}
+
+	return common.SUCCESS
+}
