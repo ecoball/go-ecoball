@@ -59,7 +59,7 @@ func NewLedger(path string) (l ledger.Ledger, err error) {
 			return nil, err
 		}
 		ll.bc.Setup(ll.dpos)
-		ll.dpos.Setup(ll.bc)
+		ll.dpos.Setup(ll.bc, ll)
 
 	}
 

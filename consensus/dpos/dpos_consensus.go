@@ -63,7 +63,7 @@ type DposService struct {
 	enable bool
 	pending bool
 
-	ledger *ledger.Ledger
+	ledger ledger.Ledger
 }
 
 func NewDposService() (*DposService, error)  {
@@ -88,7 +88,7 @@ func NewDposService() (*DposService, error)  {
 }
 
 //TODO
-func (dpos *DposService) Setup(bc *Blockchain, ledger *ledger.Ledger)  {
+func (dpos *DposService) Setup(bc *Blockchain, ledger ledger.Ledger)  {
 	dpos.chain = bc
 	addr1 := common.Address{1,2,3,4,5,6,7,8,9,10,11,12,13,1,2,3,4,5,6,7}
 	s1 := addr1.ToBase58()

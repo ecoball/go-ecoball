@@ -23,7 +23,6 @@ import (
 	"time"
 	"github.com/ecoball/go-ecoball/common"
 
-	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 )
 
 type Blockchain struct {
@@ -44,6 +43,8 @@ type Blockchain struct {
 
 	quitCh chan int
 	chainTx ChainInterface
+
+
 
 }
 
@@ -92,11 +93,10 @@ func (bc *Blockchain) Start() {
 	log.Info("Starting BlockChain...")
 }
 
-func (bc *Blockchain) Setup(dpos *DposService, ledger *ledger.Ledger) error  {
+func (bc *Blockchain) Setup(dpos *DposService) error  {
 	//TODO
 	var err error
 	bc.consensusHandler = dpos
-	bc.ledger = ledger
 
 	if err != nil {
 		log.Info("NewTransactionChain error")
