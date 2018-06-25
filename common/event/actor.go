@@ -1,8 +1,19 @@
-/*
-Copyright QuakerChain. All Rights Reserved.
+// Copyright 2018 The go-ecoball Authors
+// This file is part of the go-ecoball.
+//
+// The go-ecoball is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The go-ecoball is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
 
-SPDX-License-Identifier: Apache-2.0
-*/
 package event
 
 import (
@@ -65,14 +76,14 @@ func (a ActorIndex) String() string {
 * 各模块在创建actor时先注册，然后使用GetActor来获取其他模块的actor
  */
 func RegisterActor(index ActorIndex, pid *actor.PID) error {
-	if index < 0 || index > maxActorNumber {
+	if index <= ActorNil || index > maxActorNumber {
 		return errors.New("invalid index since too big or too little")
-	}
-	if _, ok := actorList.list[index]; ok {
-		return errors.New("this actor is existed")
 	}
 	actorList.mux.Lock()
 	defer actorList.mux.Unlock()
+	if _, ok := actorList.list[index]; ok {
+		return errors.New("this actor is existed")
+	}
 	actorList.list[index] = pid
 	return nil
 }
@@ -100,7 +111,7 @@ func DelActor(index ActorIndex) {
 ** 如果希望对方返回数据，那么就需要带上自身的sender index，否则可以设置为0即ActorNil
  */
 func Send(sender, receiver ActorIndex, msg interface{}) error {
-	if sender != 0 {
+	if sender != ActorNil {
 		s, err := GetActor(sender)
 		if err != nil {
 			return err
