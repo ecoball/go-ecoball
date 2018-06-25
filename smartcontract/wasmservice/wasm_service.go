@@ -29,7 +29,7 @@ import (
 	"os"
 )
 
-//TODO  只支持函数参数类型为uint64，单返回值
+
 type WasmService struct {
 	ledger ledger.Ledger
 	Code   []byte
@@ -41,12 +41,14 @@ func NewWasmService(ledger ledger.Ledger, method string, code []byte, arg []uint
 	if len(code) == 0 {
 		return nil, errors.New("code is nil")
 	}
-	return &WasmService{
+	ws := &WasmService{
 		ledger: ledger,
 		Code:   code,
 		Args:   arg,
 		Method: method,
-	}, nil
+	}
+	ws.RegisterApi()
+	return ws,nil
 }
 
 func ReadWasm(file string) ([]byte, error) {
@@ -116,4 +118,19 @@ func importer(name string) (*wasm.Module, error) {
 		return nil, err
 	}
 	return m, nil
+}
+
+func (ws *WasmService)RegisterApi(){
+	funs := wasm.InitNativeFuns()
+	funs.Register("ABA_Add",ws.ABA_Add)
+	funs.Register("ABA_Log",ws.ABA_Log)
+}
+
+func (ws *WasmService)ABA_Add(a int32, b int32) int32 {
+	return a+b
+}
+
+func (ws *WasmService)ABA_Log(msg string) int32{
+	fmt.Println(msg)
+	return 0
 }
