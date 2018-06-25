@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ecoball library. If not, see <http://www.gnu.org/licenses/>.
 
-package node
+package main
 
 import (
 	"fmt"
@@ -22,24 +22,24 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/ecoball/go-ecoball/http/rpc"
-	"github.com/ecoball/go-ecoball/txpool"
-
-	"github.com/spf13/viper"
-	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl"
 	"github.com/ecoball/go-ecoball/core/store"
+	"github.com/ecoball/go-ecoball/http/rpc"
 	"github.com/ecoball/go-ecoball/net"
+	"github.com/ecoball/go-ecoball/txpool"
 	"github.com/ecoball/go-ecoball/webserver"
+	"github.com/urfave/cli"
 )
 
 var (
-	log      = elog.NewLogger("Node", elog.DebugLog)
-	Name     string
-	Password string
+	RunCommand = cli.Command{
+		Name:   "run",
+		Usage:  "run node",
+		Action: runNode,
+	}
 )
 
-func RunNode(config *viper.Viper) {
+func runNode(c *cli.Context) error {
 	//get account
 	checkPassword()
 
@@ -74,6 +74,8 @@ func RunNode(config *viper.Viper) {
 
 	//wait single to exit
 	wait()
+
+	return nil
 }
 
 func wait() {
@@ -81,71 +83,5 @@ func wait() {
 	signal.Notify(interrupt, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	defer signal.Stop(interrupt)
 	sig := <-interrupt
-	fmt.Println("ecoball received signal:", sig)
-}
-
-func checkPassword() {
-	/*	var (
-				nameTime     = 0
-				passwordTime = 0
-			)
-
-			//empty name
-			if "" == Name {
-				fmt.Printf("please input wallet file name:")
-				fmt.Scan(&Name)
-				goto name
-			}
-
-		name:
-			if 0 != nameTime {
-				fmt.Printf("please input wallet file name:")
-				fmt.Scan(&Name)
-			}
-
-			//file does not exist
-			if _, err := os.Stat(Name); err != nil {
-				fmt.Fprintf(os.Stderr, "%v", err)
-				nameTime++
-				if nameTime >= 3 {
-					fmt.Fprintln(os.Stderr, "More than three times, maybe you didn't create your wallet, exit...")
-					os.Exit(1)
-				}
-				goto name
-			}
-
-			//empty password
-			if "" == Password {
-				fmt.Printf("please input wallet password:")
-				fmt.Scan(&Password)
-				goto password
-			}
-
-		password:
-			if 0 != passwordTime {
-				fmt.Printf("please input wallet password:")
-				fmt.Scan(&Password)
-			}
-
-			//worng password
-			wallet := account.Open(Name, []byte(Password))
-			if nil == wallet {
-				fmt.Fprintln(os.Stderr, "open wallet failed!")
-				passwordTime++
-				if passwordTime >= 3 {
-					fmt.Fprintln(os.Stderr, "More than three times, exit...")
-					os.Exit(1)
-				}
-				goto password
-			}
-
-			//get account
-			if 0 == len(wallet.KeyData.Accounts) {
-				fmt.Fprintln(os.Stderr, "empty account, please create account")
-				os.Exit(1)
-			}
-
-			for _, v := range wallet.KeyData.Accounts {
-				common.Account = v
-			}*/
+	log.Info("ecoball received signal:", sig)
 }

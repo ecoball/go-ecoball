@@ -66,6 +66,14 @@ func GenesesBlockInit() (*Block, error) {
 		return nil, err
 	}
 	timeStamp := tm.Unix()
+
+	//TODO start
+	SecondInMs               := int64(1000)
+	BlockIntervalInMs        := int64(15000)
+	timeStamp = int64((timeStamp*SecondInMs-SecondInMs)/BlockIntervalInMs) * BlockIntervalInMs
+	timeStamp = timeStamp/SecondInMs
+	//TODO end
+
 	hash := common.NewHash([]byte("EcoBall Geneses Block"))
 	conData := ConsensusData{Type:ConSolo, Payload:&SoloData{}}
 	header, err := NewHeader(VersionHeader, 1, hash, hash, hash, conData, bloom.Bloom{}, timeStamp)

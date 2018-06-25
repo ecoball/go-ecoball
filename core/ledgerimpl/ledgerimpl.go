@@ -23,6 +23,11 @@ import (
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/transaction"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/consensus/dpos"
+	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/common/event"
+	"github.com/ecoball/go-ecoball/common/message"
+	"time"
 )
 
 var log = elog.NewLogger("LedgerImpl", elog.DebugLog)
@@ -32,6 +37,10 @@ type LedgerImpl struct {
 	//ChainCt *ChainContract
 	//ChainAc *account.ChainAccount
 
+	//TODO, start
+	bc *dpos.Blockchain
+	dpos *dpos.DposService
+	//TODO, end
 }
 
 func NewLedger(path string) (l ledger.Ledger, err error) {
@@ -41,6 +50,19 @@ func NewLedger(path string) (l ledger.Ledger, err error) {
 		return nil, err
 	}
 
+	//TODO
+	if (config.ConsensusAlgorithm == "DPOS") {
+		ll.bc, err = dpos.NewBlockChain(ll.ChainTx)
+		ll.dpos, err = dpos.NewDposService()
+		if err != nil {
+			log.Debug("Init NewBlockChain error")
+			return nil, err
+		}
+		ll.bc.Setup(ll.dpos)
+		ll.dpos.Setup(ll.bc, ll)
+
+	}
+
 	actor := &LedActor{ledger: ll}
 	actor.pid, err = NewLedgerActor(actor)
 	if err != nil {
@@ -48,6 +70,29 @@ func NewLedger(path string) (l ledger.Ledger, err error) {
 	}
 
 	return ll, nil
+}
+
+
+func (l *LedgerImpl) Start() {
+	//TODO start
+	if (config.ConsensusAlgorithm == "DPOS") {
+		l.bc.Start()
+		l.dpos.Start()
+		//TODO end
+	} else {
+		t := time.NewTimer(time.Second * 10)
+
+		go func() {
+			for {
+				select {
+				case <-t.C:
+					log.Debug("Request a new block")
+					event.Send(event.ActorLedger, event.ActorTxPool, message.GetTxs{})
+					t.Reset(time.Second * 10)
+				}
+			}
+		}()
+	}
 }
 
 func (l *LedgerImpl) GetAccountBalance(addr common.Address) (uint64, error) {

@@ -24,10 +24,10 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/peterh/liner"
-	"github.com/urfave/cli"
 	"github.com/ecoball/go-ecoball/client/commands"
 	ncli "github.com/ecoball/go-ecoball/net/cli"
+	"github.com/peterh/liner"
+	"github.com/urfave/cli"
 )
 
 func newClientApp() *cli.App {
@@ -39,8 +39,8 @@ func newClientApp() *cli.App {
 	app.HelpName = "ecoclient"
 	app.Usage = "command line tool for ecoball"
 	app.UsageText = "ecoclient [global options] command [command options] [args]"
-	app.Copyright = "2018 Ecoball. All rights reserved"
-	app.Author = "EcoBall"
+	app.Copyright = "2018 ecoball. All rights reserved"
+	app.Author = "ecoball"
 	app.Email = "service@ecoball.org"
 	app.HideHelp = true
 	app.HideVersion = true
