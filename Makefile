@@ -8,7 +8,7 @@ all: ecoball ecoclient proto
 ecoball: proto
 	@echo "\033[;32mbuild ecoball \033[0m"
 	mkdir -p build/
-	go build -v -o ecoball node/main.go
+	go build -v -o ecoball node/*.go
 	mv ecoball build/
 
 ecoclient: 
