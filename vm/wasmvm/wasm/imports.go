@@ -94,7 +94,7 @@ func (module *Module) resolveImports(resolve ResolveFunc) error {
 	}
 
 	modules := make(map[string]*Module)
-	native  := NewNativeFun()
+	native  := GetFuns()
 	var funcs uint32
 	for _, importEntry := range module.Import.Entries {
 		//TODO import/global/memory

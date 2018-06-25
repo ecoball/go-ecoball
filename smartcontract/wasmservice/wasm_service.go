@@ -20,6 +20,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/vm/wasmvm/exec"
 	"github.com/ecoball/go-ecoball/vm/wasmvm/util"
@@ -29,7 +31,8 @@ import (
 	"os"
 )
 
-//TODO  只支持函数参数类型为uint64，单返回值
+var log = elog.NewLogger("wasm", elog.NoticeLog)
+
 type WasmService struct {
 	ledger ledger.Ledger
 	Code   []byte
@@ -41,12 +44,14 @@ func NewWasmService(ledger ledger.Ledger, method string, code []byte, arg []uint
 	if len(code) == 0 {
 		return nil, errors.New("code is nil")
 	}
-	return &WasmService{
+	ws := &WasmService{
 		ledger: ledger,
 		Code:   code,
 		Args:   arg,
 		Method: method,
-	}, nil
+	}
+	ws.RegisterApi()
+	return ws, nil
 }
 
 func ReadWasm(file string) ([]byte, error) {
@@ -116,4 +121,58 @@ func importer(name string) (*wasm.Module, error) {
 		return nil, err
 	}
 	return m, nil
+}
+
+func (ws *WasmService) RegisterApi() {
+	funs := wasm.InitNativeFuns()
+	funs.Register("AbaAdd", ws.AbaAdd)
+	funs.Register("AbaLogString", ws.AbaLogString)
+	funs.Register("AbaLogInt", ws.AbaLogInt)
+	funs.Register("AbaGetCurrentHeight", ws.AbaGetCurrentHeight)
+	funs.Register("AbaGetAccountBalance", ws.AbaGetAccountBalance)
+	funs.Register("AbaAddAccountBalance", ws.AbaAddAccountBalance)
+	funs.Register("AbaSubAccountBalance", ws.AbaSubAccountBalance)
+}
+
+func (ws *WasmService) AbaAdd(a int32, b int32) int32 {
+	return a + b
+}
+
+func (ws *WasmService) AbaLogString(str string) int32 {
+	fmt.Println(str)
+	return 0
+}
+
+func (ws *WasmService) AbaLogInt(value uint64) int32 {
+	fmt.Println("value:", value)
+	return 0
+}
+
+func (ws *WasmService) AbaGetCurrentHeight() uint64 {
+	return ws.ledger.GetCurrentHeight()
+}
+
+func (ws *WasmService) AbaGetAccountBalance(addrHex string) uint64 {
+	address := common.NewAddress(common.FromHex(addrHex))
+	value, err := ws.ledger.GetAccountBalance(address)
+	if err != nil {
+		return 0
+	}
+	return value
+}
+
+func (ws *WasmService) AbaAddAccountBalance(value uint64, addrHex string) int32 {
+	if err := ws.ledger.AddAccountBalance(common.NewAddress(common.FromHex(addrHex)), value); err != nil {
+		log.Error(err)
+		return -1
+	}
+	return 0
+}
+
+func (ws *WasmService) AbaSubAccountBalance(value uint64, addrHex string) int32 {
+	if err := ws.ledger.SubAccountBalance(common.NewAddress(common.FromHex(addrHex)), value); err != nil {
+		log.Error(err)
+		return -1
+	}
+	return 0
 }

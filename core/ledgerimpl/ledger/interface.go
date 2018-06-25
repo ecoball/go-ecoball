@@ -16,5 +16,6 @@ type Ledger interface {
 	AddAccountBalance(addr common.Address, value uint64) error
 	SubAccountBalance(addr common.Address, value uint64) error
 	GetContractInfo(key []byte) ([]byte, error)
+	//SignatureTransaction()
 	//GetContractInfo()
 }
