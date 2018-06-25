@@ -94,10 +94,11 @@ func NewTransactionChain(path string) (c *ChainTx, err error) {
 
 
 func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData) (*types.Block, error) {
-	for _, tx := range txs {
-		if _, err := c.HandleTransaction(ledger, tx); err != nil {
+	for i := 0; i < len(txs); i++ {
+		if _, err := c.HandleTransaction(ledger, txs[i]); err != nil {
 			return nil, err
 		}
+		//event.Send(event.ActorLedger, event.ActorP2P, txs[i]) //send result to p2p actor
 	}
 	return types.NewBlock(c.CurrentHeader, c.StateDB.GetHashRoot(), consensusData, txs)
 }
