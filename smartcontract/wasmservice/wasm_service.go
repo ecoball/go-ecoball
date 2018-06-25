@@ -27,8 +27,11 @@ import (
 	"github.com/ecoball/go-ecoball/vm/wasmvm/wasm"
 	"io/ioutil"
 	"os"
+	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/elog"
 )
 
+var log = elog.NewLogger("wasm", elog.NoticeLog)
 
 type WasmService struct {
 	ledger ledger.Ledger
@@ -122,19 +125,48 @@ func importer(name string) (*wasm.Module, error) {
 
 func (ws *WasmService)RegisterApi(){
 	funs := wasm.InitNativeFuns()
-	funs.Register("ABA_Add",ws.ABA_Add)
-	funs.Register("ABA_Log",ws.ABA_Log)
+	funs.Register("AbaAdd",ws.ABA_ADD)
+	funs.Register("AbaLog",ws.ABA_LOG)
+	funs.Register("AbaGetCurrentHeight",ws.AbaGetCurrentHeight)
+	funs.Register("AbaGetAccountBalance",ws.AbaGetAccountBalance)
+	funs.Register("AbaAddAccountBalance",ws.AbaAddAccountBalance)
+	funs.Register("AbaSubAccountBalance",ws.AbaSubAccountBalance)
 }
 
-func (ws *WasmService)ABA_Add(a int32, b int32) int32 {
+func (ws *WasmService) ABA_ADD(a int32, b int32) int32 {
 	return a+b
 }
 
-func (ws *WasmService)ABA_Log(msg string) int32{
+func (ws *WasmService) ABA_LOG(msg string) int32{
 	fmt.Println(msg)
 	return 0
 }
 
-func (ws *WasmService) GetCurrentHeight() uint64 {
+func (ws *WasmService) AbaGetCurrentHeight() uint64 {
 	return ws.ledger.GetCurrentHeight()
+}
+
+func (ws *WasmService) AbaGetAccountBalance(addr string) uint64 {
+	address := common.NewAddress([]byte(addr))
+	value, err := ws.ledger.GetAccountBalance(address)
+	if err != nil {
+		return 0
+	}
+	return value
+}
+
+func (ws *WasmService) AbaAddAccountBalance(value uint64, addr string) int {
+	if err := ws.ledger.AddAccountBalance(common.NewAddress([]byte(addr)), value); err != nil {
+		log.Error(err)
+		return -1
+	}
+	return 0
+}
+
+func (ws *WasmService) AbaSubAccountBalance(value uint64, addr string) int {
+	if err := ws.ledger.SubAccountBalance(common.NewAddress([]byte(addr)), value); err != nil {
+		log.Error(err)
+		return -1
+	}
+	return 0
 }
