@@ -475,7 +475,6 @@ func (m *Transaction) GetHash() []byte {
 }
 
 // *
-// <<<<<<< HEAD
 // *
 type ConsensusState struct {
 	Hash        []byte   `protobuf:"bytes,3,opt,name=hash,proto3" json:"hash,omitempty"`
@@ -527,9 +526,7 @@ func (m *Miner) GetHash() []byte {
 
 // *
 // * 签名数据
-// =======
 // * Signature Info
-// >>>>>>> 298161b8b6337f73a6610f7507202cffcb68b12f
 type Signature struct {
 	PubKey  []byte `protobuf:"bytes,1,opt,name=PubKey,proto3" json:"PubKey,omitempty"`
 	SigData []byte `protobuf:"bytes,2,opt,name=SigData,proto3" json:"SigData,omitempty"`

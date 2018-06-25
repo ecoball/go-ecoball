@@ -134,3 +134,7 @@ func (ws *WasmService)ABA_Log(msg string) int32{
 	fmt.Println(msg)
 	return 0
 }
+
+func (ws *WasmService) GetCurrentHeight() uint64 {
+	return ws.ledger.GetCurrentHeight()
+}
