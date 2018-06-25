@@ -23,16 +23,9 @@ import (
 
 	"github.com/spf13/viper"
 
-	"fmt"
-
+	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/utils"
 )
-
-//EcoBall version
-var EcoVersion string
-
-//listen port
-var HttpLocalPort string = "20337"
 
 const (
 	HttpPort   = "http_port"
@@ -51,15 +44,25 @@ const (
 	StringState    = "/State"
 )
 
-//set default value
-var configDefault = `#toml configuration for aba
-http_port = "20678"			# 
-version = "1.0"				#
-log_path = ""				# 
-log_level = 5				#
-pub_key = "1234567890"		#
-pri_key = ""				#
+var (
+	//set default value
+	configDefault = `#toml configuration for aba
+http_port = "20678"			 
+version = "1.0"				
+log_path = ""				 
+log_level = 5				
+pub_key = "1234567890"		
+pri_key = ""				
 `
+	//EcoBall version
+	EcoVersion string
+
+	//listen port
+	HttpLocalPort string = "20337"
+
+	//log
+	log = elog.NewLogger("config", elog.DebugLog)
+)
 
 type Config struct {
 	FilePath string
@@ -90,13 +93,13 @@ func (c *Config) CreateConfigFile() error {
 	}
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
 		if err := os.MkdirAll(dirPath, 0700); err != nil {
-			fmt.Println("could not create directory:", dirPath, err)
+			log.Fatal("could not create directory:", dirPath, err)
 			return err
 		}
 	}
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		if err := ioutil.WriteFile(filePath, []byte(configDefault), 0644); err != nil {
-			fmt.Println("write file err:", err)
+			log.Fatal("write file err:", err)
 			return err
 		}
 	}
@@ -111,9 +114,9 @@ func (c *Config) InitConfig() error {
 	viper.SetConfigName("aba")
 	viper.AddConfigPath(c.FilePath)
 	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+		log.Info("Using config file:", viper.ConfigFileUsed())
 	} else {
-		fmt.Println("can't load config file:", err)
+		log.Info("can't load config file:", err)
 		return err
 	}
 	return nil
@@ -121,7 +124,7 @@ func (c *Config) InitConfig() error {
 
 func CreateOrReadConfig() {
 	if err := SetConfig(); err != nil {
-		fmt.Errorf("%s\n", err)
+		log.Fatal("%s\n", err)
 		os.Exit(-1)
 	}
 

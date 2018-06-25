@@ -17,17 +17,50 @@
 package main
 
 import (
-	"fmt"
+	"os"
 
-	"github.com/ecoball/go-ecoball/common/cmd"
 	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/urfave/cli"
 )
 
+var log = elog.NewLogger("Node", elog.DebugLog)
+
 func main() {
-	fmt.Println("Start aba process...")
+	app := cli.NewApp()
 
-	//create config file or load confing file
-	config.CreateOrReadConfig()
+	//set attribute of EcoBall
+	app.Name = "ecoball"
+	app.Version = config.EcoVersion
+	app.HelpName = "ecoball"
+	app.Usage = "Block chain system from QuakerChain Technology"
+	app.UsageText = "ecoball is a brand-new, open and compatible multi-chain parallel block chain operating system"
+	app.Copyright = "2018 ecoball. All rights reserved"
+	app.Author = "EcoBall"
+	app.Email = "service@ecoball.org"
+	app.HideHelp = true
+	app.HideVersion = true
 
-	cmd.Execute()
+	//befor function
+	app.Before = func(*cli.Context) error {
+		log.Info("Start aba process...")
+
+		//create config file or load confing file
+		config.CreateOrReadConfig()
+		return nil
+	}
+
+	//commands
+	app.Commands = []cli.Command{
+		RunCommand,
+	}
+
+	//flags
+	app.Flags = []cli.Flag{
+		NewNameFlag(),
+		NewPasswordFlag(),
+	}
+
+	//run
+	app.Run(os.Args)
 }
