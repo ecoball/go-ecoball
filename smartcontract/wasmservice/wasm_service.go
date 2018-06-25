@@ -138,8 +138,9 @@ func (ws *WasmService) AbaAdd(a int32, b int32) int32 {
 	return a + b
 }
 
-func (ws *WasmService) AbaLogString(str string) int32 {
-	fmt.Println(str)
+func (ws *WasmService) AbaLogString( str string, msg interface{}) int32 {
+	fmt.Println("AbaLogString:---------")
+	fmt.Printf(str, msg)
 	return 0
 }
 

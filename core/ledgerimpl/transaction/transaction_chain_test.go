@@ -94,7 +94,7 @@ func TestLedgerDeployAdd(t *testing.T) {
 		t.Fatal(err)
 	}
 	fmt.Println("Start LedgerImpl Module, hash:", l.GetCurrentHeader().Hash.HexString())
-	code, err := wasmservice.ReadWasm("../../../test/transfer.wasm")
+	code, err := wasmservice.ReadWasm("../../../test/log.wasm")
 	tx := types.NewTestDeploy(code)
 	var txs []*types.Transaction
 	txs = append(txs, tx)
