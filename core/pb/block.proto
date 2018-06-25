@@ -104,6 +104,19 @@ message Transaction {
     bytes                   hash        = 3;
 }
 /**
+**
+*/
+message ConsensusState {
+    bytes             hash =        3;
+    repeated Miner    bookkeepers = 2;
+    int64             timestamp   = 1;
+}
+
+message Miner {
+    bytes hash = 1;
+}
+/**
+** 签名数据
 ** Signature Info
 */
 message Signature {

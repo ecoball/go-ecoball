@@ -42,6 +42,12 @@ const (
 	StringTxs      = "/Txs"
 	StringContract = "/Contract"
 	StringState    = "/State"
+	StringConsensus = "/Consensus"
+)
+
+//TODO
+const (
+	ConsensusAlgorithm = "DPOS"
 )
 
 var (

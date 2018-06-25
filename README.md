@@ -1,11 +1,10 @@
-ABA
+Go-Ecoball
 -------
 
 ## Depends
-You need install protoc by 
-https://github.com/google/protobuf/blob/master/src/README.md
+You need install [protoc](https://github.com/google/protobuf/blob/master/src/README.md) 
 
-Then you need install proto buf tools:
+Then you need install golang proto tools:
 ```bash
 go get github.com/gogo/protobuf/protoc-gen-gofast
 ```

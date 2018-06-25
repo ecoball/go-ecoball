@@ -22,6 +22,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/core/types"
 	"reflect"
+	"github.com/ecoball/go-ecoball/consensus/dpos"
 )
 
 type LedActor struct {
@@ -78,6 +79,14 @@ func (l *LedActor) Receive(ctx actor.Context) {
 			break
 		}
 		if err := event.Send(event.ActorLedger, event.ActorTxPool, msg); err != nil {
+			log.Error("send block to tx pool error:", err)
+		}
+	case *dpos.DposBlock:
+		if err := l.ledger.bc.SaveBlock(msg); err != nil {
+			log.Error("save block error", err)
+			break
+		}
+		if err := event.Send(event.ActorLedger, event.ActorTxPool, msg.Block); err != nil {
 			log.Error("send block to tx pool error:", err)
 		}
 	default:
