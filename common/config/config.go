@@ -47,7 +47,7 @@ const (
 
 //TODO
 const (
-	ConsensusAlgorithm = "DPO"
+	ConsensusAlgorithm = "DPOS"
 )
 
 var (
