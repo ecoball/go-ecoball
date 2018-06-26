@@ -204,8 +204,6 @@ func (c *ChainTx) GenesesBlockConsensusStateInit() error {
 	return nil
 }
 
-
-
 func (c *ChainTx) GenesesBlockInit() error {
 	geneses, err := types.GenesesBlockInit()
 	if err != nil {
@@ -338,4 +336,8 @@ func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction)
 	}
 
 	return nil, nil
+}
+
+func (c *ChainTx) TokenExisted(token string) bool {
+	return c.StateDB.TokenExisted(token)
 }

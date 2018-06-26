@@ -18,15 +18,15 @@ package ledgerimpl
 
 import (
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/common/event"
+	"github.com/ecoball/go-ecoball/common/message"
+	"github.com/ecoball/go-ecoball/consensus/dpos"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/transaction"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/consensus/dpos"
-	"github.com/ecoball/go-ecoball/common/config"
-	"github.com/ecoball/go-ecoball/common/event"
-	"github.com/ecoball/go-ecoball/common/message"
 	"time"
 )
 
@@ -38,7 +38,7 @@ type LedgerImpl struct {
 	//ChainAc *account.ChainAccount
 
 	//TODO, start
-	bc *dpos.Blockchain
+	bc   *dpos.Blockchain
 	dpos *dpos.DposService
 	//TODO, end
 }
@@ -51,7 +51,7 @@ func NewLedger(path string) (l ledger.Ledger, err error) {
 	}
 
 	//TODO
-	if (config.ConsensusAlgorithm == "DPOS") {
+	if config.ConsensusAlgorithm == "DPOS" {
 		ll.bc, err = dpos.NewBlockChain(ll.ChainTx)
 		ll.dpos, err = dpos.NewDposService()
 		if err != nil {
@@ -72,10 +72,9 @@ func NewLedger(path string) (l ledger.Ledger, err error) {
 	return ll, nil
 }
 
-
 func (l *LedgerImpl) Start() {
 	//TODO start
-	if (config.ConsensusAlgorithm == "DPOS") {
+	if config.ConsensusAlgorithm == "DPOS" {
 		l.bc.Start()
 		l.dpos.Start()
 		//TODO end
@@ -111,7 +110,7 @@ func (l *LedgerImpl) AccountAddBalance(addr common.Address, token string, value 
 	return l.ChainTx.AccountAddBalance(addr, token, value)
 }
 
-func (l *LedgerImpl) AccountSubBalance(addr common.Address, token string,  value uint64) error {
+func (l *LedgerImpl) AccountSubBalance(addr common.Address, token string, value uint64) error {
 	return l.ChainTx.AccountSubBalance(addr, token, value)
 }
 
@@ -149,6 +148,9 @@ func (l *LedgerImpl) CheckTransaction(tx *types.Transaction) error {
 }
 
 func (l *LedgerImpl) TokenCreate(addr common.Address, token string, maximum uint64) error {
-	l.ChainTx.AccountAddBalance(addr, token, maximum)
-	return nil
+	return l.ChainTx.AccountAddBalance(addr, token, maximum)
+}
+
+func (l *LedgerImpl) TokenIsExisted(token string) bool {
+	return l.ChainTx.TokenExisted(token)
 }

@@ -22,6 +22,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/store"
 	"math/big"
+	"bytes"
 )
 
 var log = elog.NewLogger("state", elog.DebugLog)
@@ -109,7 +110,22 @@ func (s *State) AddBalance(addr common.Address, name string, value *big.Int) err
 	if err := s.trie.TryUpdate(tObj.addrHash.Bytes(), d); err != nil {
 		return err
 	}
+	//add token into trie
+	hash := common.NewHash([]byte(name))
+	if err := s.trie.TryUpdate(hash.Bytes(), []byte(name)); err != nil {
+		return err
+	}
 	return nil
+}
+
+func (s *State) TokenExisted(name string) bool {
+	hash := common.NewHash([]byte(name))
+	data, err := s.trie.TryGet(hash.Bytes())
+	if err != nil {
+		log.Error(err)
+		return false
+	}
+	return bytes.Equal(data, []byte(name))
 }
 
 func (s *State) GetHashRoot() common.Hash {
