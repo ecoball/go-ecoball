@@ -10,10 +10,9 @@ import (
 
 func TestStateObject(t *testing.T) {
 	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
-	token := common.NewAddress(common.FromHex("01b1a6569a557eafcccc71e0d02461fd4b601aea"))
 	obj, _ := state.NewStateObject(addr)
-	obj.AddBalance(token, []byte("aba"), new(big.Int).SetUint64(100))
-	value, err := obj.Balance(token, []byte("aba"))
+	obj.AddBalance("aba", new(big.Int).SetUint64(100))
+	value, err := obj.Balance("aba")
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -12,10 +12,12 @@ type Ledger interface {
 	CheckTransaction(tx *types.Transaction) error
 	GetCurrentHeader() *types.Header
 	GetCurrentHeight() uint64
-	GetAccountBalance(addr common.Address) (uint64, error)
-	AddAccountBalance(addr common.Address, value uint64) error
-	SubAccountBalance(addr common.Address, value uint64) error
-	GetContractInfo(key []byte) ([]byte, error)
+	AccountGetBalance(addr common.Address, token string) (uint64, error)
+	AccountAddBalance(addr common.Address, token string, value uint64) error
+	AccountSubBalance(addr common.Address, token string, value uint64) error
+	ContractGetInfo(key []byte) ([]byte, error)
+	TokenCreate(addr common.Address, token string, maximum uint64) error
+	//TokenIsExisted(name string) bool
 	//SignatureTransaction()
 	//GetContractInfo()
 }

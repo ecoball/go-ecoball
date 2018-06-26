@@ -274,12 +274,16 @@ func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
 	return errs.ErrNoError
 }
 
-func (c *ChainTx) AddAccountBalance(addr common.Address, value uint64) error {
-	return c.StateDB.AddBalance(addr, state.AbaToken, []byte("aba"), new(big.Int).SetUint64(value))
+func (c *ChainTx) AccountGetBalance(addr common.Address, token string) (*big.Int, error) {
+	return c.StateDB.GetBalance(addr, token)
 }
 
-func (c *ChainTx) SubAccountBalance(addr common.Address, value uint64) error {
-	return c.StateDB.SubBalance(addr, state.AbaToken, []byte("aba"), new(big.Int).SetUint64(value))
+func (c *ChainTx) AccountAddBalance(addr common.Address, token string, value uint64) error {
+	return c.StateDB.AddBalance(addr, token, new(big.Int).SetUint64(value))
+}
+
+func (c *ChainTx) AccountSubBalance(addr common.Address, token string, value uint64) error {
+	return c.StateDB.SubBalance(addr, token, new(big.Int).SetUint64(value))
 }
 
 func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction) ([]byte, error) {
@@ -290,10 +294,10 @@ func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction)
 		if !ok {
 			return nil, errors.New("transaction type error[transfer]")
 		}
-		if err := c.SubAccountBalance(tx.From, payload.Value.Uint64()); err != nil {
+		if err := c.AccountSubBalance(tx.From, state.AbaToken, payload.Value.Uint64()); err != nil {
 			return nil, err
 		}
-		if err := c.AddAccountBalance(tx.Addr, payload.Value.Uint64()); err != nil {
+		if err := c.AccountAddBalance(tx.Addr, state.AbaToken, payload.Value.Uint64()); err != nil {
 			return nil, err
 		}
 	case types.TxDeploy:
@@ -324,7 +328,7 @@ func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction)
 		fmt.Println("execute code:", common.Bytes2Hex(deployInfo.Code))
 		fmt.Println("method:", string(payload.Method))
 		fmt.Println("param:", string(payload.Param))
-		service, err := smartcontract.NewContractService(ledger)
+		service, err := smartcontract.NewContractService(ledger, tx)
 		if err != nil {
 			return nil, err
 		}

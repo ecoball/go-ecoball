@@ -126,6 +126,7 @@ func importer(name string) (*wasm.Module, error) {
 func (ws *WasmService) RegisterApi() {
 	funs := wasm.InitNativeFuns()
 	funs.Register("AbaAdd", ws.AbaAdd)
+	funs.Register("AbaLog", ws.AbaLog)
 	funs.Register("AbaLogString", ws.AbaLogString)
 	funs.Register("AbaLogInt", ws.AbaLogInt)
 	funs.Register("AbaGetCurrentHeight", ws.AbaGetCurrentHeight)
@@ -138,7 +139,12 @@ func (ws *WasmService) AbaAdd(a int32, b int32) int32 {
 	return a + b
 }
 
-func (ws *WasmService) AbaLogString( str string, msg interface{}) int32 {
+func (ws *WasmService) AbaLog(str string) int32 {
+	fmt.Println(str)
+	return 0
+}
+
+func (ws *WasmService) AbaLogString(str string, msg interface{}) int32 {
 	fmt.Println("AbaLogString:---------")
 	fmt.Printf(str, msg)
 	return 0
@@ -153,25 +159,25 @@ func (ws *WasmService) AbaGetCurrentHeight() uint64 {
 	return ws.ledger.GetCurrentHeight()
 }
 
-func (ws *WasmService) AbaGetAccountBalance(addrHex string) uint64 {
+func (ws *WasmService) AbaGetAccountBalance(token, addrHex string) uint64 {
 	address := common.NewAddress(common.FromHex(addrHex))
-	value, err := ws.ledger.GetAccountBalance(address)
+	value, err := ws.ledger.AccountGetBalance(address, token)
 	if err != nil {
 		return 0
 	}
 	return value
 }
 
-func (ws *WasmService) AbaAddAccountBalance(value uint64, addrHex string) int32 {
-	if err := ws.ledger.AddAccountBalance(common.NewAddress(common.FromHex(addrHex)), value); err != nil {
+func (ws *WasmService) AbaAddAccountBalance(value uint64, token, addrHex string) int32 {
+	if err := ws.ledger.AccountAddBalance(common.NewAddress(common.FromHex(addrHex)), token, value); err != nil {
 		log.Error(err)
 		return -1
 	}
 	return 0
 }
 
-func (ws *WasmService) AbaSubAccountBalance(value uint64, addrHex string) int32 {
-	if err := ws.ledger.SubAccountBalance(common.NewAddress(common.FromHex(addrHex)), value); err != nil {
+func (ws *WasmService) AbaSubAccountBalance(value uint64, token, addrHex string) int32 {
+	if err := ws.ledger.AccountSubBalance(common.NewAddress(common.FromHex(addrHex)), token, value); err != nil {
 		log.Error(err)
 		return -1
 	}

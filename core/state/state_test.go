@@ -28,26 +28,25 @@ import (
 func TestStateNew(t *testing.T) {
 	root := common.HexToHash("0x2bf44335cf189dba789158d70bace19b83d3d60d113aa9efe5f53003da66e141")
 	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
-	token := common.NewAddress(common.FromHex("01b1a6569a557eafcccc71e0d02461fd4b601aea"))
 	s, err := state.NewState("/tmp/state", root)
 	if err != nil {
 		t.Fatal(err)
 	}
 	fmt.Println("Trie Root:", s.GetHashRoot().HexString())
 
-	balance, err := s.GetBalance( addr, token, []byte("aba"))
+	balance, err := s.GetBalance( addr, "aba")
 	if err != nil {
 		fmt.Println("get balance error:", err)
 	}
 	fmt.Println("Balance From:", balance)
 	value := new(big.Int).SetUint64(100)
-	if err := s.AddBalance(addr, token, []byte("aba"), value); err != nil {
+	if err := s.AddBalance(addr, "aba", value); err != nil {
 		fmt.Println("Update Error:", err)
 	}
 
 	fmt.Println("Hash Root:", s.GetHashRoot().HexString())
 	s.CommitToDB()
-	balance, err = s.GetBalance(addr, token, []byte("aba"))
+	balance, err = s.GetBalance(addr, "aba")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -56,25 +55,24 @@ func TestStateNew(t *testing.T) {
 
 func TestStateRoot(t *testing.T) {
 	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
-	token := common.NewAddress(common.FromHex("01b1a6569a557eafcccc71e0d02461fd4b601aea"))
 	s, err := state.NewState("/tmp/state_root", common.HexToHash("cf4bfc19264aa4bbd6898c0ef43ce5465c794fd587e622fccc19980e634cd9f2"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := s.AddBalance(addr, token, []byte("aba"), new(big.Int).SetInt64(100)); err != nil {
+	if err := s.AddBalance(addr, "aba", new(big.Int).SetInt64(100)); err != nil {
 		t.Fatal(err)
 	}
-	value, err := s.GetBalance(addr, token, []byte("aba"))
+	value, err := s.GetBalance(addr, "aba")
 	if err != nil {
 		t.Fatal(err)
 	}
 	fmt.Println("value:", value)
 	fmt.Println("root:", s.GetHashRoot().HexString())
 
-	if err := s.AddBalance(addr, token, []byte("aba"), new(big.Int).SetInt64(150)); err != nil {
+	if err := s.AddBalance(addr, "aba", new(big.Int).SetInt64(150)); err != nil {
 		t.Fatal(err)
 	}
-	value, err = s.GetBalance(addr, token, []byte("aba"))
+	value, err = s.GetBalance(addr, "aba")
 	if err != nil {
 		t.Fatal(err)
 	}

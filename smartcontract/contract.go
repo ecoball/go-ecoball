@@ -29,14 +29,15 @@ type Service interface {
 
 type ContractService struct {
 	ledger  ledger.Ledger
+	tx *types.Transaction
 	Service Service
 }
 
-func NewContractService(ledger ledger.Ledger) (*ContractService, error) {
+func NewContractService(ledger ledger.Ledger, tx *types.Transaction) (*ContractService, error) {
 	if ledger == nil {
 		return nil, errors.New("the contract service's ledger interface is nil")
 	}
-	return &ContractService{ledger: ledger}, nil
+	return &ContractService{ledger: ledger, tx: tx}, nil
 }
 
 func (c ContractService) ExecuteContract(vmType types.VmType, method string, code []byte, arg []byte) (ret []byte, err error) {

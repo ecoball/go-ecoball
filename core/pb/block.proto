@@ -135,7 +135,6 @@ message stateObject {
 ** Account Info
 */
 message Account {
-    bytes       Address     = 3;
     bytes       Name        = 4;
     uint64      Nonce       = 1;
     bytes       Balance     = 2;

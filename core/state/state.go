@@ -25,7 +25,7 @@ import (
 )
 
 var log = elog.NewLogger("state", elog.DebugLog)
-var AbaToken = common.NewAddress(common.FromHex("01b1a6569a557eafcccc71e0d02461fd4b601aea"))
+var AbaToken = "Aba"
 
 type State struct {
 	path     string
@@ -73,19 +73,19 @@ func (s *State) GetStateObject(addr common.Address) (*StateObject, error) {
 	return fObj, nil
 }
 
-func (s *State) SubBalance(addr, token common.Address, name []byte, value *big.Int) error {
+func (s *State) SubBalance(addr common.Address, name string, value *big.Int) error {
 	fObj, err := s.GetStateObject(addr)
 	if err != nil {
 		return err
 	}
-	balance, err := fObj.Balance(token, name)
+	balance, err := fObj.Balance(name)
 	if err != nil {
 		return errors.New("no enough balance")
 	}
 	if balance.Cmp(value) == -1 {
 		return errors.New("no enough balance")
 	}
-	fObj.SubBalance(token, name, value)
+	fObj.SubBalance(name, value)
 	d, err := fObj.Serialize()
 	if err != nil {
 		return err
@@ -96,12 +96,12 @@ func (s *State) SubBalance(addr, token common.Address, name []byte, value *big.I
 	return nil
 }
 
-func (s *State) AddBalance(addr, token common.Address, name []byte, value *big.Int) error {
+func (s *State) AddBalance(addr common.Address, name string, value *big.Int) error {
 	tObj, err := s.GetStateObject(addr)
 	if err != nil {
 		return err
 	}
-	tObj.AddBalance(token, name, value)
+	tObj.AddBalance(name, value)
 	d, err := tObj.Serialize()
 	if err != nil {
 		return err
@@ -133,7 +133,7 @@ func (s *State) CommitToDB() error {
 	return s.db.TrieDB().Commit(s.trie.Hash(), false)
 }
 
-func (s *State) GetBalance(addr, token common.Address, name []byte) (*big.Int, error) {
+func (s *State) GetBalance(addr common.Address, name string) (*big.Int, error) {
 	val := new(big.Int)
 	key := common.SingleHash(addr.Bytes())
 	data, err := s.trie.TryGet(key.Bytes())
@@ -150,7 +150,7 @@ func (s *State) GetBalance(addr, token common.Address, name []byte) (*big.Int, e
 		log.Error(err)
 		return val, err
 	}
-	val, err = obj.Balance(token, name)
+	val, err = obj.Balance(name)
 	return val, nil
 }
 

@@ -95,24 +95,24 @@ func (l *LedgerImpl) Start() {
 	}
 }
 
-func (l *LedgerImpl) GetAccountBalance(addr common.Address) (uint64, error) {
-	value, err := l.ChainTx.StateDB.GetBalance(addr, state.AbaToken, []byte("aba"))
+func (l *LedgerImpl) AccountGetBalance(addr common.Address, token string) (uint64, error) {
+	value, err := l.ChainTx.AccountGetBalance(addr, state.AbaToken)
 	if err != nil {
 		return 0, err
 	}
 	return value.Uint64(), nil
 }
 
-func (l *LedgerImpl) GetContractInfo(key []byte) ([]byte, error) {
+func (l *LedgerImpl) ContractGetInfo(key []byte) ([]byte, error) {
 	return l.ChainTx.TxsStore.Get(key)
 }
 
-func (l *LedgerImpl) AddAccountBalance(addr common.Address, value uint64) error {
-	return l.ChainTx.AddAccountBalance(addr, value)
+func (l *LedgerImpl) AccountAddBalance(addr common.Address, token string, value uint64) error {
+	return l.ChainTx.AccountAddBalance(addr, token, value)
 }
 
-func (l *LedgerImpl) SubAccountBalance(addr common.Address, value uint64) error {
-	return l.ChainTx.SubAccountBalance(addr, value)
+func (l *LedgerImpl) AccountSubBalance(addr common.Address, token string,  value uint64) error {
+	return l.ChainTx.AccountSubBalance(addr, token, value)
 }
 
 func (l *LedgerImpl) NewTxBlock(txs []*types.Transaction, consensusData types.ConsensusData) (*types.Block, error) {
@@ -145,5 +145,10 @@ func (l *LedgerImpl) CheckTransaction(tx *types.Transaction) error {
 	//if err := l.ChainAc.CheckTransaction(tx); err != nil {
 	//	return err
 	//}
+	return nil
+}
+
+func (l *LedgerImpl) TokenCreate(addr common.Address, token string, maximum uint64) error {
+	l.ChainTx.AccountAddBalance(addr, token, maximum)
 	return nil
 }

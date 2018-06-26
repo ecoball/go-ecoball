@@ -28,62 +28,70 @@ import (
 type StateObject struct {
 	Address  common.Address //User Address
 	addrHash common.Hash    //Address Hash, used to key
-	Account  map[common.Address]Account
+	Account  map[string]Account
 }
 
 type Account struct {
-	Address common.Address //Token Address
-	Name    []byte         //Token Name
+	//Address common.Address //Token Address
+	Name    string         //Token Name
 	Nonce   uint64         //Account Random Number
 	Balance *big.Int       //Balance
 }
 
 func NewStateObject(address common.Address) (*StateObject, error) {
-	state := StateObject{Address: address, Account: make(map[common.Address]Account, 1)}
+	state := StateObject{Address: address, Account: make(map[string]Account, 1)}
 	state.addrHash = common.SingleHash(address.Bytes())
 
 	return &state, nil
 }
 
-func (s *StateObject) AddAccount(token common.Address, name []byte) error {
-	ac := Account{Address: token, Name: name, Nonce: 1, Balance: new(big.Int).SetUint64(0)}
-	s.Account[token] = ac
+func (s *StateObject) AddAccount(name string) error {
+	ac := Account{Name: name, Nonce: 1, Balance: new(big.Int).SetUint64(0)}
+	s.Account[name] = ac
 	return nil
 }
 
-func (s *StateObject) AddBalance(token common.Address, name []byte, amount *big.Int) error {
+func (s *StateObject) AccountExisted(name string) bool {
+	_, ok := s.Account[name]
+	if ok {
+		return true
+	}
+	return false
+}
+
+func (s *StateObject) AddBalance(name string, amount *big.Int) error {
 	if amount.Sign() == 0 {
 		return errors.New("amount is zero")
 	}
-	ac, ok := s.Account[token]
+	ac, ok := s.Account[name]
 	if !ok {
-		if err := s.AddAccount(token, name); err != nil {
+		if err := s.AddAccount(name); err != nil {
 			return err
 		}
-		ac, _ = s.Account[token]
+		ac, _ = s.Account[name]
 	}
 	ac.SetBalance(new(big.Int).Add(ac.GetBalance(), amount))
 	ac.Nonce++
-	s.Account[token] = ac
+	s.Account[name] = ac
 	return nil
 }
 
-func (s *StateObject) SubBalance(token common.Address, name []byte, amount *big.Int) error {
+func (s *StateObject) SubBalance(name string, amount *big.Int) error {
 	if amount.Sign() == 0 {
 		return errors.New("amount is zero")
 	}
-	ac, ok := s.Account[token]
+	ac, ok := s.Account[name]
 	if !ok {
 		return errors.New("not sufficient funds")
 	}
 	ac.SetBalance(new(big.Int).Sub(ac.GetBalance(), amount))
 	ac.Nonce++
-	s.Account[token] = ac
+	s.Account[name] = ac
 	return nil
 }
 
-func (s *StateObject) Balance(token common.Address, name []byte) (*big.Int, error) {
-	ac, ok := s.Account[token]
+func (s *StateObject) Balance(name string) (*big.Int, error) {
+	ac, ok := s.Account[name]
 	if !ok {
 		return nil, errors.New("can't find token account")
 	}
@@ -126,8 +134,7 @@ func (s *StateObject) ProtoBuf() (*pb.StateObject, error) {
 			return nil, err
 		}
 		ac := pb.Account{
-			Address: v.Address.Bytes(),
-			Name:    common.CopyBytes(v.Name),
+			Name:    common.CopyBytes([]byte(v.Name)),
 			Nonce:   v.Nonce,
 			Balance: balance,
 		}
@@ -148,18 +155,17 @@ func (s *StateObject) Deserialize(data []byte) error {
 	}
 	s.Address = common.NewAddress(pbObject.Address)
 	s.addrHash = common.NewHash(pbObject.AddrHash)
-	s.Account = make(map[common.Address]Account)
+	s.Account = make(map[string]Account)
 	for _, v := range pbObject.Account {
 		ac := Account{
-			Address: common.NewAddress(v.Address),
-			Name:    common.CopyBytes(v.Name),
+			Name:    string(common.CopyBytes(v.Name)),
 			Nonce:   v.Nonce,
 			Balance: new(big.Int),
 		}
 		if err := ac.Balance.GobDecode(v.Balance); err != nil {
 			return err
 		}
-		s.Account[ac.Address] = ac
+		s.Account[ac.Name] = ac
 	}
 
 	return nil
@@ -170,8 +176,7 @@ func (s *StateObject) Show() {
 	fmt.Println("\tAddress        :", s.Address.HexString())
 	fmt.Println("\tAccount Len    :", len(s.Account))
 	for _, v := range s.Account {
-		fmt.Println("\tToken          :", v.Address.HexString())
-		fmt.Println("\tName           :", string(v.Name))
+		fmt.Println("\tName           :", v.Name)
 		fmt.Println("\tBalance        :", v.Balance)
 	}
 }

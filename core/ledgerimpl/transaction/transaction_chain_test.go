@@ -24,6 +24,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
 	"testing"
+	"github.com/ecoball/go-ecoball/core/state"
 )
 
 func TestNewTransactionChain(t *testing.T) {
@@ -65,7 +66,7 @@ func TestLedgerTxAdd(t *testing.T) {
 	}
 	fmt.Println("Start LedgerImpl Module, hash:", l.GetCurrentHeader().Hash.HexString())
 	tx := types.NewTestTx()
-	l.AddAccountBalance(tx.From, 150)
+	l.AccountAddBalance(tx.From, state.AbaToken, 150)
 	var txs []*types.Transaction
 	txs = append(txs, tx)
 	conData := types.ConsensusData{Type:types.ConSolo, Payload:&types.SoloData{}}
@@ -76,12 +77,12 @@ func TestLedgerTxAdd(t *testing.T) {
 	if err := l.SaveTxBlock(block); err != nil {
 		t.Fatal(err)
 	}
-	value, err := l.GetAccountBalance(tx.From)
+	value, err := l.AccountGetBalance(tx.From, state.AbaToken)
 	if err != nil {
 		t.Fatal(err)
 	}
 	fmt.Println("value:", value)
-	value, err = l.GetAccountBalance(tx.Addr)
+	value, err = l.AccountGetBalance(tx.Addr, state.AbaToken)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +95,7 @@ func TestLedgerDeployAdd(t *testing.T) {
 		t.Fatal(err)
 	}
 	fmt.Println("Start LedgerImpl Module, hash:", l.GetCurrentHeader().Hash.HexString())
-	code, err := wasmservice.ReadWasm("../../../test/log.wasm")
+	code, err := wasmservice.ReadWasm("../../../test/transfer.wasm")
 	tx := types.NewTestDeploy(code)
 	var txs []*types.Transaction
 	txs = append(txs, tx)
