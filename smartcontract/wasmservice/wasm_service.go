@@ -23,6 +23,7 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
+	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/vm/wasmvm/exec"
 	"github.com/ecoball/go-ecoball/vm/wasmvm/util"
 	"github.com/ecoball/go-ecoball/vm/wasmvm/validate"
@@ -35,6 +36,7 @@ var log = elog.NewLogger("wasm", elog.NoticeLog)
 
 type WasmService struct {
 	ledger ledger.Ledger
+	tx     *types.Transaction
 	Code   []byte
 	Args   []uint64
 	Method string
@@ -133,6 +135,8 @@ func (ws *WasmService) RegisterApi() {
 	funs.Register("AbaAccountGetBalance", ws.AbaAccountGetBalance)
 	funs.Register("AbaAccountAddBalance", ws.AbaAccountAddBalance)
 	funs.Register("AbaAccountSubBalance", ws.AbaAccountSubBalance)
+	funs.Register("TokenIsExisted", ws.TokenIsExisted)
+	funs.Register("TokenCreate", ws.TokenCreate)
 }
 
 func (ws *WasmService) AbaAdd(a int32, b int32) int32 {
@@ -182,4 +186,21 @@ func (ws *WasmService) AbaAccountSubBalance(value uint64, token, addrHex string)
 		return -1
 	}
 	return 0
+}
+
+func (ws *WasmService) TokenCreate(addrHex, token string, maximum uint64) int32 {
+	if err := ws.ledger.TokenCreate(common.NewAddress(common.FromHex(addrHex)), token, maximum); err != nil {
+		log.Error(err)
+		return -1
+	}
+	return 0
+}
+
+func (ws *WasmService) TokenIsExisted(token string) int32 {
+	ret := ws.ledger.TokenIsExisted(token)
+	if ret {
+		return 1
+	} else {
+		return 0
+	}
 }

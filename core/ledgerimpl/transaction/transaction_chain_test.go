@@ -107,7 +107,7 @@ func TestLedgerDeployAdd(t *testing.T) {
 	if err := l.SaveTxBlock(block); err != nil {
 		t.Fatal(err)
 	}
-
+	//Invoke Contract
 	invoke := types.NewTestInvoke()
 	var txs2 []*types.Transaction
 	txs2 = append(txs, invoke)
@@ -118,4 +118,19 @@ func TestLedgerDeployAdd(t *testing.T) {
 	if err := l.SaveTxBlock(block); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestLedgerInterface(t *testing.T) {
+	l, err := ledgerimpl.NewLedger("/tmp/quaker")
+	if err != nil {
+		t.Fatal(err)
+	}
+	//common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
+	addr := common.NewAddress(common.FromHex("01b1a6569a557eafcccc71e0d02461fd4b601aea"))
+
+	value, err := l.AccountGetBalance(addr, "Abc")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println("Token Abc Value:", value)
 }

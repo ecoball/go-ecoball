@@ -37,29 +37,30 @@ const (
 )
 
 const (
-	StringBlock    = "/Block"
-	StringHeader   = "/Header"
-	StringTxs      = "/Txs"
-	StringContract = "/Contract"
-	StringState    = "/State"
+	StringBlock     = "/Block"
+	StringHeader    = "/Header"
+	StringTxs       = "/Txs"
+	StringContract  = "/Contract"
+	StringState     = "/State"
 	StringConsensus = "/Consensus"
 )
 
 //TODO
 const (
-	ConsensusAlgorithm = "DPOS"
+	ConsensusAlgorithm = "DPO"
 )
 
 var (
 	//set default value
 	configDefault = `#toml configuration for aba
-http_port = "20678"			 
-version = "1.0"				
-log_path = ""				 
-log_level = 5				
-pub_key = "1234567890"		
-pri_key = ""				
-`
+					http_port = "20678"			 
+					version = "1.0"				
+					log_path = ""				 
+					log_level = 5				
+					pub_key = "1234567890"		
+					pri_key = ""		
+					consensus_algorithm = "solo"
+					`
 	//EcoBall version
 	EcoVersion string
 

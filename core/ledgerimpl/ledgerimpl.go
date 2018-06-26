@@ -25,7 +25,6 @@ import (
 	"github.com/ecoball/go-ecoball/consensus/dpos"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/transaction"
-	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
 	"time"
 )
@@ -95,7 +94,7 @@ func (l *LedgerImpl) Start() {
 }
 
 func (l *LedgerImpl) AccountGetBalance(addr common.Address, token string) (uint64, error) {
-	value, err := l.ChainTx.AccountGetBalance(addr, state.AbaToken)
+	value, err := l.ChainTx.AccountGetBalance(addr, token)
 	if err != nil {
 		return 0, err
 	}

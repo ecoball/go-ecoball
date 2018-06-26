@@ -76,6 +76,9 @@ func NewTransactionChain(path string) (c *ChainTx, err error) {
 	if c.StateDB, err = state.NewState(path+config.StringState, c.CurrentHeader.StateHash); err != nil {
 		return nil, err
 	}
+	if err := c.StateDB.AddBalance(common.Address{}, state.AbaToken, new(big.Int).SetUint64(2100000)); err != nil {
+		return nil, err
+	}
 	if f == false {
 		if err := c.GenesesBlockInit(); err != nil {
 			return nil, err

@@ -37,8 +37,8 @@ func NewTxsList() *TxsList {
 
 //删除一笔交易
 func (t *TxsList) Delete(hash common.Hash) {
-	t.mux.RLock()
-	defer t.mux.RUnlock()
+	t.mux.Lock()
+	defer t.mux.Unlock()
 
 	delete(t.Txs, hash)
 }

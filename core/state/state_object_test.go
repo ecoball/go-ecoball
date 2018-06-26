@@ -30,5 +30,13 @@ func TestStateObject(t *testing.T) {
 	if !obj.Address.Equals(&obj2.Address) {
 		t.Fatal("mismatch")
 	}
+	value, err = obj.Balance("aba")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if value.Uint64() != 100 {
+		t.Fatal("balance error")
+	}
+	fmt.Println("Balance:", value)
 	obj2.Show()
 }

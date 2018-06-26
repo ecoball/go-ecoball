@@ -111,7 +111,7 @@ func (s *State) AddBalance(addr common.Address, name string, value *big.Int) err
 		return err
 	}
 	//add token into trie
-	hash := common.NewHash([]byte(name))
+	hash := common.SingleHash([]byte(name))
 	if err := s.trie.TryUpdate(hash.Bytes(), []byte(name)); err != nil {
 		return err
 	}
@@ -149,8 +149,8 @@ func (s *State) CommitToDB() error {
 	return s.db.TrieDB().Commit(s.trie.Hash(), false)
 }
 
-func (s *State) GetBalance(addr common.Address, name string) (*big.Int, error) {
-	val := new(big.Int)
+func (s *State) GetBalance(addr common.Address, token string) (*big.Int, error) {
+	val := new(big.Int).SetUint64(0)
 	key := common.SingleHash(addr.Bytes())
 	data, err := s.trie.TryGet(key.Bytes())
 	if err != nil {
@@ -166,8 +166,8 @@ func (s *State) GetBalance(addr common.Address, name string) (*big.Int, error) {
 		log.Error(err)
 		return val, err
 	}
-	val, err = obj.Balance(name)
-	return val, nil
+
+	return obj.Balance(token)
 }
 
 func (s *State) Reset(hash common.Hash) error {
