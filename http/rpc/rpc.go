@@ -31,7 +31,7 @@ import (
 
 func init() {
 	httpServer.method2Handle = make(map[string]func([]interface{}) *common.Response)
-	RpcLog = elog.NewFileLogger("rpc", elog.NoticeLog)
+	RpcLog = elog.NewLogger("rpc", elog.NoticeLog)
 }
 
 var (

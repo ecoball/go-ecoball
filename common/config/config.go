@@ -17,23 +17,14 @@
 package config
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
 
 	"github.com/spf13/viper"
 
-	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/utils"
-)
-
-const (
-	HttpPort   = "http_port"
-	Version    = "version"
-	LogLevel   = "log_level"
-	LogPath    = "log_path"
-	PublicKey  = "pub_key"
-	PrivateKey = "pri_key"
 )
 
 const (
@@ -50,25 +41,22 @@ const (
 	ConsensusAlgorithm = "DPOS"
 )
 
-var (
-	//set default value
+const (
 	configDefault = `#toml configuration for aba
-					http_port = "20678"			 
-					version = "1.0"				
-					log_path = ""				 
-					log_level = 5				
-					pub_key = "1234567890"		
-					pri_key = ""		
-					consensus_algorithm = "solo"
-					`
-	//EcoBall version
-	EcoVersion string
+http_port = "20678"			 
+version = "1.0"	
+log_dir = "./Log/"
+output_to_terminal = "true"		
+log_level = 1				 								
+`
+)
 
-	//listen port
-	HttpLocalPort string = "20337"
-
-	//log
-	log = elog.NewLogger("config", elog.DebugLog)
+var (
+	HttpLocalPort    string
+	EcoVersion       string
+	LogDir           string
+	OutputToTerminal bool
+	LogLevel         int
 )
 
 type Config struct {
@@ -77,7 +65,6 @@ type Config struct {
 
 func SetConfig() error {
 	c := new(Config)
-	c.FilePath = "./"
 	if err := c.CreateConfigFile(); err != nil {
 		return err
 	}
@@ -100,13 +87,13 @@ func (c *Config) CreateConfigFile() error {
 	}
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
 		if err := os.MkdirAll(dirPath, 0700); err != nil {
-			log.Fatal("could not create directory:", dirPath, err)
+			fmt.Println("could not create directory:", dirPath, err)
 			return err
 		}
 	}
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		if err := ioutil.WriteFile(filePath, []byte(configDefault), 0644); err != nil {
-			log.Fatal("write file err:", err)
+			fmt.Println("write file err:", err)
 			return err
 		}
 	}
@@ -121,20 +108,27 @@ func (c *Config) InitConfig() error {
 	viper.SetConfigName("aba")
 	viper.AddConfigPath(c.FilePath)
 	if err := viper.ReadInConfig(); err == nil {
-		log.Info("Using config file:", viper.ConfigFileUsed())
+		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	} else {
-		log.Info("can't load config file:", err)
+		fmt.Println("can't load config file:", err)
 		return err
 	}
 	return nil
 }
 
-func CreateOrReadConfig() {
+func init() {
 	if err := SetConfig(); err != nil {
-		log.Fatal("%s\n", err)
+		fmt.Println("init config failed: ", err)
 		os.Exit(-1)
 	}
 
-	HttpLocalPort = viper.GetString(HttpPort)
-	EcoVersion = viper.GetString(Version)
+	initVariable()
+}
+
+func initVariable() {
+	HttpLocalPort = viper.GetString("http_port")
+	EcoVersion = viper.GetString("version")
+	LogDir = viper.GetString("log_dir")
+	OutputToTerminal = viper.GetBool("output_to_terminal")
+	LogLevel = viper.GetInt("log_level")
 }

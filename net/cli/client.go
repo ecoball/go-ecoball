@@ -18,6 +18,7 @@ package cli
 
 import (
 	"os"
+
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/urfave/cli"
 )
@@ -26,7 +27,7 @@ func main() {
 
 	app := cli.NewApp()
 	app.Name = "ecocli"
-	app.Version = config.Version
+	app.Version = config.EcoVersion
 	app.HelpName = "ecocli"
 	app.Usage = "command line tool for ecoball"
 	app.UsageText = "ecoclient [global options] command [command options] [args]"

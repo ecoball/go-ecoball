@@ -1,3 +1,19 @@
+// Copyright 2018 The go-ecoball Authors
+// This file is part of the go-ecoball library.
+//
+// The go-ecoball library is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// The go-ecoball library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with the go-ecoball library. If not, see <http://www.gnu.org/licenses/>.
+
 package elog
 
 import (
@@ -5,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -12,6 +29,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 const (
@@ -28,6 +47,7 @@ const (
 	InfoLog
 	WarnLog
 	ErrorLog
+	FatalLog
 	MaxLevelLog
 )
 
@@ -71,12 +91,6 @@ func fileOpen(path string) (*os.File, error) {
 }
 
 func NewLogger(moduleName string, level int) Logger {
-	logger := log.New(os.Stderr, "", log.Ldate|log.Lmicroseconds|log.LstdFlags)
-	module := loggerModule{logger, moduleName, level}
-	return &module
-}
-
-func NewFileLogger(moduleName string, level int) Logger {
 	InitFile()
 	logger := log.New(fileAndStdoutWrite, "", log.Ldate|log.Lmicroseconds|log.LstdFlags)
 	module := loggerModule{logger, moduleName, level}
@@ -86,15 +100,33 @@ func NewFileLogger(moduleName string, level int) Logger {
 var fileAndStdoutWrite io.Writer
 
 func InitFile() {
-	var logFile *os.File
-	var writers = []io.Writer{os.Stdout}
-	logFile, err := fileOpen("./Log/")
+	//get configured output
+	var output io.Writer = os.Stdout
+	if !config.OutputToTerminal {
+		output = ioutil.Discard
+	}
+
+	//get configured log directory
+	logDir := "./Log/"
+	if config.LogDir != "" && config.LogDir != logDir {
+		logDir = config.LogDir
+	}
+
+	logFile, err := fileOpen(logDir)
 	if err != nil {
-		fmt.Println("error: open log file failed")
+		fmt.Println("open log file failed: ", err)
 		os.Exit(1)
 	}
-	writers = append(writers, logFile)
+
+	var writers = []io.Writer{output, logFile}
 	fileAndStdoutWrite = io.MultiWriter(writers...)
+}
+
+func checkPrint(printLevel int) bool {
+	if printLevel < config.LogLevel {
+		return false
+	}
+	return true
 }
 
 func (l *loggerModule) GetLogger() *log.Logger {
@@ -135,14 +167,12 @@ func getFunctionName() string {
 
 	funcName := strings.TrimPrefix(nameEnd, ".")
 
-
 	return fileName + ":" + strconv.Itoa(line) + "-" + funcName
-
 
 }
 
 func (l *loggerModule) Notice(a ...interface{}) {
-	if l.level > NoticeLog {
+	if l.level > NoticeLog || !checkPrint(NoticeLog) {
 		return
 	}
 	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorGreen) + "m" + "▶ NOTI " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
@@ -152,46 +182,46 @@ func (l *loggerModule) Notice(a ...interface{}) {
 }
 
 func (l *loggerModule) Debug(a ...interface{}) {
-	if l.level > DebugLog {
+	if l.level > DebugLog || !checkPrint(DebugLog) {
 		return
 	}
-	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorBlue) + "m" + "▶ DEBU " + "[" + l.name + "] " +  getFunctionName() + "():" + "\x1b[0m "}
+	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorBlue) + "m" + "▶ DEBU " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
 	a = append(prefix, a...)
 	l.logger.Output(2, fmt.Sprintln(a...))
 }
 
 func (l *loggerModule) Info(a ...interface{}) {
-	if l.level > InfoLog {
+	if l.level > InfoLog || !checkPrint(InfoLog) {
 		return
 	}
-	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorYellow) + "m" + "▶ INFO " + "[" + l.name + "] " +  getFunctionName() + "():" + "\x1b[0m "}
+	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorYellow) + "m" + "▶ INFO " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
 	a = append(prefix, a...)
 	l.logger.Output(2, fmt.Sprintln(a...))
 }
 
 func (l *loggerModule) Warn(a ...interface{}) {
-	if l.level > WarnLog {
+	if l.level > WarnLog || !checkPrint(WarnLog) {
 		return
 	}
-	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorMagenta) + "m" + "▶ WARN " + "[" + l.name + "] " +  getFunctionName() + "():" + "\x1b[0m "}
+	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorMagenta) + "m" + "▶ WARN " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
 	a = append(prefix, a...)
 	l.logger.Output(2, fmt.Sprintln(a...))
 }
 
 func (l *loggerModule) Error(a ...interface{}) {
-	if l.level > ErrorLog {
+	if l.level > ErrorLog || !checkPrint(ErrorLog) {
 		return
 	}
-	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorRed) + "m" + "▶ ERRO " + "[" + l.name + "] " +  getFunctionName() + "():" + "\x1b[0m "}
+	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorRed) + "m" + "▶ ERRO " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
 	a = append(prefix, a...)
 	l.logger.Output(2, fmt.Sprintln(a...))
 }
 
 func (l *loggerModule) Fatal(a ...interface{}) {
-	if l.level > ErrorLog {
+	if l.level > FatalLog || !checkPrint(FatalLog) {
 		return
 	}
-	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorRed) + "m" + "▶ FATAL " + "[" + l.name + "] " +  getFunctionName() + "():" + "\x1b[0m "}
+	prefix := []interface{}{"\x1b[" + strconv.Itoa(colorRed) + "m" + "▶ FATAL " + "[" + l.name + "] " + getFunctionName() + "():" + "\x1b[0m "}
 	a = append(prefix, a...)
 	l.logger.Fatal(a...)
 }

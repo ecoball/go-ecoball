@@ -25,6 +25,7 @@ import (
 	"syscall"
 
 	"github.com/ecoball/go-ecoball/client/commands"
+	"github.com/ecoball/go-ecoball/common/config"
 	ncli "github.com/ecoball/go-ecoball/net/cli"
 	"github.com/peterh/liner"
 	"github.com/urfave/cli"
@@ -35,7 +36,7 @@ func newClientApp() *cli.App {
 
 	//set attribute of client
 	app.Name = "ecoclient"
-	app.Version = "1.0"
+	app.Version = config.EcoVersion
 	app.HelpName = "ecoclient"
 	app.Usage = "command line tool for ecoball"
 	app.UsageText = "ecoclient [global options] command [command options] [args]"

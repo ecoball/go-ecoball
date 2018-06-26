@@ -44,9 +44,6 @@ func main() {
 	//befor function
 	app.Before = func(*cli.Context) error {
 		log.Info("Start aba process...")
-
-		//create config file or load confing file
-		config.CreateOrReadConfig()
 		return nil
 	}
 
