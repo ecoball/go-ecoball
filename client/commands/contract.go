@@ -22,8 +22,8 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/urfave/cli"
 	"github.com/ecoball/go-ecoball/client/rpc"
+	"github.com/urfave/cli"
 )
 
 var (
@@ -35,7 +35,7 @@ var (
 		ArgsUsage:   "[args]",
 		Subcommands: []cli.Command{
 			{
-				Name:   "setcontract",
+				Name:   "deploy",
 				Usage:  "deploy contract",
 				Action: setContract,
 				Flags: []cli.Flag{
@@ -61,11 +61,31 @@ var (
 					},
 				},
 			},
+			{
+				Name:   "invoke",
+				Usage:  "invoke contract",
+				Action: invokeContract,
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "address, a",
+						Usage: "contract address",
+					},
+					cli.StringFlag{
+						Name:  "method, m",
+						Usage: "contract method",
+					},
+					cli.StringFlag{
+						Name:  "param, p",
+						Usage: "method parameters",
+					},
+				},
+			},
 		},
 	}
 )
 
 func setContract(c *cli.Context) error {
+
 	//Check the number of flags
 	if c.NumFlags() == 0 {
 		cli.ShowSubcommandHelp(c)
@@ -85,44 +105,87 @@ func setContract(c *cli.Context) error {
 		fmt.Println("open file failed")
 		return errors.New("open file failed: " + fileName)
 	}
-	defer file.Close()
 
+	defer file.Close()
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
 		fmt.Println("read contract filr err: ", err.Error())
 		return err
 	}
 
-	//contrace name
+	//contract name
 	contractName := c.String("name")
 	if contractName == "" {
 		fmt.Println("Invalid contract name: ", contractName)
 		return errors.New("Invalid contract name")
 	}
 
-	//contrace description
+	//contract description
 	description := c.String("description")
-	if contractName == "" {
+	if description == "" {
 		fmt.Println("Invalid contract description: ", description)
 		return errors.New("Invalid contract description")
 	}
 
 	//contract author
 	author := c.String("author")
-	if contractName == "" {
+	if author == "" {
 		fmt.Println("Invalid contract author: ", author)
 		return errors.New("Invalid contract author")
 	}
 
 	//author email
 	email := c.String("email")
-	if contractName == "" {
+	if email == "" {
 		fmt.Println("Invalid author email: ", email)
 		return errors.New("Invalid author email")
 	}
 
 	//rpc call
 	resp, err := rpc.Call("setContract", []interface{}{string(data), contractName, description, author, email})
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return err
+	}
+
+	//result
+	switch resp["result"].(type) {
+	case map[string]interface{}:
+
+	case string:
+		fmt.Println(resp["result"].(string))
+		os.Exit(1)
+	}
+
+	return nil
+}
+
+func invokeContract(c *cli.Context) error {
+	//Check the number of flags
+	if c.NumFlags() == 0 {
+		cli.ShowSubcommandHelp(c)
+		return nil
+	}
+
+	//contract address
+	contractAddress := c.String("address")
+	if contractAddress == "" {
+		fmt.Println("Invalid contract address: ", contractAddress)
+		return errors.New("Invalid contract address")
+	}
+
+	//contract name
+	contractMethod := c.String("method")
+	if contractMethod == "" {
+		fmt.Println("Invalid contract method: ", contractMethod)
+		return errors.New("Invalid contract method")
+	}
+
+	//contract parameter
+	contractParam := c.String("param")
+
+	//rpc call
+	resp, err := rpc.Call("invokeContract", []interface{}{contractAddress, contractMethod, contractParam})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err

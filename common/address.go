@@ -20,8 +20,9 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/gogo/protobuf/proto"
+
 	"github.com/ecoball/go-ecoball/core/pb"
+	"github.com/gogo/protobuf/proto"
 
 	"github.com/btcsuite/btcutil/base58"
 )
@@ -64,6 +65,11 @@ func (a *Address) Equals(b *Address) bool {
 	return bytes.Equal(a[:], b[:])
 }
 
+//convert to strong
+func (a *Address) ToString() string {
+	return string(a[:])
+}
+
 type Signature struct {
 	PubKey  []byte //签名者的公钥
 	SigData []byte //签名数据
@@ -71,8 +77,8 @@ type Signature struct {
 
 func (s *Signature) Serialize() ([]byte, error) {
 	sig := pb.Signature{
-		SigData:s.SigData,
-		PubKey:s.PubKey,
+		SigData: s.SigData,
+		PubKey:  s.PubKey,
 	}
 	d, err := proto.Marshal(&sig)
 	if err != nil {

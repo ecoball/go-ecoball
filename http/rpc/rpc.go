@@ -134,6 +134,9 @@ func StartRPCServer() {
 	//set contract
 	httpServer.AddHandleFunc("setContract", commands.SetContract)
 
+	//invoke contract
+	httpServer.AddHandleFunc("invokeContract", commands.InvokeContract)
+
 	httpServer.AddHandleFunc("netlistmyid", nrpc.CliServerListMyId)
 	httpServer.AddHandleFunc("netlistmypeer", nrpc.CliServerListMyPeers)
 
