@@ -327,12 +327,12 @@ func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction)
 		}
 		fmt.Println("execute code:", common.Bytes2Hex(deployInfo.Code))
 		fmt.Println("method:", string(payload.Method))
-		fmt.Println("param:", string(payload.Param))
+		fmt.Println("param:", payload.Param)
 		service, err := smartcontract.NewContractService(ledger, tx)
 		if err != nil {
 			return nil, err
 		}
-		return service.ExecuteContract(payload.TypeVm, string(payload.Method), deployInfo.Code, nil)
+		return service.ExecuteContract(payload.TypeVm, string(payload.Method), deployInfo.Code, payload.Param)
 	default:
 		return nil, errors.New("the transaction's type error")
 	}

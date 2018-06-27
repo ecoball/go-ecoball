@@ -28,11 +28,11 @@ import (
 type InvokeInfo struct {
 	TypeVm VmType
 	Method []byte
-	Param  []byte
+	Param  []string
 }
 
-func NewInvokeContract(from, addr common.Address, vm VmType, method, param string, nonce uint64, time int64) (*Transaction, error) {
-	invoke := &InvokeInfo{TypeVm: vm, Method: []byte(method), Param: []byte(param)}
+func NewInvokeContract(from, addr common.Address, vm VmType, method string, param []string, nonce uint64, time int64) (*Transaction, error) {
+	invoke := &InvokeInfo{TypeVm: vm, Method: []byte(method), Param: param}
 	trans, err := NewTransaction(TxInvoke, from, addr, invoke, nonce, time)
 	if err != nil {
 		return nil, err
@@ -47,14 +47,24 @@ func (i InvokeInfo) GetObject() interface{} {
 func (i *InvokeInfo) Show() {
 	fmt.Println("\tTypeVm        :", i.TypeVm)
 	fmt.Println("\tMethod        :", string(i.Method))
-	fmt.Println("\tParam         :", string(i.Param))
+	fmt.Println("\tParam Num     :", len(i.Param))
+	for _, v := range i.Param {
+		fmt.Println("\tParam         :", v)
+	}
+	fmt.Println("\t---------------------------")
 }
 
 func (i *InvokeInfo) Serialize() ([]byte, error) {
+	var param []*pb.ParamData
+	for _, v := range i.Param {
+		p := pb.ParamData{Param:[]byte(v)}
+		param = append(param, &p)
+	}
+
 	p := &pb.InvokeInfo{
 		TypeVm: uint32(i.TypeVm),
 		Method: i.Method,
-		Param:  i.Param,
+		Param:  param,
 	}
 	b, err := p.Marshal()
 	if err != nil {
@@ -73,7 +83,10 @@ func (i *InvokeInfo) Deserialize(data []byte) error {
 	}
 	i.TypeVm = VmType(invoke.TypeVm)
 	i.Method = common.CopyBytes(invoke.Method)
-	i.Param = common.CopyBytes(invoke.Param)
+	for _, v := range invoke.Param {
+		p := string(v.Param)
+		i.Param = append(i.Param, p)
+	}
 
 	return nil
 }
@@ -81,7 +94,7 @@ func (i *InvokeInfo) Deserialize(data []byte) error {
 func NewTestInvoke() *Transaction {
 	from := common.NewAddress(common.FromHex("01b1a6569a557eafcccc71e0d02461fd4b601aea"))
 	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
-	invoke, err := NewInvokeContract(from, addr, VmWasm, "main", "-run", 0, time.Now().Unix())
+	invoke, err := NewInvokeContract(from, addr, VmWasm, "main", []string{"-run"}, 0, time.Now().Unix())
 	if err != nil {
 		panic(err)
 		return nil

@@ -70,12 +70,12 @@ message AbaBftData {
 /**
 ** Transaction info for compute hash
 */
-message TransferPayload {
+message TransactionPayload {
     uint32      version     = 1;
     uint32      type        = 7;
     bytes       from        = 2;
     bytes       addr        = 3;
-    bytes       payload     = 4;
+    bytes       payload     = 4; //store DeployInfo and InvokeInfo
     uint64      nonce       = 5;
     int64       timestamp   = 6;
 }
@@ -89,17 +89,21 @@ message DeployInfo {
 	bytes       Code        = 6;
 }
 
+message ParamData {
+    bytes Param = 1;
+}
+
 message InvokeInfo {
     uint32      TypeVm      = 5;
     bytes       Method      = 1;
-    bytes       Param       = 2;
+    repeated ParamData Param= 2;
 }
 
 /**
 ** Transaction Info for Sync with nodes
 */
 message Transaction {
-    TransferPayload         payload     = 1;
+    TransactionPayload      payload     = 1;
     repeated    Signature   sign        = 2;
     bytes                   hash        = 3;
 }
@@ -115,14 +119,15 @@ message ConsensusState {
 message Miner {
     bytes hash = 1;
 }
+
 /**
-** 签名数据
 ** Signature Info
 */
 message Signature {
     bytes       PubKey      = 1;
     bytes       SigData     = 2;
 }
+
 /**
 ** Account Object
 */

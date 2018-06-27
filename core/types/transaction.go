@@ -100,7 +100,7 @@ func (t *Transaction) unSignatureData() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	p := &pb.TransferPayload{
+	p := &pb.TransactionPayload{
 		Version:   t.Version,
 		From:      t.From.Bytes(),
 		Addr:      t.Addr.Bytes(),
@@ -126,7 +126,7 @@ func (t *Transaction) protoBuf() (*pb.Transaction, error) {
 		sig = append(sig, s)
 	}
 	p := &pb.Transaction{
-		Payload: &pb.TransferPayload{
+		Payload: &pb.TransactionPayload{
 			Version:   t.Version,
 			Type:      uint32(t.Type),
 			From:      t.From.Bytes(),
@@ -207,4 +207,5 @@ func (t *Transaction) Show() {
 		fmt.Println("\tPublicKey      :", common.ToHex(t.Signatures[i].PubKey))
 		fmt.Println("\tSigData        :", common.ToHex(t.Signatures[i].SigData))
 	}
+	t.Payload.Show()
 }

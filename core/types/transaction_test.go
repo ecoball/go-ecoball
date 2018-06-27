@@ -60,3 +60,21 @@ func TestDeploy(t *testing.T) {
 	}
 	dep.Show()
 }
+
+func TestInvoke(t *testing.T) {
+	i := types.NewTestInvoke()
+	i.Show()
+	data, err := i.Serialize()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	i2 := new(types.Transaction)
+	if err := i2.Deserialize(data); err != nil {
+		t.Fatal(err)
+	}
+	if !i2.Hash.Equals(&i.Hash) {
+		t.Fatal("hash mismatch")
+	}
+	i2.Show()
+}
