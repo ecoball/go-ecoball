@@ -29,6 +29,8 @@ import (
 	"github.com/ecoball/go-ecoball/txpool"
 	"github.com/ecoball/go-ecoball/webserver"
 	"github.com/urfave/cli"
+	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/consensus/solo"
 )
 
 var (
@@ -45,11 +47,18 @@ func runNode(c *cli.Context) error {
 
 	fmt.Println("Run Node")
 	log.Info("Build Geneses Block")
-	_, err := ledgerimpl.NewLedger(store.PathBlock)
+	l, err := ledgerimpl.NewLedger(store.PathBlock)
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	//start consensus
+	switch config.ConsensusAlgorithm {
+	case "SOLO":
+		c, _ := solo.NewSoloConsensusServer(l)
+		c.Start()
+	default:
+		log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
+	}
 	//start transaction pool
 	if _, err = txpool.Start(); err != nil {
 		log.Fatal("start txpool error, ", err.Error())

@@ -17,7 +17,6 @@
 package solo
 
 import (
-	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
@@ -75,9 +74,4 @@ func (s *Solo) Start() error {
 	}()
 	return nil
 }
-func (s *Solo) Halt() error {
-	return nil
-}
-func (s *Solo) GetPID() *actor.PID {
-	return nil
-}
+
