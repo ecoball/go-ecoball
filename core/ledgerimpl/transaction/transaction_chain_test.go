@@ -21,10 +21,10 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/transaction"
+	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
 	"testing"
-	"github.com/ecoball/go-ecoball/core/state"
 )
 
 func TestNewTransactionChain(t *testing.T) {
@@ -69,7 +69,7 @@ func TestLedgerTxAdd(t *testing.T) {
 	l.AccountAddBalance(tx.From, state.AbaToken, 150)
 	var txs []*types.Transaction
 	txs = append(txs, tx)
-	conData := types.ConsensusData{Type:types.ConSolo, Payload:&types.SoloData{}}
+	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
 	block, err := l.NewTxBlock(txs, conData)
 	if err != nil {
 		t.Fatal(err)
@@ -99,7 +99,7 @@ func TestLedgerDeployAdd(t *testing.T) {
 	tx := types.NewTestDeploy(code)
 	var txs []*types.Transaction
 	txs = append(txs, tx)
-	conData := types.ConsensusData{Type:types.ConSolo, Payload:&types.SoloData{}}
+	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
 	block, err := l.NewTxBlock(txs, conData)
 	if err != nil {
 		t.Fatal(err)
@@ -125,12 +125,28 @@ func TestLedgerInterface(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	//common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
 	addr := common.NewAddress(common.FromHex("01b1a6569a557eafcccc71e0d02461fd4b601aea"))
+	if err := l.AccountAddBalance(addr, "Test", 100001); err != nil {
+		t.Fatal(err)
+	}
 
-	value, err := l.AccountGetBalance(addr, "Abc")
+	value, err := l.AccountGetBalance(addr, "Test")
 	if err != nil {
 		t.Fatal(err)
 	}
 	fmt.Println("Token Abc Value:", value)
+
+}
+
+func TestLedgerInterfaceTokenCreate(t *testing.T) {
+	l, err := ledgerimpl.NewLedger("/tmp/quaker")
+	if err != nil {
+		t.Fatal(err)
+	}
+	addr := common.NewAddress(common.FromHex("01b1a6569a557eafcccc71e0d02461fd4b601aea"))
+	if err := l.TokenCreate(addr, "Test", 100001); err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println("Token Test Value:", l.TokenIsExisted("Test"))
+
 }

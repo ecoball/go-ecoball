@@ -1,3 +1,3 @@
 int main() {
-  ABA_Log("Aba Log Test\n");
+  AbaLog("Aba Log Test\n");
 }

@@ -24,11 +24,11 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	errs "github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
+	"github.com/ecoball/go-ecoball/consensus/dpos"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/store"
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/consensus/dpos"
 	"github.com/ecoball/go-ecoball/smartcontract"
 	"math/big"
 )
@@ -36,9 +36,9 @@ import (
 var log = elog.NewLogger("Chain Tx", elog.NoticeLog)
 
 type ChainTx struct {
-	BlockStore  store.Storage
-	HeaderStore store.Storage
-	TxsStore    store.Storage
+	BlockStore     store.Storage
+	HeaderStore    store.Storage
+	TxsStore       store.Storage
 	ConsensusStore store.Storage
 
 	CurrentHeader *types.Header
@@ -94,7 +94,6 @@ func NewTransactionChain(path string) (c *ChainTx, err error) {
 
 	return c, nil
 }
-
 
 func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData) (*types.Block, error) {
 	for i := 0; i < len(txs); i++ {
@@ -164,7 +163,7 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	return nil
 }
 
-func (c *ChainTx) GetTailBlockHash() (common.Hash) {
+func (c *ChainTx) GetTailBlockHash() common.Hash {
 	return c.CurrentHeader.Hash
 }
 

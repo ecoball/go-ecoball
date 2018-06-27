@@ -17,12 +17,12 @@
 package state
 
 import (
+	"bytes"
 	"errors"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/store"
 	"math/big"
-	"bytes"
 )
 
 var log = elog.NewLogger("state", elog.DebugLog)
@@ -119,7 +119,7 @@ func (s *State) AddBalance(addr common.Address, name string, value *big.Int) err
 }
 
 func (s *State) TokenExisted(name string) bool {
-	hash := common.NewHash([]byte(name))
+	hash := common.SingleHash([]byte(name))
 	data, err := s.trie.TryGet(hash.Bytes())
 	if err != nil {
 		log.Error(err)

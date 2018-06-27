@@ -29,7 +29,7 @@ type Service interface {
 
 type ContractService struct {
 	ledger  ledger.Ledger
-	tx *types.Transaction
+	tx      *types.Transaction
 	Service Service
 }
 
@@ -40,16 +40,20 @@ func NewContractService(ledger ledger.Ledger, tx *types.Transaction) (*ContractS
 	return &ContractService{ledger: ledger, tx: tx}, nil
 }
 
-func (c ContractService) ExecuteContract(vmType types.VmType, method string, code []byte, arg []byte) (ret []byte, err error) {
+func (c *ContractService) ExecuteContract(vmType types.VmType, method string, code []byte, arg []uint64) (ret []byte, err error) {
 	if c.ledger == nil {
 		return nil, errors.New("the contract service's ledger interface is nil")
 	}
 	switch vmType {
 	case types.VmWasm:
-		c.Service, err = wasmservice.NewWasmService(c.ledger, method, code, nil)
+		c.Service, err = wasmservice.NewWasmService(c.ledger, method, code, arg)
 		if err != nil {
 			return nil, err
 		}
 	}
 	return c.Service.Execute(), nil
+}
+
+func (c *ContractService) ParseArguments(param string) ([]uint64, error) {
+	return nil, nil
 }

@@ -148,9 +148,9 @@ func (ws *WasmService) AbaLogString(str string) int32 {
 	return 0
 }
 
-func (ws *WasmService) AbaLog(str string, msg interface{}) int32 {
+func (ws *WasmService) AbaLog(str string) int32 {
 	fmt.Println("AbaLog:---------")
-	fmt.Printf(str, msg)
+	fmt.Printf(str)
 	return 0
 }
 
@@ -188,8 +188,12 @@ func (ws *WasmService) AbaAccountSubBalance(value uint64, token, addrHex string)
 	return 0
 }
 
-func (ws *WasmService) TokenCreate(addrHex, token string, maximum uint64) int32 {
-	if err := ws.ledger.TokenCreate(common.NewAddress(common.FromHex(addrHex)), token, maximum); err != nil {
+func (ws *WasmService) TokenCreate(addrHexP, tokenP uint64, maximum uint64) int32 {
+	addrHex := common.PointerToString(addrHexP)
+	token := common.PointerToString(tokenP)
+	fmt.Println("addr:", addrHex, "token:", token, "maximun:", maximum)
+	addr := common.NewAddress(common.FromHex(addrHex))
+	if err := ws.ledger.TokenCreate(addr, token, maximum); err != nil {
 		log.Error(err)
 		return -1
 	}

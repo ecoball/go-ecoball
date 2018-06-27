@@ -18,6 +18,10 @@ package smartcontract_test
 
 import (
 	"fmt"
+	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/core/ledgerimpl"
+	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/smartcontract"
 	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
 	"testing"
 )
@@ -50,4 +54,30 @@ func TestLog(t *testing.T) {
 	}
 	s, err := wasmservice.NewWasmService(nil, "main", code, nil)
 	fmt.Println(s.Execute())
+}
+
+func TestCreate(t *testing.T) {
+	l, err := ledgerimpl.NewLedger("/tmp/quaker")
+	if err != nil {
+		t.Fatal(err)
+	}
+	server, err := smartcontract.NewContractService(l, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	code, err := wasmservice.ReadWasm("../test/token.wasm")
+	if err != nil {
+		t.Fatal(err)
+	}
+	addrP, _ := common.StringToPointer("01b1a6569a557eafcccc71e0d02461fd4b601aea")
+	nameP, _ := common.StringToPointer("TokenTest")
+	var arg []uint64
+	arg = append(arg, addrP)
+	arg = append(arg, nameP)
+	arg = append(arg, 100001)
+	s, err := server.ExecuteContract(types.VmWasm, "create", code, arg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println(s)
 }

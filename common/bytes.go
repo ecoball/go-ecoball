@@ -16,7 +16,12 @@
 
 package common
 
-import "encoding/hex"
+import (
+	"encoding/hex"
+	"unsafe"
+	"strconv"
+	"fmt"
+)
 
 func ToHex(b []byte) string {
 	hex := Bytes2Hex(b)
@@ -115,4 +120,17 @@ func LeftPadBytes(slice []byte, l int) []byte {
 	copy(padded[l-len(slice):], slice)
 
 	return padded
+}
+
+func StringToPointer(str string) (uint64, error) {
+	strPointerInt := fmt.Sprintf("%d", unsafe.Pointer(&str))
+	return strconv.ParseUint(strPointerInt, 10, 0)
+}
+
+func PointerToString(pointer uint64) string {
+	var s *string
+	s = *(**string)(unsafe.Pointer(&pointer))
+	str := *(*string)(unsafe.Pointer(s))
+	b := CopyBytes([]byte(str))
+	return string(b)
 }
