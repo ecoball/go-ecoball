@@ -37,6 +37,7 @@ var log = elog.NewLogger("wasm", elog.NoticeLog)
 
 type WasmService struct {
 	ledger ledger.Ledger
+	vm *exec.VM
 	tx     *types.Transaction
 	Code   []byte
 	Args   []uint64
@@ -78,6 +79,7 @@ func (ws *WasmService) Execute() []byte {
 	}
 
 	vm, err := exec.NewVM(m)
+	ws.vm = vm
 	if err != nil {
 		fmt.Printf("could not create VM: %v", err)
 	}
@@ -130,6 +132,7 @@ func (ws *WasmService) RegisterApi() {
 	funs := wasm.InitNativeFuns()
 	funs.Register("AbaAdd", ws.AbaAdd)
 	funs.Register("AbaLog", ws.AbaLog)
+	funs.Register("print", ws.Print)
 	funs.Register("AbaLogString", ws.AbaLogString)
 	funs.Register("AbaLogInt", ws.AbaLogInt)
 	funs.Register("AbaGetCurrentHeight", ws.AbaGetCurrentHeight)
@@ -137,6 +140,7 @@ func (ws *WasmService) RegisterApi() {
 	funs.Register("AbaAccountAddBalance", ws.AbaAccountAddBalance)
 	funs.Register("AbaAccountSubBalance", ws.AbaAccountSubBalance)
 	funs.Register("TokenIsExisted", ws.TokenIsExisted)
+	funs.Register("TokenCreate", ws.TokenCreate)
 	funs.Register("TokenCreate", ws.TokenCreate)
 }
 
@@ -149,8 +153,18 @@ func (ws *WasmService) AbaLogString(str string) int32 {
 	return 0
 }
 
-func (ws *WasmService) AbaLog(str string) int32 {
+func (ws *WasmService) Print(arg uint64) int32 {
+	fmt.Println(arg)
+	memory := ws.vm.Memory()
+	data := memory[arg:]
+	index := bytes.IndexByte(data, 0)
+	para := data[:index]
+	fmt.Println(string(para))
+	return 0
+}
+func (ws *WasmService) AbaLog(strP uint64) int32 {
 	fmt.Println("AbaLog:---------")
+	str := common.PointerToString(strP)
 	fmt.Printf(str)
 	return 0
 }

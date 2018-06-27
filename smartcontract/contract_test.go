@@ -47,7 +47,7 @@ func TestAdd(t *testing.T) {
 }
 
 func TestLog(t *testing.T) {
-	code, err := wasmservice.ReadWasm("../test/aba_log.wasm")
+	code, err := wasmservice.ReadWasm("../test/print.wasm")
 	if err != nil {
 		t.Fatal(err)
 	}
