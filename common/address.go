@@ -65,11 +65,6 @@ func (a *Address) Equals(b *Address) bool {
 	return bytes.Equal(a[:], b[:])
 }
 
-//convert to strong
-func (a *Address) ToString() string {
-	return string(a[:])
-}
-
 type Signature struct {
 	PubKey  []byte //签名者的公钥
 	SigData []byte //签名数据

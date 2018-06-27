@@ -121,10 +121,10 @@ func handleSetContract(params []interface{}) (common.Errcode, string) {
 		return common.INVALID_PARAMS, ""
 	}
 
-	err = transaction.SetSignature(&common.Account)
+	/*err = transaction.SetSignature(&common.Account)
 	if err != nil {
 		return common.INVALID_ACCOUNT, ""
-	}
+	}*/
 
 	//send to txpool
 	err = event.Send(event.ActorNil, event.ActorTxPool, transaction)
@@ -132,7 +132,7 @@ func handleSetContract(params []interface{}) (common.Errcode, string) {
 		return common.INTERNAL_ERROR, ""
 	}
 
-	return common.SUCCESS, address.ToString()
+	return common.SUCCESS, address.HexString()
 }
 
 func InvokeContract(params []interface{}) *common.Response {
@@ -202,10 +202,10 @@ func handleInvokeContract(params []interface{}) common.Errcode {
 		return common.INVALID_PARAMS
 	}
 
-	err = transaction.SetSignature(&common.Account)
+	/*err = transaction.SetSignature(&common.Account)
 	if err != nil {
 		return common.INVALID_ACCOUNT
-	}
+	}*/
 
 	//send to txpool
 	err = event.Send(event.ActorNil, event.ActorTxPool, transaction)
