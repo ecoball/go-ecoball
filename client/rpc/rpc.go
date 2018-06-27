@@ -18,6 +18,7 @@ package rpc
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -25,6 +26,7 @@ import (
 	"strings"
 
 	"github.com/ecoball/go-ecoball/client/common"
+	innerCommon "github.com/ecoball/go-ecoball/http/common"
 )
 
 // RPC call
@@ -60,4 +62,43 @@ func Call(method string, params []interface{}) (map[string]interface{}, error) {
 	}
 
 	return result, nil
+}
+
+//rpc result
+func EchoResult(resp map[string]interface{}) error {
+	var (
+		errorCode int64
+		desc      string
+		invalid   bool = false
+	)
+
+	if v, ok := resp["errorCode"].(float64); ok {
+		errorCode = int64(v)
+	} else {
+		invalid = true
+	}
+
+	if v, ok := resp["desc"].(string); ok {
+		desc = v
+	} else {
+		invalid = true
+	}
+
+	if invalid {
+		fmt.Println("errorCode or desc of respone is wrong!")
+		return errors.New("errorCode or desc of respone is wrong!")
+	} else if errorCode != int64(innerCommon.SUCCESS) {
+		fmt.Println("failed: ", desc)
+		return errors.New(desc)
+	}
+
+	//success
+	switch resp["result"].(type) {
+	case map[string]interface{}:
+
+	case string:
+		fmt.Println(resp["result"].(string))
+	}
+
+	return nil
 }

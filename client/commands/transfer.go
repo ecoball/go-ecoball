@@ -86,11 +86,5 @@ func transferAction(c *cli.Context) error {
 	}
 
 	//result
-	switch resp["result"].(type) {
-	case map[string]interface{}:
-
-	case string:
-		fmt.Println(resp["result"].(string))
-	}
-	return nil
+	return rpc.EchoResult(resp)
 }

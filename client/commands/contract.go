@@ -149,7 +149,7 @@ func setContract(c *cli.Context) error {
 	}
 
 	//result
-	switch resp["result"].(type) {
+	switch resp["errorCode"].(type) {
 	case map[string]interface{}:
 
 	case string:
@@ -157,7 +157,8 @@ func setContract(c *cli.Context) error {
 		os.Exit(1)
 	}
 
-	return nil
+	//result
+	return rpc.EchoResult(resp)
 }
 
 func invokeContract(c *cli.Context) error {
@@ -192,13 +193,5 @@ func invokeContract(c *cli.Context) error {
 	}
 
 	//result
-	switch resp["result"].(type) {
-	case map[string]interface{}:
-
-	case string:
-		fmt.Println(resp["result"].(string))
-		os.Exit(1)
-	}
-
-	return nil
+	return rpc.EchoResult(resp)
 }
