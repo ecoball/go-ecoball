@@ -36,20 +36,16 @@ const (
 	StringConsensus = "/Consensus"
 )
 
-//TODO
-const (
-	ConsensusAlgorithm = "DPOS"
-)
 
-const (
-	configDefault = `#toml configuration for aba
-http_port = "20678"			 
-version = "1.0"	
-log_dir = "./Log/"
-output_to_terminal = "true"		
-log_level = 1				 								
+var configDefault =
+`#toml configuration for EcoBall system
+http_port = "20678"          # client http port
+version = "1.0"              # system version
+log_dir = "/tmp/Log/"        # log file location
+output_to_terminal = "true"	 	
+log_level = 1                # debug level	
+consensus_algorithm = "SOLO" # can set as SOLO, DPOS
 `
-)
 
 var (
 	HttpLocalPort    string
@@ -57,6 +53,7 @@ var (
 	LogDir           string
 	OutputToTerminal bool
 	LogLevel         int
+	ConsensusAlgorithm string
 )
 
 type Config struct {
@@ -79,10 +76,10 @@ func (c *Config) CreateConfigFile() error {
 	var filePath string
 	if "" == path.Ext(c.FilePath) {
 		dirPath = c.FilePath
-		filePath = path.Join(c.FilePath, "aba.toml")
+		filePath = path.Join(c.FilePath, "ecoball.toml")
 	} else {
 		dirPath = c.FilePath
-		filePath = path.Join(c.FilePath, "aba.toml")
+		filePath = path.Join(c.FilePath, "ecoball.toml")
 		//filePath = path.Dir(c.FilePath)
 	}
 	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
@@ -105,7 +102,7 @@ func defaultPath() (string, error) {
 }
 
 func (c *Config) InitConfig() error {
-	viper.SetConfigName("aba")
+	viper.SetConfigName("ecoball")
 	viper.AddConfigPath(c.FilePath)
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
@@ -131,4 +128,5 @@ func initVariable() {
 	LogDir = viper.GetString("log_dir")
 	OutputToTerminal = viper.GetBool("output_to_terminal")
 	LogLevel = viper.GetInt("log_level")
+	ConsensusAlgorithm = viper.GetString("consensus_algorithm")
 }

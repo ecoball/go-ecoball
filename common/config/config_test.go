@@ -20,12 +20,11 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/spf13/viper"
 	"github.com/ecoball/go-ecoball/common/config"
 	_ "github.com/ecoball/go-ecoball/common/config"
 )
 
 func TestConfig(t *testing.T) {
-	c := viper.GetViper()
-	fmt.Println(c.Get(config.HttpPort))
+	fmt.Println(config.HttpLocalPort)
+	fmt.Println(config.ConsensusAlgorithm)
 }

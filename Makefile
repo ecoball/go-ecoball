@@ -27,6 +27,7 @@ proto:
 clean:
 	@echo "\033[;31mclean project \033[0m"
 	-rm -rf build/
+	-rm ~/ecoball.toml
 	make -C core/pb/ clean
 	make -C client/protos clean
 
