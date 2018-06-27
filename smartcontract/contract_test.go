@@ -18,7 +18,6 @@ package smartcontract_test
 
 import (
 	"fmt"
-	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/smartcontract"
@@ -69,13 +68,17 @@ func TestCreate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	addrP, _ := common.StringToPointer("01b1a6569a557eafcccc71e0d02461fd4b601aea")
-	nameP, _ := common.StringToPointer("TokenTest")
-	var arg []uint64
-	arg = append(arg, addrP)
-	arg = append(arg, nameP)
-	arg = append(arg, 100001)
+	addr := "01b1a6569a557eafcccc71e0d02461fd4b601aea"
+	name := "TokenTest"
+	var arg = []string{addr, name, "100001"}
 	s, err := server.ExecuteContract(types.VmWasm, "create", code, arg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println(s)
+
+	balance := []string{addr, name}
+	s, err = server.ExecuteContract(types.VmWasm, "balance", code, balance)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -30,6 +30,7 @@ import (
 	"github.com/ecoball/go-ecoball/vm/wasmvm/wasm"
 	"io/ioutil"
 	"os"
+	"strconv"
 )
 
 var log = elog.NewLogger("wasm", elog.NoticeLog)
@@ -163,16 +164,25 @@ func (ws *WasmService) AbaGetCurrentHeight() uint64 {
 	return ws.ledger.GetCurrentHeight()
 }
 
-func (ws *WasmService) AbaAccountGetBalance(token, addrHex string) uint64 {
+func (ws *WasmService) AbaAccountGetBalance(tokenP, addrHexP uint64) uint64 {
+	addrHex := common.PointerToString(addrHexP)
+	token := common.PointerToString(tokenP)
 	address := common.NewAddress(common.FromHex(addrHex))
 	value, err := ws.ledger.AccountGetBalance(address, token)
+	fmt.Println(addrHex, value)
 	if err != nil {
 		return 0
 	}
 	return value
 }
 
-func (ws *WasmService) AbaAccountAddBalance(value uint64, token, addrHex string) int32 {
+func (ws *WasmService) AbaAccountAddBalance(valueP, tokenP, addrHexP uint64) int32 {
+	addrHex := common.PointerToString(addrHexP)
+	token := common.PointerToString(tokenP)
+	value, err := strconv.ParseUint(common.PointerToString(valueP), 0, 64)
+	if err != nil {
+		return -1
+	}
 	if err := ws.ledger.AccountAddBalance(common.NewAddress(common.FromHex(addrHex)), token, value); err != nil {
 		log.Error(err)
 		return -1
@@ -180,7 +190,13 @@ func (ws *WasmService) AbaAccountAddBalance(value uint64, token, addrHex string)
 	return 0
 }
 
-func (ws *WasmService) AbaAccountSubBalance(value uint64, token, addrHex string) int32 {
+func (ws *WasmService) AbaAccountSubBalance(valueP, tokenP, addrHexP uint64) int32 {
+	addrHex := common.PointerToString(addrHexP)
+	token := common.PointerToString(tokenP)
+	value, err := strconv.ParseUint(common.PointerToString(valueP), 0, 64)
+	if err != nil {
+		return -1
+	}
 	if err := ws.ledger.AccountSubBalance(common.NewAddress(common.FromHex(addrHex)), token, value); err != nil {
 		log.Error(err)
 		return -1
@@ -188,9 +204,13 @@ func (ws *WasmService) AbaAccountSubBalance(value uint64, token, addrHex string)
 	return 0
 }
 
-func (ws *WasmService) TokenCreate(addrHexP, tokenP uint64, maximum uint64) int32 {
+func (ws *WasmService) TokenCreate(addrHexP, tokenP, maximumP uint64) int32 {
 	addrHex := common.PointerToString(addrHexP)
 	token := common.PointerToString(tokenP)
+	maximum, err := strconv.ParseUint(common.PointerToString(maximumP), 0, 64)
+	if err != nil {
+		return -1
+	}
 	fmt.Println("addr:", addrHex, "token:", token, "maximun:", maximum)
 	addr := common.NewAddress(common.FromHex(addrHex))
 	if err := ws.ledger.TokenCreate(addr, token, maximum); err != nil {
@@ -200,7 +220,8 @@ func (ws *WasmService) TokenCreate(addrHexP, tokenP uint64, maximum uint64) int3
 	return 0
 }
 
-func (ws *WasmService) TokenIsExisted(token string) int32 {
+func (ws *WasmService) TokenIsExisted(tokenP uint64) int32 {
+	token := common.PointerToString(tokenP)
 	ret := ws.ledger.TokenIsExisted(token)
 	if ret {
 		return 1
