@@ -36,11 +36,12 @@ func NewSoloConsensusServer(l ledger.Ledger) (*Solo, error) {
 }
 
 func (s *Solo) Start() error {
-	t := time.NewTimer(time.Second * 5)
+	t := time.NewTimer(time.Second * 1)
 	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
 
 	go func() {
 		for {
+			t.Reset(time.Second * 5)
 			select {
 			case <-t.C:
 				log.Debug("Request transactions from tx pool")
@@ -67,8 +68,6 @@ func (s *Solo) Start() error {
 					log.Error("save block error:", err)
 					continue
 				}
-
-				t.Reset(time.Second * 5)
 			}
 		}
 	}()

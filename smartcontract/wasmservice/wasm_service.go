@@ -30,12 +30,14 @@ import (
 	"github.com/ecoball/go-ecoball/vm/wasmvm/wasm"
 	"io/ioutil"
 	"os"
+	"strconv"
 )
 
 var log = elog.NewLogger("wasm", elog.NoticeLog)
 
 type WasmService struct {
 	ledger ledger.Ledger
+	vm *exec.VM
 	tx     *types.Transaction
 	Code   []byte
 	Args   []uint64
@@ -69,14 +71,16 @@ func (ws *WasmService) Execute() []byte {
 	bf := bytes.NewBuffer(ws.Code)
 	m, err := wasm.ReadModule(bf, importer)
 	if err != nil {
-		fmt.Printf("could not read module: %v", err)
+		log.Error("could not read module:", err)
+		return nil
 	}
 
 	if m.Export == nil {
-		fmt.Printf("module has no export section")
+		log.Warn("module has no export section")
 	}
 
 	vm, err := exec.NewVM(m)
+	ws.vm = vm
 	if err != nil {
 		fmt.Printf("could not create VM: %v", err)
 	}
@@ -129,6 +133,7 @@ func (ws *WasmService) RegisterApi() {
 	funs := wasm.InitNativeFuns()
 	funs.Register("AbaAdd", ws.AbaAdd)
 	funs.Register("AbaLog", ws.AbaLog)
+	funs.Register("print", ws.Print)
 	funs.Register("AbaLogString", ws.AbaLogString)
 	funs.Register("AbaLogInt", ws.AbaLogInt)
 	funs.Register("AbaGetCurrentHeight", ws.AbaGetCurrentHeight)
@@ -136,6 +141,7 @@ func (ws *WasmService) RegisterApi() {
 	funs.Register("AbaAccountAddBalance", ws.AbaAccountAddBalance)
 	funs.Register("AbaAccountSubBalance", ws.AbaAccountSubBalance)
 	funs.Register("TokenIsExisted", ws.TokenIsExisted)
+	funs.Register("TokenCreate", ws.TokenCreate)
 	funs.Register("TokenCreate", ws.TokenCreate)
 }
 
@@ -148,8 +154,18 @@ func (ws *WasmService) AbaLogString(str string) int32 {
 	return 0
 }
 
-func (ws *WasmService) AbaLog(str string) int32 {
+func (ws *WasmService) Print(arg uint64) int32 {
+	fmt.Println(arg)
+	memory := ws.vm.Memory()
+	data := memory[arg:]
+	index := bytes.IndexByte(data, 0)
+	para := data[:index]
+	fmt.Println(string(para))
+	return 0
+}
+func (ws *WasmService) AbaLog(strP uint64) int32 {
 	fmt.Println("AbaLog:---------")
+	str := common.PointerToString(strP)
 	fmt.Printf(str)
 	return 0
 }
@@ -163,16 +179,26 @@ func (ws *WasmService) AbaGetCurrentHeight() uint64 {
 	return ws.ledger.GetCurrentHeight()
 }
 
-func (ws *WasmService) AbaAccountGetBalance(token, addrHex string) uint64 {
+func (ws *WasmService) AbaAccountGetBalance(tokenP, addrHexP uint64) uint64 {
+	addrHex := common.PointerToString(addrHexP)
+	token := common.PointerToString(tokenP)
 	address := common.NewAddress(common.FromHex(addrHex))
+	log.Debug("GetBalance:", address.HexString(), "token:", token)
 	value, err := ws.ledger.AccountGetBalance(address, token)
+	fmt.Println(addrHex, value)
 	if err != nil {
 		return 0
 	}
 	return value
 }
 
-func (ws *WasmService) AbaAccountAddBalance(value uint64, token, addrHex string) int32 {
+func (ws *WasmService) AbaAccountAddBalance(addrHexP, tokenP, valueP  uint64) int32 {
+	addrHex := common.PointerToString(addrHexP)
+	token := common.PointerToString(tokenP)
+	value, err := strconv.ParseUint(common.PointerToString(valueP), 0, 64)
+	if err != nil {
+		return -1
+	}
 	if err := ws.ledger.AccountAddBalance(common.NewAddress(common.FromHex(addrHex)), token, value); err != nil {
 		log.Error(err)
 		return -1
@@ -180,17 +206,29 @@ func (ws *WasmService) AbaAccountAddBalance(value uint64, token, addrHex string)
 	return 0
 }
 
-func (ws *WasmService) AbaAccountSubBalance(value uint64, token, addrHex string) int32 {
-	if err := ws.ledger.AccountSubBalance(common.NewAddress(common.FromHex(addrHex)), token, value); err != nil {
+func (ws *WasmService) AbaAccountSubBalance(addrHexP, tokenP, valueP  uint64) int32 {
+	addrHex := common.PointerToString(addrHexP)
+	token := common.PointerToString(tokenP)
+	address := common.NewAddress(common.FromHex(addrHex))
+	value, err := strconv.ParseUint(common.PointerToString(valueP), 0, 64)
+	if err != nil {
+		return -1
+	}
+	log.Debug("SubBalance:", address.HexString(), "token:", token, "value:", value)
+	if err := ws.ledger.AccountSubBalance(address, token, value); err != nil {
 		log.Error(err)
 		return -1
 	}
 	return 0
 }
 
-func (ws *WasmService) TokenCreate(addrHexP, tokenP uint64, maximum uint64) int32 {
+func (ws *WasmService) TokenCreate(addrHexP, tokenP, maximumP uint64) int32 {
 	addrHex := common.PointerToString(addrHexP)
 	token := common.PointerToString(tokenP)
+	maximum, err := strconv.ParseUint(common.PointerToString(maximumP), 0, 64)
+	if err != nil {
+		return -1
+	}
 	fmt.Println("addr:", addrHex, "token:", token, "maximun:", maximum)
 	addr := common.NewAddress(common.FromHex(addrHex))
 	if err := ws.ledger.TokenCreate(addr, token, maximum); err != nil {
@@ -200,7 +238,8 @@ func (ws *WasmService) TokenCreate(addrHexP, tokenP uint64, maximum uint64) int3
 	return 0
 }
 
-func (ws *WasmService) TokenIsExisted(token string) int32 {
+func (ws *WasmService) TokenIsExisted(tokenP uint64) int32 {
+	token := common.PointerToString(tokenP)
 	ret := ws.ledger.TokenIsExisted(token)
 	if ret {
 		return 1

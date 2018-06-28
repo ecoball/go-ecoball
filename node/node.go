@@ -25,7 +25,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/ledgerimpl"
 	"github.com/ecoball/go-ecoball/core/store"
 	"github.com/ecoball/go-ecoball/http/rpc"
-	"github.com/ecoball/go-ecoball/net"
+	//"github.com/ecoball/go-ecoball/net"
 	"github.com/ecoball/go-ecoball/txpool"
 	"github.com/ecoball/go-ecoball/webserver"
 	"github.com/urfave/cli"
@@ -70,7 +70,7 @@ func runNode(c *cli.Context) error {
 		os.Exit(1)
 	}
 
-	net.StartNetWork()
+	//net.StartNetWork()
 	//TODO, modify temporily
 	//consensus.InitConsensusService(l, consensus.CONSENSUS_SOLO, nil)
 	//TODO, modify temporily

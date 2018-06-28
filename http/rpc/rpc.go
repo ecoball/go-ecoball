@@ -107,7 +107,7 @@ func Handle(w http.ResponseWriter, r *http.Request) {
 		//if the function does not exist
 		RpcLog.Warn("HTTP JSON RPC Handle - No function to call for ", request["method"])
 		data, err := json.Marshal(map[string]interface{}{
-			"errorCode": -32601,
+			"errorCode": int64(-32601),
 			"desc":      "The called method was not found on the server",
 			"result":    nil,
 		})
@@ -133,6 +133,9 @@ func StartRPCServer() {
 
 	//set contract
 	httpServer.AddHandleFunc("setContract", commands.SetContract)
+
+	//invoke contract
+	httpServer.AddHandleFunc("invokeContract", commands.InvokeContract)
 
 	httpServer.AddHandleFunc("netlistmyid", nrpc.CliServerListMyId)
 	httpServer.AddHandleFunc("netlistmypeer", nrpc.CliServerListMyPeers)

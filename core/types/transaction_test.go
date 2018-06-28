@@ -62,7 +62,7 @@ func TestDeploy(t *testing.T) {
 }
 
 func TestInvoke(t *testing.T) {
-	i := types.NewTestInvoke()
+	i := types.NewTestInvoke("main")
 	i.Show()
 	data, err := i.Serialize()
 	if err != nil {

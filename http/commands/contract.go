@@ -17,10 +17,13 @@
 package commands
 
 import (
-	"github.com/ecoball/go-ecoball/core/types"
+	"strings"
 	"time"
 
+	"github.com/ecoball/go-ecoball/core/types"
+
 	"github.com/ecoball/go-ecoball/account"
+	innerCommon "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
 	"github.com/ecoball/go-ecoball/http/common"
@@ -33,8 +36,10 @@ func SetContract(params []interface{}) *common.Response {
 
 	switch {
 	case len(params) == 5:
-		if errCode := handleSetContract(params); errCode != common.SUCCESS {
+		if errCode, result := handleSetContract(params); errCode != common.SUCCESS {
 			return common.NewResponse(errCode, nil)
+		} else {
+			return common.NewResponse(common.SUCCESS, result)
 		}
 
 	default:
@@ -44,7 +49,7 @@ func SetContract(params []interface{}) *common.Response {
 	return common.NewResponse(common.SUCCESS, "")
 }
 
-func handleSetContract(params []interface{}) common.Errcode {
+func handleSetContract(params []interface{}) (common.Errcode, string) {
 
 	//Get account address
 	var (
@@ -57,7 +62,7 @@ func handleSetContract(params []interface{}) common.Errcode {
 	)
 
 	if v, ok := params[0].(string); ok {
-		code = []byte(v)
+		code = innerCommon.FromHex(v)
 	} else {
 		invalid = true
 	}
@@ -87,7 +92,7 @@ func handleSetContract(params []interface{}) common.Errcode {
 	}
 
 	if invalid {
-		return common.INVALID_PARAMS
+		return common.INVALID_PARAMS, ""
 	}
 
 	//time
@@ -96,12 +101,12 @@ func handleSetContract(params []interface{}) common.Errcode {
 	//generate key pair
 	keyData, err := secp256k1.NewECDSAPrivateKey()
 	if err != nil {
-		return common.GENERATE_KEY_PAIR_FAILED
+		return common.GENERATE_KEY_PAIR_FAILED, ""
 	}
 
 	public, err := secp256k1.FromECDSAPub(&keyData.PublicKey)
 	if err != nil {
-		return common.GENERATE_KEY_PAIR_FAILED
+		return common.GENERATE_KEY_PAIR_FAILED, ""
 	}
 
 	//generate address
@@ -113,13 +118,94 @@ func handleSetContract(params []interface{}) common.Errcode {
 	transaction, err := types.NewDeployContract(from, address, types.VmWasm, author,
 		contractName, email, description, code, 0, time)
 	if nil != err {
+		return common.INVALID_PARAMS, ""
+	}
+
+	/*err = transaction.SetSignature(&common.Account)
+	if err != nil {
+		return common.INVALID_ACCOUNT, ""
+	}*/
+
+	//send to txpool
+	err = event.Send(event.ActorNil, event.ActorTxPool, transaction)
+	if nil != err {
+		return common.INTERNAL_ERROR, ""
+	}
+
+	return common.SUCCESS, address.HexString()
+}
+
+func InvokeContract(params []interface{}) *common.Response {
+	if len(params) < 1 {
+		return common.NewResponse(common.INVALID_PARAMS, nil)
+	}
+
+	switch {
+	case len(params) == 3:
+		if errCode := handleInvokeContract(params); errCode != common.SUCCESS {
+			return common.NewResponse(errCode, nil)
+		}
+
+	default:
+		return common.NewResponse(common.INVALID_PARAMS, nil)
+	}
+
+	return common.NewResponse(common.SUCCESS, "")
+}
+
+func handleInvokeContract(params []interface{}) common.Errcode {
+	var (
+		contractAddress string
+		contractMethod  string
+		contractParam   string
+		parameters      []string
+		invalid         bool = false
+	)
+
+	if v, ok := params[0].(string); ok {
+		contractAddress = v
+	} else {
+		invalid = true
+	}
+
+	if v, ok := params[1].(string); ok {
+		contractMethod = v
+	} else {
+		invalid = true
+	}
+
+	if v, ok := params[2].(string); ok {
+		contractParam = v
+	} else {
+		invalid = true
+	}
+
+	if "" != contractParam {
+		parameters = strings.Split(contractParam, " ")
+	}
+
+	if invalid {
 		return common.INVALID_PARAMS
 	}
 
-	err = transaction.SetSignature(&common.Account)
+	//from address
+	from := account.AddressFromPubKey(common.Account.PublicKey)
+
+	//contract address
+	address := innerCommon.NewAddress(innerCommon.CopyBytes(innerCommon.FromHex(contractAddress)))
+
+	//time
+	time := time.Now().Unix()
+
+	transaction, err := types.NewInvokeContract(from, address, types.VmWasm, contractMethod, parameters, 0, time)
+	if nil != err {
+		return common.INVALID_PARAMS
+	}
+
+	/*err = transaction.SetSignature(&common.Account)
 	if err != nil {
 		return common.INVALID_ACCOUNT
-	}
+	}*/
 
 	//send to txpool
 	err = event.Send(event.ActorNil, event.ActorTxPool, transaction)

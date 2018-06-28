@@ -23,6 +23,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/store"
 	"math/big"
+	"fmt"
 )
 
 var log = elog.NewLogger("state", elog.DebugLog)
@@ -75,13 +76,25 @@ func (s *State) GetStateObject(addr common.Address) (*StateObject, error) {
 }
 
 func (s *State) SubBalance(addr common.Address, name string, value *big.Int) error {
-	fObj, err := s.GetStateObject(addr)
+	key := common.SingleHash(addr.Bytes())
+	data, err := s.trie.TryGet(key.Bytes())
 	if err != nil {
+		log.Error(err)
 		return err
 	}
+	if data == nil {
+		return errors.New(fmt.Sprintf("can't find address[%s] account in MPT tree", addr.HexString()))
+	}
+	fObj := new(StateObject)
+	err = fObj.Deserialize(data)
+	if err != nil {
+		log.Error(err)
+		return err
+	}
+
 	balance, err := fObj.Balance(name)
 	if err != nil {
-		return errors.New("no enough balance")
+		return err
 	}
 	if balance.Cmp(value) == -1 {
 		return errors.New("no enough balance")

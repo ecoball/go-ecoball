@@ -197,6 +197,7 @@ func (t *Transaction) Deserialize(data []byte) error {
 }
 
 func (t *Transaction) Show() {
+	fmt.Println("\t---------------Transaction-------------")
 	fmt.Println("\tVersion        :", t.Version)
 	fmt.Println("\tFrom           :", t.From.HexString())
 	fmt.Println("\tAddr           :", t.Addr.HexString())

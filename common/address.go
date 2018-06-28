@@ -19,9 +19,9 @@ package common
 import (
 	"bytes"
 	"errors"
-	"fmt"
-	"github.com/gogo/protobuf/proto"
+
 	"github.com/ecoball/go-ecoball/core/pb"
+	"github.com/gogo/protobuf/proto"
 
 	"github.com/btcsuite/btcutil/base58"
 )
@@ -50,7 +50,12 @@ func (a Address) ToBase58() string {
 
 // ToHexString returns  hex string representation of Address
 func (a Address) HexString() string {
-	return fmt.Sprintf("%x", a[:])
+	//return fmt.Sprintf("%x", a[:])
+	return ToHex(a[:])
+}
+
+func FormHexString(data string) Address{
+	return NewAddress(FromHex(data))
 }
 
 /* Equals compare two Address. True is equal, otherwise false. */
@@ -71,8 +76,8 @@ type Signature struct {
 
 func (s *Signature) Serialize() ([]byte, error) {
 	sig := pb.Signature{
-		SigData:s.SigData,
-		PubKey:s.PubKey,
+		SigData: s.SigData,
+		PubKey:  s.PubKey,
 	}
 	d, err := proto.Marshal(&sig)
 	if err != nil {

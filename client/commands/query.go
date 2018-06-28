@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/urfave/cli"
 	"github.com/ecoball/go-ecoball/client/rpc"
+	"github.com/urfave/cli"
 )
 
 var (
@@ -67,11 +67,5 @@ func queryBalance(c *cli.Context) error {
 	}
 
 	//result
-	switch resp["result"].(type) {
-	case map[string]interface{}:
-
-	case string:
-		fmt.Println(resp["result"].(string))
-	}
-	return nil
+	return rpc.EchoResult(resp)
 }
