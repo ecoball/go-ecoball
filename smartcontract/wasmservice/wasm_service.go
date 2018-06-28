@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/types"
@@ -33,11 +34,11 @@ import (
 	"strconv"
 )
 
-var log = elog.NewLogger("wasm", elog.NoticeLog)
+var log = elog.NewLogger("wasm", config.LogLevel)
 
 type WasmService struct {
 	ledger ledger.Ledger
-	vm *exec.VM
+	//vm *exec.VM
 	tx     *types.Transaction
 	Code   []byte
 	Args   []uint64
@@ -80,7 +81,7 @@ func (ws *WasmService) Execute() []byte {
 	}
 
 	vm, err := exec.NewVM(m)
-	ws.vm = vm
+	//ws.vm = vm
 	if err != nil {
 		fmt.Printf("could not create VM: %v", err)
 	}
@@ -133,7 +134,7 @@ func (ws *WasmService) RegisterApi() {
 	funs := wasm.InitNativeFuns()
 	funs.Register("AbaAdd", ws.AbaAdd)
 	funs.Register("AbaLog", ws.AbaLog)
-	funs.Register("print", ws.Print)
+	//funs.Register("print", ws.Print)
 	funs.Register("AbaLogString", ws.AbaLogString)
 	funs.Register("AbaLogInt", ws.AbaLogInt)
 	funs.Register("AbaGetCurrentHeight", ws.AbaGetCurrentHeight)
@@ -154,7 +155,7 @@ func (ws *WasmService) AbaLogString(str string) int32 {
 	return 0
 }
 
-func (ws *WasmService) Print(arg uint64) int32 {
+/*func (ws *WasmService) Print(arg uint64) int32 {
 	fmt.Println(arg)
 	memory := ws.vm.Memory()
 	data := memory[arg:]
@@ -162,7 +163,7 @@ func (ws *WasmService) Print(arg uint64) int32 {
 	para := data[:index]
 	fmt.Println(string(para))
 	return 0
-}
+}*/
 func (ws *WasmService) AbaLog(strP uint64) int32 {
 	fmt.Println("AbaLog:---------")
 	str := common.PointerToString(strP)
@@ -192,7 +193,7 @@ func (ws *WasmService) AbaAccountGetBalance(tokenP, addrHexP uint64) uint64 {
 	return value
 }
 
-func (ws *WasmService) AbaAccountAddBalance(addrHexP, tokenP, valueP  uint64) int32 {
+func (ws *WasmService) AbaAccountAddBalance(addrHexP, tokenP, valueP uint64) int32 {
 	addrHex := common.PointerToString(addrHexP)
 	token := common.PointerToString(tokenP)
 	value, err := strconv.ParseUint(common.PointerToString(valueP), 0, 64)
@@ -206,7 +207,7 @@ func (ws *WasmService) AbaAccountAddBalance(addrHexP, tokenP, valueP  uint64) in
 	return 0
 }
 
-func (ws *WasmService) AbaAccountSubBalance(addrHexP, tokenP, valueP  uint64) int32 {
+func (ws *WasmService) AbaAccountSubBalance(addrHexP, tokenP, valueP uint64) int32 {
 	addrHex := common.PointerToString(addrHexP)
 	token := common.PointerToString(tokenP)
 	address := common.NewAddress(common.FromHex(addrHex))
