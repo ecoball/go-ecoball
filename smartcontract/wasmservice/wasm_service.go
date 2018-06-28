@@ -183,6 +183,7 @@ func (ws *WasmService) AbaAccountGetBalance(tokenP, addrHexP uint64) uint64 {
 	addrHex := common.PointerToString(addrHexP)
 	token := common.PointerToString(tokenP)
 	address := common.NewAddress(common.FromHex(addrHex))
+	log.Debug("GetBalance:", address.HexString(), "token:", token)
 	value, err := ws.ledger.AccountGetBalance(address, token)
 	fmt.Println(addrHex, value)
 	if err != nil {
@@ -191,7 +192,7 @@ func (ws *WasmService) AbaAccountGetBalance(tokenP, addrHexP uint64) uint64 {
 	return value
 }
 
-func (ws *WasmService) AbaAccountAddBalance(valueP, tokenP, addrHexP uint64) int32 {
+func (ws *WasmService) AbaAccountAddBalance(addrHexP, tokenP, valueP  uint64) int32 {
 	addrHex := common.PointerToString(addrHexP)
 	token := common.PointerToString(tokenP)
 	value, err := strconv.ParseUint(common.PointerToString(valueP), 0, 64)
@@ -205,14 +206,16 @@ func (ws *WasmService) AbaAccountAddBalance(valueP, tokenP, addrHexP uint64) int
 	return 0
 }
 
-func (ws *WasmService) AbaAccountSubBalance(valueP, tokenP, addrHexP uint64) int32 {
+func (ws *WasmService) AbaAccountSubBalance(addrHexP, tokenP, valueP  uint64) int32 {
 	addrHex := common.PointerToString(addrHexP)
 	token := common.PointerToString(tokenP)
+	address := common.NewAddress(common.FromHex(addrHex))
 	value, err := strconv.ParseUint(common.PointerToString(valueP), 0, 64)
 	if err != nil {
 		return -1
 	}
-	if err := ws.ledger.AccountSubBalance(common.NewAddress(common.FromHex(addrHex)), token, value); err != nil {
+	log.Debug("SubBalance:", address.HexString(), "token:", token, "value:", value)
+	if err := ws.ledger.AccountSubBalance(address, token, value); err != nil {
 		log.Error(err)
 		return -1
 	}
