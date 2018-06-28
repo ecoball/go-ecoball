@@ -56,6 +56,7 @@ func main() {
 	app.Flags = []cli.Flag{
 		NewNameFlag(),
 		NewPasswordFlag(),
+		NewAddressFlag(),
 	}
 
 	//run

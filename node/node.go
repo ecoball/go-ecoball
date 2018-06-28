@@ -26,11 +26,11 @@ import (
 	"github.com/ecoball/go-ecoball/core/store"
 	"github.com/ecoball/go-ecoball/http/rpc"
 	//"github.com/ecoball/go-ecoball/net"
+	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/consensus/solo"
 	"github.com/ecoball/go-ecoball/txpool"
 	"github.com/ecoball/go-ecoball/webserver"
 	"github.com/urfave/cli"
-	"github.com/ecoball/go-ecoball/common/config"
-	"github.com/ecoball/go-ecoball/consensus/solo"
 )
 
 var (
@@ -69,16 +69,6 @@ func runNode(c *cli.Context) error {
 		log.Fatal("start txpool error, ", err.Error())
 		os.Exit(1)
 	}
-
-	//net.StartNetWork()
-	//TODO, modify temporily
-	//consensus.InitConsensusService(l, consensus.CONSENSUS_SOLO, nil)
-	//TODO, modify temporily
-
-	//if err != nil {
-	//	log.Fatal("Starting net server failed")
-	//	os.Exit(1)
-	//}
 
 	//start http server
 	go rpc.StartRPCServer()
