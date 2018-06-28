@@ -36,7 +36,7 @@ var ErrorCodeInfo = map[Errcode]string{
 	SAMEDATA:                 "duplicated data",
 }
 
-func (this *Errcode) info() string {
+func (this *Errcode) Info() string {
 	desc, exist := ErrorCodeInfo[*this]
 	if exist {
 		return desc

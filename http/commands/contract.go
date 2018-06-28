@@ -24,19 +24,24 @@ import (
 
 	"github.com/ecoball/go-ecoball/account"
 	innerCommon "github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
 	"github.com/ecoball/go-ecoball/http/common"
 )
 
+var log = elog.NewLogger("commands", elog.DebugLog)
+
 func SetContract(params []interface{}) *common.Response {
 	if len(params) < 1 {
+		log.Error("invalid arguments")
 		return common.NewResponse(common.INVALID_PARAMS, nil)
 	}
 
 	switch {
 	case len(params) == 5:
 		if errCode, result := handleSetContract(params); errCode != common.SUCCESS {
+			log.Error(errCode.Info())
 			return common.NewResponse(errCode, nil)
 		} else {
 			return common.NewResponse(common.SUCCESS, result)
@@ -137,12 +142,14 @@ func handleSetContract(params []interface{}) (common.Errcode, string) {
 
 func InvokeContract(params []interface{}) *common.Response {
 	if len(params) < 1 {
+		log.Error("invalid arguments")
 		return common.NewResponse(common.INVALID_PARAMS, nil)
 	}
 
 	switch {
 	case len(params) == 3:
 		if errCode := handleInvokeContract(params); errCode != common.SUCCESS {
+			log.Error(errCode.Info())
 			return common.NewResponse(errCode, nil)
 		}
 

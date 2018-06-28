@@ -30,12 +30,14 @@ import (
 //transfer handle
 func Transfer(params []interface{}) *common.Response {
 	if len(params) < 1 {
+		log.Error("invalid arguments")
 		return common.NewResponse(common.INVALID_PARAMS, nil)
 	}
 
 	switch {
 	case len(params) == 3:
 		if errCode := handleTransfer(params); errCode != common.SUCCESS {
+			log.Error(errCode.Info())
 			return common.NewResponse(errCode, nil)
 		}
 

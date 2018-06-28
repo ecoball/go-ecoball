@@ -36,6 +36,7 @@ func Query(params []interface{}) *common.Response {
 			//query balance
 			balance, errCode := QueryBalance(address)
 			if errCode != common.SUCCESS {
+				log.Error(errCode.Info())
 				return common.NewResponse(errCode, nil)
 			}
 
