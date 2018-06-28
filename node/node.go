@@ -51,11 +51,16 @@ func runNode(c *cli.Context) error {
 	if err != nil {
 		log.Fatal(err)
 	}
+	log.Info("consensus", config.ConsensusAlgorithm)
 	//start consensus
 	switch config.ConsensusAlgorithm {
 	case "SOLO":
 		c, _ := solo.NewSoloConsensusServer(l)
 		c.Start()
+	case "DPOS":
+		log.Info("Start DPOS consensus")
+
+		l.Start()
 	default:
 		log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}

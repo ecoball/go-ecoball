@@ -22,4 +22,5 @@ type Ledger interface {
 	TokenIsExisted(token string) bool
 	//SignatureTransaction()
 	//GetContractInfo()
+	Start()
 }
