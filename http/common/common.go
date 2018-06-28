@@ -33,7 +33,7 @@ type Response struct {
 func NewResponse(code Errcode, info interface{}) *Response {
 	resp := Response{
 		errCode: code,
-		desc:    code.info(),
+		desc:    code.Info(),
 		result:  info,
 	}
 

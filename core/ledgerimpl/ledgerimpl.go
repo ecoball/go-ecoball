@@ -57,9 +57,9 @@ func NewLedger(path string) (l ledger.Ledger, err error) {
 			log.Debug("Init NewBlockChain error")
 			return nil, err
 		}
+		log.Debug("DPOS setup")
 		ll.bc.Setup(ll.dpos)
 		ll.dpos.Setup(ll.bc, ll)
-
 	}
 
 	actor := &LedActor{ledger: ll}
@@ -74,6 +74,7 @@ func NewLedger(path string) (l ledger.Ledger, err error) {
 func (l *LedgerImpl) Start() {
 	//TODO start
 	if config.ConsensusAlgorithm == "DPOS" {
+		log.Debug("Ledger start DPOS")
 		l.bc.Start()
 		l.dpos.Start()
 		//TODO end

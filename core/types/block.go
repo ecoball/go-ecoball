@@ -51,7 +51,10 @@ func NewBlock(prevHeader *Header, stateHash common.Hash, consensusData Consensus
 		return nil, err
 	}
 
-	header, _ := NewHeader(VersionHeader, prevHeader.Height+1, prevHeader.Hash, merkleHash, stateHash, consensusData, Bloom, timeStamp)
+	header, err := NewHeader(VersionHeader, prevHeader.Height+1, prevHeader.Hash, merkleHash, stateHash, consensusData, Bloom, timeStamp)
+	if err != nil {
+		return nil, err
+	}
 	block := Block{header, uint32(len(txs)), txs}
 	return &block, nil
 }
