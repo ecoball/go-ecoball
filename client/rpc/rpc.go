@@ -90,6 +90,8 @@ func EchoResult(resp map[string]interface{}) error {
 	} else if errorCode != int64(innerCommon.SUCCESS) {
 		fmt.Println("failed: ", desc)
 		return errors.New(desc)
+	} else {
+		fmt.Println("success!")
 	}
 
 	//success
@@ -97,7 +99,10 @@ func EchoResult(resp map[string]interface{}) error {
 	case map[string]interface{}:
 
 	case string:
-		fmt.Println(resp["result"].(string))
+		strResult := resp["result"].(string)
+		if "" != strResult {
+			fmt.Println(strResult)
+		}
 	}
 
 	return nil

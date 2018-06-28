@@ -17,9 +17,10 @@
 package commands
 
 import (
-	"github.com/ecoball/go-ecoball/core/types"
 	"math/big"
 	"time"
+
+	"github.com/ecoball/go-ecoball/core/types"
 
 	inner "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/event"
@@ -65,8 +66,8 @@ func handleTransfer(params []interface{}) common.Errcode {
 		invalid = true
 	}
 
-	if v, ok := params[2].(int64); ok {
-		value = big.NewInt(v)
+	if v, ok := params[2].(float64); ok {
+		value = big.NewInt(int64(v))
 	} else {
 		invalid = true
 	}
@@ -83,10 +84,10 @@ func handleTransfer(params []interface{}) common.Errcode {
 		return common.INVALID_PARAMS
 	}
 
-	err = transaction.SetSignature(&common.Account)
+	/*err = transaction.SetSignature(&common.Account)
 	if err != nil {
 		return common.INVALID_ACCOUNT
-	}
+	}*/
 
 	//send to txpool
 	err = event.Send(event.ActorNil, event.ActorTxPool, transaction)
