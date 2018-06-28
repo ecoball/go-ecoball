@@ -23,7 +23,7 @@ ecoball  ecoclient
 ## Notes
 This project used CGO, so set the CGO_ENABLED="1"
 
-##ecoclient
+## ecoclient
 transfer aba  to another person
 ```
 $ ./ecoclient transfer  --from=$ADDRESS --to=$ADDRESS --value=$AMOUNT
@@ -52,7 +52,7 @@ $ ./ecoclient --console $COMMAND
 ecoclient: \> $COMMAND
 ...
 ```
-##ecoball
+## ecoball
 run ecoball
 
 ```
