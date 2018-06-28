@@ -23,6 +23,7 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/pb"
+	"github.com/ecoball/go-ecoball/common/elog"
 )
 
 const VersionHeader = 1
@@ -40,6 +41,8 @@ type Header struct {
 
 	Hash common.Hash
 }
+
+var log = elog.NewLogger("LedgerImpl", elog.DebugLog)
 
 /**
 * New a Header and compute it's hash

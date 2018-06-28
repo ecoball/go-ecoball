@@ -24,6 +24,18 @@ ecoball  ecoclient
 This project used CGO, so set the CGO_ENABLED="1"
 
 ## ecoclient
+create wallet file
+```
+$./ecoclient wallet --create --name $WALLETFILE --password $PASSWORD
+```
+create account
+```
+$./ecoclient wallet --createaccount --name $WALLETFILE --password $PASSWORD
+```
+list account
+```
+$./ecoclient wallet --list --name $WALLETFILE --password $PASSWORD
+```
 transfer aba  to another person
 ```
 $ ./ecoclient transfer  --from=$ADDRESS --to=$ADDRESS --value=$AMOUNT
