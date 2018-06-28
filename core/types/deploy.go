@@ -92,6 +92,7 @@ func (d DeployInfo) GetObject() interface{} {
 }
 
 func (d *DeployInfo) Show() {
+	fmt.Println("\t---------Show Deploy Info ----------")
 	fmt.Println("\tTypeVm        :", d.TypeVm)
 	fmt.Println("\tAuthor        :", string(d.Author))
 	fmt.Println("\tName          :", string(d.Name))

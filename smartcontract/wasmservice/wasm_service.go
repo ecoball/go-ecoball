@@ -71,11 +71,12 @@ func (ws *WasmService) Execute() []byte {
 	bf := bytes.NewBuffer(ws.Code)
 	m, err := wasm.ReadModule(bf, importer)
 	if err != nil {
-		fmt.Printf("could not read module: %v", err)
+		log.Error("could not read module:", err)
+		return nil
 	}
 
 	if m.Export == nil {
-		fmt.Printf("module has no export section")
+		log.Warn("module has no export section")
 	}
 
 	vm, err := exec.NewVM(m)

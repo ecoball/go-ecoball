@@ -45,6 +45,7 @@ func (i InvokeInfo) GetObject() interface{} {
 }
 
 func (i *InvokeInfo) Show() {
+	fmt.Println("\t---------Show Invoke Info ----------")
 	fmt.Println("\tTypeVm        :", i.TypeVm)
 	fmt.Println("\tMethod        :", string(i.Method))
 	fmt.Println("\tParam Num     :", len(i.Param))
@@ -91,10 +92,10 @@ func (i *InvokeInfo) Deserialize(data []byte) error {
 	return nil
 }
 
-func NewTestInvoke() *Transaction {
+func NewTestInvoke(method string) *Transaction {
 	from := common.NewAddress(common.FromHex("01b1a6569a557eafcccc71e0d02461fd4b601aea"))
 	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
-	invoke, err := NewInvokeContract(from, addr, VmWasm, "main", []string{"-run"}, 0, time.Now().Unix())
+	invoke, err := NewInvokeContract(from, addr, VmWasm, method, []string{"01b1a6569a557eafcccc71e0d02461fd4b601aea", "Token.Test", "20000"}, 0, time.Now().Unix())
 	if err != nil {
 		panic(err)
 		return nil

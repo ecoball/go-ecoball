@@ -98,6 +98,7 @@ func NewTransactionChain(path string) (c *ChainTx, err error) {
 func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData) (*types.Block, error) {
 	for i := 0; i < len(txs); i++ {
 		if _, err := c.HandleTransaction(ledger, txs[i]); err != nil {
+			log.Error("Handle Transaction Error:", err)
 			return nil, err
 		}
 		//event.Send(event.ActorLedger, event.ActorP2P, txs[i]) //send result to p2p actor
@@ -287,6 +288,7 @@ func (c *ChainTx) AccountSubBalance(addr common.Address, token string, value uin
 }
 
 func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction) ([]byte, error) {
+	tx.Show()
 	switch tx.Type {
 	case types.TxTransfer:
 		log.Info("Execute Transfer")
@@ -305,8 +307,7 @@ func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction)
 		if !ok {
 			return nil, errors.New("transaction type error[deploy]")
 		}
-		log.Info("Deploy Execute:", common.Bytes2Hex(payload.Code))
-		payload.Show()
+		log.Info("Deploy Execute:", common.ToHex(payload.Code))
 	case types.TxInvoke:
 		log.Info("InvokeInfo Execute()")
 		payload, ok := tx.Payload.GetObject().(types.InvokeInfo)
@@ -321,11 +322,12 @@ func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction)
 		if err := txDeploy.Deserialize(data); err != nil {
 			return nil, err
 		}
+		txDeploy.Show()
 		deployInfo, ok := txDeploy.Payload.GetObject().(types.DeployInfo)
 		if !ok {
 			return nil, errors.New(fmt.Sprintf("can't find the deploy contract:%s", tx.Addr.HexString()))
 		}
-		fmt.Println("execute code:", common.Bytes2Hex(deployInfo.Code))
+		fmt.Println("execute code:", common.ToHex(deployInfo.Code))
 		fmt.Println("method:", string(payload.Method))
 		fmt.Println("param:", payload.Param)
 		service, err := smartcontract.NewContractService(ledger, tx)

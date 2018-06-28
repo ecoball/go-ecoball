@@ -62,7 +62,7 @@ func handleSetContract(params []interface{}) (common.Errcode, string) {
 	)
 
 	if v, ok := params[0].(string); ok {
-		code = []byte(v)
+		code = innerCommon.FromHex(v)
 	} else {
 		invalid = true
 	}
@@ -192,7 +192,7 @@ func handleInvokeContract(params []interface{}) common.Errcode {
 	from := account.AddressFromPubKey(common.Account.PublicKey)
 
 	//contract address
-	address := innerCommon.NewAddress([]byte(contractAddress))
+	address := innerCommon.NewAddress(innerCommon.CopyBytes(innerCommon.FromHex(contractAddress)))
 
 	//time
 	time := time.Now().Unix()

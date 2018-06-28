@@ -24,6 +24,7 @@ import (
 
 	"github.com/ecoball/go-ecoball/client/rpc"
 	"github.com/urfave/cli"
+	"github.com/ecoball/go-ecoball/common"
 )
 
 var (
@@ -112,7 +113,6 @@ func setContract(c *cli.Context) error {
 		fmt.Println("read contract filr err: ", err.Error())
 		return err
 	}
-
 	//contract name
 	contractName := c.String("name")
 	if contractName == "" {
@@ -142,7 +142,7 @@ func setContract(c *cli.Context) error {
 	}
 
 	//rpc call
-	resp, err := rpc.Call("setContract", []interface{}{string(data), contractName, description, author, email})
+	resp, err := rpc.Call("setContract", []interface{}{common.ToHex(data), contractName, description, author, email})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err

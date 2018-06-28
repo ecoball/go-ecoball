@@ -95,7 +95,7 @@ func TestLedgerDeployAdd(t *testing.T) {
 		t.Fatal(err)
 	}
 	fmt.Println("Start LedgerImpl Module, hash:", l.GetCurrentHeader().Hash.HexString())
-	code, err := wasmservice.ReadWasm("../../../test/transfer.wasm")
+	code, err := wasmservice.ReadWasm("../../../test/token.wasm")
 	tx := types.NewTestDeploy(code)
 	var txs []*types.Transaction
 	txs = append(txs, tx)
@@ -108,7 +108,7 @@ func TestLedgerDeployAdd(t *testing.T) {
 		t.Fatal(err)
 	}
 	//Invoke Contract
-	invoke := types.NewTestInvoke()
+	invoke := types.NewTestInvoke("create")
 	var txs2 []*types.Transaction
 	txs2 = append(txs, invoke)
 	block, err = l.NewTxBlock(txs2, conData)
