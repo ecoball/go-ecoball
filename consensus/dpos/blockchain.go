@@ -340,10 +340,6 @@ func (bc *Blockchain) SaveBlock(block *DposBlock) error {
 	if err != nil {
 		return err
 	}
-	err = bc.chainTx.SaveConsensusState(block)
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
