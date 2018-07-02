@@ -25,7 +25,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/ledgerimpl"
 	"github.com/ecoball/go-ecoball/core/store"
 	"github.com/ecoball/go-ecoball/http/rpc"
-	//"github.com/ecoball/go-ecoball/net"
+	"github.com/ecoball/go-ecoball/net"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/consensus/solo"
 	"github.com/ecoball/go-ecoball/txpool"
@@ -43,7 +43,7 @@ var (
 
 func runNode(c *cli.Context) error {
 	//get account
-	checkPassword()
+	//checkPassword()
 
 	fmt.Println("Run Node")
 	log.Info("Build Geneses Block")
@@ -65,11 +65,12 @@ func runNode(c *cli.Context) error {
 		log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
 	//start transaction pool
-	if _, err = txpool.Start(); err != nil {
+	if _, err := txpool.Start(); err != nil {
 		log.Fatal("start txpool error, ", err.Error())
 		os.Exit(1)
 	}
 
+	net.StartNetWork(l)
 	//start http server
 	go rpc.StartRPCServer()
 

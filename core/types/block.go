@@ -63,6 +63,15 @@ func (b *Block) SetSignature(account *account.Account) error {
 	return b.Header.SetSignature(account)
 }
 
+func GenesesBlockInitConsensusData(timestamp int64) *ConsensusData  {
+	conData, err := InitConsensusData(timestamp)
+	if err != nil {
+		log.Debug(err)
+		return nil
+	}
+	return conData
+}
+
 func GenesesBlockInit() (*Block, error) {
 	tm, err := time.Parse("02/01/2006 15:04:05 PM", "21/02/1990 00:00:00 AM")
 	if err != nil {
@@ -78,8 +87,8 @@ func GenesesBlockInit() (*Block, error) {
 	//TODO end
 
 	hash := common.NewHash([]byte("EcoBall Geneses Block"))
-	conData := ConsensusData{Type:ConSolo, Payload:&SoloData{}}
-	header, err := NewHeader(VersionHeader, 1, hash, hash, hash, conData, bloom.Bloom{}, timeStamp)
+	conData := GenesesBlockInitConsensusData(timeStamp)
+	header, err := NewHeader(VersionHeader, 1, hash, hash, hash, *conData, bloom.Bloom{}, timeStamp)
 	if err != nil {
 		return nil, err
 	}

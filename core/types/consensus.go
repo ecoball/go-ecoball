@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/pb"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 type ConType uint32
@@ -47,6 +48,23 @@ type ConsensusData struct {
 
 func NewConsensusPayload(Type ConType, payload ConsensusPayload) *ConsensusData {
 	return &ConsensusData{Type: Type, Payload: payload}
+}
+
+func InitConsensusData(timestamp int64) (*ConsensusData, error) {
+
+	switch config.ConsensusAlgorithm {
+	case "SOLO":
+		conType := ConSolo
+		conPayload := new(SoloData)
+		return NewConsensusPayload(conType, conPayload), nil
+	case "DPOS":
+		conType := CondPos
+		conPayload := GenesisStateInit(timestamp)
+		return NewConsensusPayload(conType, conPayload), nil
+		//TODO
+	default:
+		return nil, errors.New("unknown consensus type")
+	}
 }
 
 func (c *ConsensusData) ProtoBuf() (*pb.ConsensusData, error) {
@@ -100,6 +118,42 @@ func (c *ConsensusData) Deserialize(data []byte) error {
 ///////////////////////////////////////dPos/////////////////////////////////////////
 type DPosData struct {
 	proposer common.Hash
+}
+
+func GenesisStateInit(timestamp int64) *DPosData {
+
+	//TODO, bookkeepers
+	bookkeepers := []common.Hash{}
+
+	addr1 := common.Address{1,2,3,4,5,6,7,8,9,10,11,12,13,1,2,3,4,5,6,7}
+	s1 := addr1.ToBase58()
+
+	addr2 := common.Address{1,2,3,4,5,6,7,8,9,10,11,12,13,1,2,3,4,5,6,8}
+	s2 := addr2.ToBase58()
+
+	addr3 := common.Address{1,2,3,4,5,6,7,8,9,10,11,12,13,1,2,3,4,5,6,9}
+	s3 := addr3.ToBase58()
+
+	addr4 := common.Address{1,2,3,4,5,6,7,8,9,10,11,12,13,1,2,3,4,5,6,6}
+	s4 := addr4.ToBase58()
+
+
+	addresses := []string{}
+	addresses = append(addresses, s1)
+	addresses = append(addresses, s2)
+	addresses = append(addresses, s3)
+	addresses = append(addresses, s4)
+
+	for _, v := range addresses {
+		hash := common.NewHash(common.AddressFromBase58(v).Bytes())
+		bookkeepers = append(bookkeepers, hash)
+	}
+
+	//TODO
+	data := &DPosData{
+		proposer: bookkeepers[0],
+	}
+	return data
 }
 
 func (d *DPosData) Serialize() ([]byte, error) {

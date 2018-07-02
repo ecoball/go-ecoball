@@ -27,6 +27,9 @@ import (
 const (
 	APP_MSG_TRN  uint32 = iota
 	APP_MSG_BLK
+	APP_MSG_GOSSIP_PULL_BLK_REQ
+	APP_MSG_GOSSIP_PULL_BLK_ACK
+	APP_MSG_GOSSIP_PUSH_BLKS
 )
 var log = elog.NewLogger("message", elog.DebugLog)
 type HandlerFunc func(data []byte) (err error)
