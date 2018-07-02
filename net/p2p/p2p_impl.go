@@ -190,14 +190,14 @@ func (bsnet *impl) handleNewStreamMsg(s inet.Stream) {
 			if err != io.EOF {
 				s.Reset()
 				go bsnet.receiver.ReceiveError(err)
-				log.Debug("bitswap net handleNewStream from %s error: ", s.Conn().RemotePeer(), err)
+				log.Debug("p2p net handleNewStream from %s error: ", s.Conn().RemotePeer(), err)
 			}
 			return
 		}
 
 		p := s.Conn().RemotePeer()
 		ctx := context.Background()
-		log.Debug("bitswap net handleNewStream from ", s.Conn().RemotePeer())
+		log.Debug("p2p net handleNewStream from ", s.Conn().RemotePeer())
 		bsnet.receiver.ReceiveMessage(ctx, p, received)
 	}
 }

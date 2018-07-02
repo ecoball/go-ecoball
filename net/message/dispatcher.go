@@ -43,11 +43,36 @@ func HdBlkMsg(data []byte) error {
 	return nil
 }
 
+func HdGossipBlkReqMsg(data []byte) error {
+	blkReq := new(types.BlkReqMsg)
+	blkReq.Deserialize(data)
+	eactor.Send(0, eactor.ActorP2P, blkReq)
+	return nil
+}
+
+func HdGossipBlkAckMsg(data []byte) error {
+	blkAck := new(types.BlkAckMsg)
+	blkAck.Deserialize(data)
+	eactor.Send(0, eactor.ActorP2P, blkAck)
+	return nil
+}
+
+func HdGossipBlkAck2Msg(data []byte) error {
+	blkAck2 := new(types.BlkAck2Msg)
+	blkAck2.Deserialize(data)
+	eactor.Send(0, eactor.ActorP2P, blkAck2)
+	return nil
+}
+
 // MakeHandlers generates a map of MsgTypes to their corresponding handler functions
 func MakeHandlers() map[uint32]HandlerFunc {
 	return map[uint32]HandlerFunc{
 		APP_MSG_TRN:     HdTransactionMsg,
 		APP_MSG_BLK:     HdBlkMsg,
+		APP_MSG_GOSSIP_PULL_BLK_REQ: HdGossipBlkReqMsg,
+		APP_MSG_GOSSIP_PULL_BLK_ACK: HdGossipBlkAckMsg,
+		APP_MSG_GOSSIP_PUSH_BLKS:    HdGossipBlkAck2Msg,
+
 		//TODO add new msg handler at here
 	}
 }

@@ -158,3 +158,32 @@ message BlockCt {
     repeated    Contract contracts      = 4;
 }
 
+/**
+** Gossip Pull Blocks request
+*/
+message PullBlocksRequest {
+	bytes   peer_hash    = 1;
+	uint32  chain_id     = 2;
+	uint64  height       = 3;
+}
+
+/**
+** Gossip Pull Blocks response
+*/
+message PullBlocksResponse {
+	bytes   peer_hash      = 1;
+	uint32  chain_id       = 2;
+	uint64  height         = 3;
+	uint64  block_count    = 4;
+	repeated BlockTx data  = 5;
+}
+
+/**
+** Gossip  Push Blocks
+*/
+message PushBlocks {
+	uint32  chain_id        = 1;
+    uint64  block_count     = 2;
+    repeated BlockTx data   = 3;
+}
+

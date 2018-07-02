@@ -22,13 +22,15 @@ import (
 	"fmt"
 	"context"
 	"github.com/ipfs/go-ipfs/core"
-	peer "gx/ipfs/QmcJukH2sAFjY3HdBKq35WDzWoL3UUu2gt9wdfqZTUyM74/go-libp2p-peer"
-	floodsub "gx/ipfs/QmaWsab8a1KQgoxWP3RjK7mBhSi5PB9pR6NwZUrSXvVd1i/go-libp2p-floodsub"
+	"gx/ipfs/QmcJukH2sAFjY3HdBKq35WDzWoL3UUu2gt9wdfqZTUyM74/go-libp2p-peer"
+	"gx/ipfs/QmaWsab8a1KQgoxWP3RjK7mBhSi5PB9pR6NwZUrSXvVd1i/go-libp2p-floodsub"
 	"github.com/ecoball/go-ecoball/net/message"
+	"github.com/ecoball/go-ecoball/net/util"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"bytes"
 	"os"
+	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 )
 
 var log = elog.NewLogger("net", elog.DebugLog)
@@ -45,7 +47,6 @@ type NetNode struct {
 	handlers 	 map[uint32]message.HandlerFunc
 	actorId      *actor.PID
 	pubSub       *floodsub.PubSub
-
 	//TODO msg channel
 	//msgChannel notifications.PubSub
 	//TODO cache check
@@ -62,11 +63,28 @@ func New(parent context.Context, ipfs *core.IpfsNode, network p2p.EcoballNetwork
 		handlers: message.MakeHandlers(),
 		pubSub: ipfs.Floodsub,
 	}
-
 	netNode.broadcastLoop()
 	netNode.subTxLoop()
 	network.SetDelegate(netNode)
 	return netNode
+}
+
+func (node *NetNode) SendMsg2Peers(peerCounts int, msg message.EcoBallNetMsg){
+	peers := node.SelectRandomPeers(peerCounts)
+	for _, pid := range peers {
+		err := node.network.SendMessage(context.Background(), pid, msg)
+		if err != nil {
+			log.Error("send msg to ", pid.Pretty(), err.Error())
+		}
+	}
+}
+
+func (node *NetNode) SendMsg2Peer(pid peer.ID, msg message.EcoBallNetMsg) error{
+	err := node.network.SendMessage(context.Background(), pid, msg)
+	if err != nil {
+		log.Error("send msg to ", pid.Pretty(), err.Error())
+	}
+	return err
 }
 
 func (node *NetNode) broadcastLoop() {
@@ -124,7 +142,30 @@ func (node *NetNode) connectedPeerIds() []peer.ID  {
 	}
 	return peers
 }
+
+// select randomly k peers from remote peers and returns them.
+func (node *NetNode) SelectRandomPeers(k int) []peer.ID {
+	host := node.ipfsNode.PeerHost
+	if host == nil {
+		return []peer.ID{}
+	}
+
+	conns := host.Network().Conns()
+	if len(conns) < k {
+		k = len(conns)
+	}
+	indices := util.GetRandomIndices(k, len(conns)-1)
+	peers := make([]peer.ID, len(indices))
+	for i, j := range indices {
+		pid := conns[j].RemotePeer()
+		peers[i] = pid
+	}
+
+	return peers
+}
+
 func (bs *NetNode) ReceiveMessage(ctx context.Context, p peer.ID, incoming message.EcoBallNetMsg) {
+	log.Debug("receive msg:",incoming.Type(), "from ", p.Pretty())
 	handler, ok := bs.handlers[incoming.Type()]
 	if !ok {
 		log.Error("get msg ", incoming.Type(), "handler failed")
@@ -153,6 +194,10 @@ func (bs *NetNode) PeerDisconnected(p peer.ID) {
 }
 func (node *NetNode) SelfId() string {
 	return node.self.Pretty()
+}
+
+func (node *NetNode) SelfRawId() peer.ID {
+	return node.self
 }
 
 func (node *NetNode) Nbrs() []string  {
@@ -185,7 +230,7 @@ func GetChainId() uint32 {
 	return ecoballChainId
 }
 
-func StartNetWork()  {
+func StartNetWork(ledg ledger.Ledger)  {
 	//TODO load config
 	//configFile, err := ioutil.ReadFile(ConfigFile)
 	//if err != nil {
@@ -201,7 +246,9 @@ func StartNetWork()  {
 	}
 	network := p2p.NewFromIpfsHost(ipfsNode.PeerHost, ipfsNode.Routing)
 	netNode := New(context.Background(), ipfsNode, network)
-	netActor := NewNetActor(netNode)
+	gossiper := NewGossiper(netNode, ledg)
+	netActor := NewNetActor(netNode, gossiper)
+	gossiper.Start()
 	actorId, _ := netActor.Start()
 	netNode.SetActorPid(actorId)
 	fmt.Printf("i am %s \n", netNode.SelfId())

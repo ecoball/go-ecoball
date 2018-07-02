@@ -27,11 +27,13 @@ import (
 type NetActor struct {
 	props    *actor.Props
 	node   	 *NetNode
+	gossiper *Gossiper
 }
 
-func NewNetActor(node *NetNode) *NetActor {
+func NewNetActor(node *NetNode, gossiper *Gossiper) *NetActor {
 	return &NetActor{
-		node: node,
+		node:     node,
+		gossiper: gossiper,
 	}
 }
 
@@ -53,14 +55,33 @@ func (this *NetActor) Receive(ctx actor.Context) {
 		msgType = message.APP_MSG_TRN
 		buffer, _ = msg.(*types.Transaction).Serialize()
 		netMsg := message.New(msgType, buffer)
-		this.node.broadCastCh <- netMsg
+		log.Debug("new transactions")
+		//this.node.broadCastCh <- netMsg
+		this.gossiper.AddPushMsg(netMsg)
 		//TODO pubsub
 		//this.node.pubSub.Publish("transaction", buffer)
 	case *types.Block:
 		msgType = message.APP_MSG_BLK
 		buffer, _ = msg.(*types.Block).Serialize()
 		netMsg := message.New(msgType, buffer)
-		this.node.broadCastCh <- netMsg
+		log.Debug("p2p push new block")
+		//this.node.broadCastCh <- netMsg
+		this.gossiper.AddPushMsg(netMsg)
+	case *types.BlkReqMsg:
+		msgType = message.APP_MSG_GOSSIP_PULL_BLK_REQ
+		buffer, _ = msg.(*types.BlkReqMsg).Serialize()
+		netMsg := message.New(msgType, buffer)
+		this.gossiper.AddPushPullMsg(netMsg)
+	case *types.BlkAckMsg:
+		msgType = message.APP_MSG_GOSSIP_PULL_BLK_ACK
+		buffer, _ = msg.(*types.BlkAckMsg).Serialize()
+		netMsg := message.New(msgType, buffer)
+		this.gossiper.AddPushPullMsg(netMsg)
+	case *types.BlkAck2Msg:
+		msgType = message.APP_MSG_GOSSIP_PUSH_BLKS
+		buffer, _ = msg.(*types.BlkAck2Msg).Serialize()
+		netMsg := message.New(msgType, buffer)
+		this.gossiper.AddPushPullMsg(netMsg)
 	case *rpc.ListMyIdReq:
 		id := this.node.SelfId()
 		ctx.Sender().Request(&rpc.ListMyIdRsp{Id:id}, ctx.Self())
