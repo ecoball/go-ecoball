@@ -251,7 +251,6 @@ func (bc *Blockchain) GetBlock(hash common.Hash) *DposBlock {
 func (bc *Blockchain) StoreBlockToStorage(block *DposBlock) error {
 	//event.Send(0, event.ActorLedger, block)
 	bc.chainTx.SaveBlock(block.Block)
-	bc.chainTx.SaveConsensusState(block)
 	return nil
 }
 
@@ -338,10 +337,6 @@ func (bc *Blockchain) DetachedTailBlocks() []*DposBlock {
 
 func (bc *Blockchain) SaveBlock(block *DposBlock) error {
 	err := bc.chainTx.SaveBlock(block.Block)
-	if err != nil {
-		return err
-	}
-	err = bc.chainTx.SaveConsensusState(block)
 	if err != nil {
 		return err
 	}

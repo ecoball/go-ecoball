@@ -117,7 +117,11 @@ func (c *ConsensusData) Deserialize(data []byte) error {
 
 ///////////////////////////////////////dPos/////////////////////////////////////////
 type DPosData struct {
-	proposer common.Hash
+	timestamp int64
+	leader common.Hash
+
+	//TODO
+	bookkeepers []common.Hash
 }
 
 func GenesisStateInit(timestamp int64) *DPosData {
@@ -151,23 +155,69 @@ func GenesisStateInit(timestamp int64) *DPosData {
 
 	//TODO
 	data := &DPosData{
-		proposer: bookkeepers[0],
+		leader: bookkeepers[0],
+		timestamp: timestamp,
+		bookkeepers: bookkeepers,
 	}
 	return data
 }
 
-func (d *DPosData) Serialize() ([]byte, error) {
-	return d.proposer.Bytes(), nil
+
+func (data *DPosData) protoBuf() (*pb.ConsensusState, error) {
+	var bookkeepers []*pb.Miner
+	for i := 0; i < len(data.bookkeepers); i++ {
+		bookkeeper := &pb.Miner{
+			Hash: data.bookkeepers[i].Bytes(),
+		}
+		bookkeepers = append(bookkeepers, bookkeeper)
+	}
+	consensusState := &pb.ConsensusState{
+		data.leader.Bytes(),
+		bookkeepers,
+		data.timestamp,
+	}
+	return consensusState, nil
 }
+
+//TODO
+func (d *DPosData) Serialize() ([]byte, error) {
+	p, err := d.protoBuf()
+	if err != nil {
+		return nil, err
+	}
+	b, err := p.Marshal()
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
+}
+
+//TODO
 func (d *DPosData) Deserialize(data []byte) error {
-	d.proposer = common.NewHash(data)
+	if len(data) == 0 {
+		return errors.New("input data's length is zero")
+	}
+	var state pb.ConsensusState
+	if err := state.Unmarshal(data); err != nil {
+		return err
+	}
+
+	d.timestamp = state.Timestamp
+	d.leader = common.NewHash(state.Hash)
+	var keepers []common.Hash
+	for i := 0; i < len(state.Bookkeepers); i++ {
+		bookkeeper := state.Bookkeepers[i]
+		keepers = append(keepers, common.NewHash(bookkeeper.Hash))
+	}
+	d.bookkeepers = keepers
 	return nil
 }
+
 func (d DPosData) GetObject() interface{} {
 	return d
 }
 func (d *DPosData) Show() {
-	fmt.Println("Proposer:", d.proposer)
+	//fmt.Println("Proposer:", d.proposer)
 }
 
 /////////////////////////////////////////dBft///////////////////////////////////////

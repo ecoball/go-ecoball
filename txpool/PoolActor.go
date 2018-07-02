@@ -26,6 +26,7 @@ import (
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
 
 	"github.com/AsynkronIT/protoactor-go/actor"
+	innerError "github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/core/types"
 )
@@ -92,24 +93,14 @@ func (this *PoolActor) handleTransaction(tx *types.Transaction) error {
 		}
 	}
 
-	switch tx.Type {
-	case types.TxTransfer:
-		//Send the account module to verify the balance
-		if _, err := event.SendSync(event.ActorLedger, tx, time.Second*2); nil != err {
-			log.Warn("check transaction args invalid:" + tx.Hash.HexString())
-			return errors.New("check transaction args invalid:" + tx.Hash.HexString())
-		}
-
-	case types.TxDeploy:
-	//Send the intelligent contract module to verify the validity
-
-	case types.TxInvoke:
-		//Send the virtual machine to verify the execution results
-
-	default:
-		log.Warn("unrecognized transaction type" + tx.Hash.HexString())
-		return errors.New("unrecognized transaction type" + tx.Hash.HexString())
-
+	//Send the transaction to ledger to Check legitimacy
+	res, err := event.SendSync(event.ActorLedger, tx, time.Second*2)
+	if nil != err {
+		log.Warn("send message to ledger actor error: ", tx.Hash.HexString())
+		return errors.New("send message to ledger actor error: " + tx.Hash.HexString())
+	} else if v := res.(innerError.ErrCode); v != innerError.ErrNoError {
+		log.Warn(tx.Hash.HexString(), " Check legitimacy failed: ", v.ErrorInfo())
+		return errors.New(tx.Hash.HexString() + " Check legitimacy failed: " + v.ErrorInfo())
 	}
 
 	//Verify by adding to the transaction pool
