@@ -31,11 +31,11 @@ import (
 
 func init() {
 	httpServer.method2Handle = make(map[string]func([]interface{}) *common.Response)
-	RpcLog = elog.NewLogger("rpc", elog.NoticeLog)
+	rpcLog = elog.NewLogger("http", elog.NoticeLog)
 }
 
 var (
-	RpcLog     elog.Logger
+	rpcLog     elog.Logger
 	httpServer HttpRpcServer
 )
 
@@ -62,41 +62,42 @@ func Handle(w http.ResponseWriter, r *http.Request) {
 	}
 	//JSON RPC commands should be POSTs
 	if r.Method != "POST" {
-		RpcLog.Warn("HTTP JSON RPC Handle - Method!=\"POST\"")
+		rpcLog.Warn("HTTP JSON RPC Handle - Method!=\"POST\"")
 		return
 	}
 
 	//check if there is Request Body to read
 	if r.Body == nil {
-		RpcLog.Warn("HTTP JSON RPC Handle - Request body is nil")
+		rpcLog.Warn("HTTP JSON RPC Handle - Request body is nil")
 		return
 	}
 
 	//read the body of the request
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		RpcLog.Error("HTTP JSON RPC Handle - ioutil.ReadAll: ", err)
+		rpcLog.Error("HTTP JSON RPC Handle - ioutil.ReadAll: ", err)
 		return
 	}
 
 	request := make(map[string]interface{})
 	err = json.Unmarshal(body, &request)
 	if err != nil {
-		RpcLog.Error("HTTP JSON RPC Handle - json.Unmarshal: ", err)
+		rpcLog.Error("HTTP JSON RPC Handle - json.Unmarshal: ", err)
 		return
 	}
 	if request["method"] == nil {
-		RpcLog.Error("HTTP JSON RPC Handle - method not found: ")
+		rpcLog.Error("HTTP JSON RPC Handle - method not found: ")
 		return
 	}
 
 	//get the corresponding function
 	function, ok := httpServer.method2Handle[request["method"].(string)]
 	if ok {
+		rpcLog.Info("new http rpc call for method: ", request["method"])
 		response := function(request["params"].([]interface{}))
 		data, err := response.Serialize()
 		if err != nil {
-			RpcLog.Error("HTTP JSON RPC Handle - json.Marshal: ", err)
+			rpcLog.Error("HTTP JSON RPC Handle - json.Marshal: ", err)
 			return
 		}
 		w.Header().Add("Access-Control-Allow-Headers", "Content-Type")
@@ -105,14 +106,14 @@ func Handle(w http.ResponseWriter, r *http.Request) {
 		w.Write(data)
 	} else {
 		//if the function does not exist
-		RpcLog.Warn("HTTP JSON RPC Handle - No function to call for ", request["method"])
+		rpcLog.Warn("HTTP JSON RPC Handle - No function to call for ", request["method"])
 		data, err := json.Marshal(map[string]interface{}{
 			"errorCode": int64(-32601),
 			"desc":      "The called method was not found on the server",
 			"result":    nil,
 		})
 		if err != nil {
-			RpcLog.Error("HTTP JSON RPC Handle - json.Marshal: ", err)
+			rpcLog.Error("HTTP JSON RPC Handle - json.Marshal: ", err)
 			return
 		}
 		w.Header().Add("Access-Control-Allow-Headers", "Content-Type")
@@ -143,6 +144,6 @@ func StartRPCServer() {
 	//listen port
 	err := http.ListenAndServe(":"+config.HttpLocalPort, nil)
 	if err != nil {
-		RpcLog.Fatal("ListenAndServe: ", err.Error())
+		rpcLog.Fatal("ListenAndServe: ", err.Error())
 	}
 }
