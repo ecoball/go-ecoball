@@ -43,10 +43,11 @@ type ChainTx struct {
 
 	CurrentHeader *types.Header
 	StateDB       *state.State
+	ledger        ledger.Ledger
 }
 
-func NewTransactionChain(path string) (c *ChainTx, err error) {
-	c = &ChainTx{CurrentHeader: &types.Header{}}
+func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err error) {
+	c = &ChainTx{CurrentHeader: &types.Header{}, ledger: ledger}
 	c.BlockStore, err = store.NewLevelDBStore(path+config.StringBlock, 0, 0)
 	if err != nil {
 		return nil, err
@@ -258,32 +259,35 @@ func (c *ChainTx) GetTransaction(key []byte) (*types.Transaction, error) {
 }
 
 func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
-	var v []byte
+	var data []byte
 	switch tx.Type {
 	case types.TxTransfer:
-		value, err := c.AccountGetBalance(tx.From, state.AbaToken)
-		if err != nil {
+		if data, err = c.TxsStore.Get(tx.Hash.Bytes()); err != nil {
 			return err
+		} else {
+			if data != nil {
+				return errs.ErrDuplicatedTx
+			}
 		}
-		if value.Sign() <= 0 {
+		if value, err := c.AccountGetBalance(tx.From, state.AbaToken); err != nil {
+			return err
+		} else if value.Sign() <= 0 {
 			return errs.ErrDoubleSpend
 		}
-		v, err = c.TxsStore.Get(tx.Hash.Bytes())
 	case types.TxDeploy:
-		v, err = c.TxsStore.Get(tx.Addr.Bytes())
+		if data, err = c.TxsStore.Get(tx.Addr.Bytes()); err != nil {
+			return err
+		} else if data != nil {
+			return errs.ErrDuplicatedTx
+		}
+		//hash := c.StateDB.GetHashRoot()
+		//c.HandleTransaction(c, tx)
 	case types.TxInvoke:
-		v, err = c.TxsStore.Get(tx.Hash.Bytes())
+		data, err = c.TxsStore.Get(tx.Hash.Bytes())
 	default:
 		return errors.New("check transaction unknown tx type")
 	}
-	if err != nil {
-		log.Error(err)
-		return err
-	} else {
-		if v != nil {
-			return errs.ErrDuplicatedTx
-		}
-	}
+
 	return errs.ErrNoError
 }
 

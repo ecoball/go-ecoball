@@ -193,7 +193,10 @@ func (s *State) Reset(hash common.Hash) error {
 	log.Notice("Open Trie Hash:", hash.HexString())
 	s.trie, err = s.db.OpenTrie(hash)
 	if err != nil {
-		s.trie, _ = s.db.OpenTrie(common.Hash{})
+		s.trie, err = s.db.OpenTrie(common.Hash{})
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

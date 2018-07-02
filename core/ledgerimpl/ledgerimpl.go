@@ -44,7 +44,7 @@ type LedgerImpl struct {
 
 func NewLedger(path string) (l ledger.Ledger, err error) {
 	ll := new(LedgerImpl)
-	ll.ChainTx, err = transaction.NewTransactionChain(path + "/Transaction")
+	ll.ChainTx, err = transaction.NewTransactionChain(path + "/Transaction", ll)
 	if err != nil {
 		return nil, err
 	}
