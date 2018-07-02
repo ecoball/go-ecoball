@@ -251,7 +251,6 @@ func (bc *Blockchain) GetBlock(hash common.Hash) *DposBlock {
 func (bc *Blockchain) StoreBlockToStorage(block *DposBlock) error {
 	//event.Send(0, event.ActorLedger, block)
 	bc.chainTx.SaveBlock(block.Block)
-	bc.chainTx.SaveConsensusState(block)
 	return nil
 }
 

@@ -59,16 +59,7 @@ func NewTransactionChain(path string) (c *ChainTx, err error) {
 	if err != nil {
 		return nil, err
 	}
-	//TODO start
-	if config.ConsensusAlgorithm == "DPOS" {
 
-		c.ConsensusStore, err = store.NewLevelDBStore(path+config.StringConsensus, 0, 0)
-		if err != nil {
-			return nil, err
-		}
-		log.Debug("In Dpos, new LevelDB", c.ConsensusStore)
-	}
-	//TODO end
 	f, err := c.RestoreBlock()
 	if err != nil {
 		return nil, err
@@ -83,13 +74,6 @@ func NewTransactionChain(path string) (c *ChainTx, err error) {
 		if err := c.GenesesBlockInit(); err != nil {
 			return nil, err
 		}
-		//TODO start
-		if config.ConsensusAlgorithm == "DPOS" {
-			if err := c.GenesesBlockConsensusStateInit(); err != nil {
-				return nil, err
-			}
-		}
-		//TODO end
 	}
 
 	return c, nil
@@ -111,18 +95,6 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
  */
 func (c *ChainTx) ResetStateDB() error {
 	return c.StateDB.Reset(c.CurrentHeader.StateHash)
-}
-
-//TODO start
-func (c *ChainTx) SaveConsensusState(block *dpos.DposBlock) error {
-	state := block.DposState()
-	payload, err := state.Serialize()
-	if err != nil {
-		return err
-	}
-	c.ConsensusStore.Put(block.Header.Hash.Bytes(), payload)
-	//log.Debug("Header hash = ", block.Header.Hash)
-	return nil
 }
 
 //TODO end
