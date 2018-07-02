@@ -259,10 +259,22 @@ func (c *ChainTx) GetTransaction(key []byte) (*types.Transaction, error) {
 
 func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
 	var v []byte
-	if tx.Type == types.TxDeploy {
-		v, err = c.TxsStore.Get(tx.Addr.Bytes())
-	} else {
+	switch tx.Type {
+	case types.TxTransfer:
+		value, err := c.AccountGetBalance(tx.From, state.AbaToken)
+		if err != nil {
+			return err
+		}
+		if value.Sign() <= 0 {
+			return errs.ErrDoubleSpend
+		}
 		v, err = c.TxsStore.Get(tx.Hash.Bytes())
+	case types.TxDeploy:
+		v, err = c.TxsStore.Get(tx.Addr.Bytes())
+	case types.TxInvoke:
+		v, err = c.TxsStore.Get(tx.Hash.Bytes())
+	default:
+		return errors.New("check transaction unknown tx type")
 	}
 	if err != nil {
 		log.Error(err)
