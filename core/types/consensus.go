@@ -23,6 +23,7 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/consensus/dpos"
 )
 
 type ConType uint32
@@ -116,12 +117,79 @@ func (c *ConsensusData) Deserialize(data []byte) error {
 }
 
 ///////////////////////////////////////dPos/////////////////////////////////////////
+
+
+
+
+
+
 type DPosData struct {
 	timestamp int64
 	leader common.Hash
 
 	//TODO
 	bookkeepers []common.Hash
+}
+
+
+func (ds *DPosData) Timestamp() int64 {
+	return ds.timestamp
+}
+
+func (ds *DPosData) Leader() common.Hash  {
+	return ds.leader
+}
+
+func (ds *DPosData) NextConsensusState(passedSecond int64) (dpos.ConsensusState, error){
+	elapsedSecondInMs := passedSecond * dpos.Second
+	if elapsedSecondInMs <= 0 || elapsedSecondInMs % dpos.BlockInterval != 0 {
+		return nil, dpos.ErrNotBlockForgTime
+	}
+	//TODO
+	bookkeepers := ds.bookkeepers
+
+	consensusState := &DPosData{
+		timestamp: ds.timestamp + passedSecond,
+		bookkeepers: bookkeepers,
+	}
+
+	log.Debug("consensusState, timestamp ", consensusState.timestamp)
+	log.Debug(ds.timestamp, passedSecond)
+	currentInMs := consensusState.timestamp * dpos.Second
+	offsetInMs := currentInMs % dpos.GenerationInterval
+	log.Debug("timestamp %", offsetInMs, (offsetInMs*dpos.Second)%dpos.BlockInterval)
+	var err error
+	consensusState.leader, err = FindLeader(consensusState.timestamp, bookkeepers)
+	if err != nil {
+		log.Debug(err)
+		return nil, err
+	}
+	return consensusState, nil
+}
+
+func FindLeader(current int64, bookkeepers []common.Hash) (leader common.Hash, err error) {
+	currentInMs := current * dpos.Second
+	offsetInMs := currentInMs % dpos.GenerationInterval
+	log.Debug("offsetMs = ", offsetInMs)
+	if offsetInMs % dpos.BlockInterval != 0 {
+		log.Debug("In FindLeader, mod not 0")
+		return common.NewHash(nil), dpos.ErrNotBlockForgTime
+	}
+	offset := offsetInMs / dpos.BlockInterval
+	offset %= dpos.GenerationSize
+
+	if offset >= 0 && int(offset) < len(bookkeepers) {
+		log.Debug("offset = ", offset)
+		leader = bookkeepers[offset]
+	} else {
+		log.Warn("Can't find Leader")
+		return common.NewHash(nil), dpos.ErrFoundNilLeader
+	}
+	return leader, nil
+}
+
+func (ds *DPosData) Bookkeepers() ([]common.Hash, error) {
+	return ds.bookkeepers, nil
 }
 
 func GenesisStateInit(timestamp int64) *DPosData {

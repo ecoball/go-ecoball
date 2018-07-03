@@ -29,8 +29,6 @@ type ConsensusState interface {
 
 	Bookkeepers() ([]common.Hash, error)
 
-	Serialize() ([]byte, error)
-	Deserialize(data []byte) error
 }
 
 
@@ -40,4 +38,5 @@ type ForkConsensus interface {
 	DealWithFork() error
 	UpdateLIB()
 }
+
 

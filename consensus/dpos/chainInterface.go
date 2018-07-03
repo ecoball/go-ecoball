@@ -25,7 +25,7 @@ import (
 
 type ChainInterface interface {
 	GetBlock(hash common.Hash) (*types.Block, error)
-	GetConsensusState(hash common.Hash) (ConsensusState, error)
+	//GetConsensusState(hash common.Hash) (ConsensusState, error)
 	SaveBlock(block *types.Block) error
 	//SaveConsensusState(block *DposBlock) error
 	//NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData) (*types.Block, error)

@@ -23,6 +23,7 @@ import (
 	"time"
 	"github.com/ecoball/go-ecoball/common"
 
+	"errors"
 )
 
 type Blockchain struct {
@@ -143,7 +144,7 @@ func (bc *Blockchain) putVerifiedNewBlocks(parent *DposBlock, allBlocks, tailBlo
 
 func (bc *Blockchain) SetTailBlock(newTail *DposBlock) error {
 	if newTail == nil {
-		return ErrNilArgument
+		return errors.New("ErrNilArgument")
 	}
 	oldTail := bc.tailBlock
 	ancestor, err := bc.FindLowestCommonAncestorWithTail(newTail)
@@ -206,7 +207,7 @@ param block is the new tail, has bigger height
 
 func (bc *Blockchain) FindLowestCommonAncestorWithTail(block *DposBlock) (*DposBlock, error) {
 	if block == nil {
-		return nil, ErrNilArgument
+		return nil, errors.New("ErrNilArgument")
 	}
 	target := bc.GetBlock(block.Hash)
 	if target == nil {

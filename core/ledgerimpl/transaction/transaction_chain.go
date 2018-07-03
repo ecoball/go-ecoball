@@ -24,7 +24,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	errs "github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
-	"github.com/ecoball/go-ecoball/consensus/dpos"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/store"
@@ -97,7 +96,6 @@ func (c *ChainTx) ResetStateDB() error {
 	return c.StateDB.Reset(c.CurrentHeader.StateHash)
 }
 
-//TODO end
 
 func (c *ChainTx) SaveBlock(block *types.Block) error {
 	if block == nil {
@@ -153,31 +151,7 @@ func (c *ChainTx) GetBlock(hash common.Hash) (*types.Block, error) {
 	return block, nil
 }
 
-func (c *ChainTx) GetConsensusState(hash common.Hash) (dpos.ConsensusState, error) {
-	//log.Debug("GetConsensusState, hash = ", hash)
-	dataBlock, err := c.ConsensusStore.Get(hash.Bytes())
-	if err != nil {
-		log.Error("ConsensusStore.Get ", err)
-		return nil, err
-	}
-	state := new(dpos.State)
-	if err := state.Deserialize(dataBlock); err != nil {
-		log.Error("state deserialize error")
-		return nil, err
-	}
-	return state, nil
-}
 
-func (c *ChainTx) GenesesBlockConsensusStateInit() error {
-	genesisState, err := dpos.GenesisStateInit(c.CurrentHeader.TimeStamp)
-	if err != nil {
-		return err
-	}
-	payload, err := genesisState.Serialize()
-	c.ConsensusStore.Put(c.CurrentHeader.Hash.Bytes(), payload)
-	//log.Debug("GenesesBlockConsensusStateInit, hash = ", c.CurrentHeader.Hash.Bytes())
-	return nil
-}
 
 func (c *ChainTx) GenesesBlockInit() error {
 	geneses, err := types.GenesesBlockInit()
