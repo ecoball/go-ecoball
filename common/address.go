@@ -70,8 +70,8 @@ func (a *Address) Equals(b *Address) bool {
 }
 
 type Signature struct {
-	PubKey  []byte //签名者的公钥
-	SigData []byte //签名数据
+	PubKey  []byte
+	SigData []byte
 }
 
 func (s *Signature) Serialize() ([]byte, error) {
