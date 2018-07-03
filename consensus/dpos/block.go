@@ -20,11 +20,23 @@ package dpos
 import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/elog"
+	"errors"
 )
+var (
+
+	ErrNilArgument      = errors.New("arguments is nil")
+
+	ErrTypeWrong               = errors.New("wrong type")
+	ErrTimeNegative            = errors.New("Negative Time")
+
+)
+
+var log = elog.NewLogger("Consensus", elog.DebugLog)
 
 type DposBlock struct {
 	*types.Block
-	state ConsensusState
+	state types.ConsensusState
 }
 
 func (block *DposBlock) Timestamp() int64{
@@ -62,9 +74,12 @@ func LoadBlockFromStorage(hash common.Hash, chain *Blockchain) (*DposBlock, erro
 	block, err := chain.chainTx.GetBlock(hash)
 	if err != nil {
 		log.Debug("GetBlock err")
-		return nil, ErrNilArgument
+		return nil, errors.New("Invalid hash")
 	}
-	state, err := chain.chainTx.GetConsensusState(hash)
+	//state, err := chain.chainTx.GetConsensusState(hash)
+
+	state := block.ConsensusData.Payload.GetObject().(types.ConsensusState)
+
 	if err != nil {
 		log.Error(err)
 		return nil, err
@@ -77,7 +92,7 @@ func LoadBlockFromStorage(hash common.Hash, chain *Blockchain) (*DposBlock, erro
 	return dposBlock, nil
 }
 
-func (block *DposBlock) DposState() (ConsensusState) {
+func (block *DposBlock) DposState() (types.ConsensusState) {
 	return block.state
 }
 

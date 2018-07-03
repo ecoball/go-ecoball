@@ -17,12 +17,12 @@
 package types
 
 import (
-	"encoding/binary"
-	"errors"
-	"fmt"
-	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/core/pb"
-	"github.com/ecoball/go-ecoball/common/config"
+"encoding/binary"
+"errors"
+"fmt"
+"github.com/ecoball/go-ecoball/common"
+"github.com/ecoball/go-ecoball/core/pb"
+"github.com/ecoball/go-ecoball/common/config"
 )
 
 type ConType uint32
@@ -116,12 +116,101 @@ func (c *ConsensusData) Deserialize(data []byte) error {
 }
 
 ///////////////////////////////////////dPos/////////////////////////////////////////
+
+
+const (
+	Second             = int64(1000)
+	BlockInterval      = int64(15000)
+	GenerationInterval = GenerationSize * BlockInterval * 10
+	GenerationSize     = 4
+	ConsensusThreshold = GenerationSize*2/3 + 1
+	MaxProduceDuration = int64(5250)
+	MinProduceDuration = int64(2250)
+)
+
+var (
+	ErrNotBlockForgTime = errors.New("current is not time to forge block")
+	ErrFoundNilLeader   = errors.New("found a nil leader")
+)
+
+type ConsensusState interface {
+
+	Timestamp() int64
+	NextConsensusState(int64) (ConsensusState, error)
+	Leader() common.Hash
+
+	Bookkeepers() ([]common.Hash, error)
+
+}
+
+
 type DPosData struct {
 	timestamp int64
 	leader common.Hash
 
 	//TODO
 	bookkeepers []common.Hash
+}
+
+
+func (ds *DPosData) Timestamp() int64 {
+	return ds.timestamp
+}
+
+func (ds *DPosData) Leader() common.Hash  {
+	return ds.leader
+}
+
+func (ds *DPosData) NextConsensusState(passedSecond int64) (ConsensusState, error){
+	elapsedSecondInMs := passedSecond * Second
+	if elapsedSecondInMs <= 0 || elapsedSecondInMs % BlockInterval != 0 {
+		return nil, ErrNotBlockForgTime
+	}
+	//TODO
+	bookkeepers := ds.bookkeepers
+
+	consensusState := &DPosData{
+		timestamp: ds.timestamp + passedSecond,
+		bookkeepers: bookkeepers,
+	}
+
+	log.Debug("consensusState, timestamp ", consensusState.timestamp)
+	log.Debug(ds.timestamp, passedSecond)
+	currentInMs := consensusState.timestamp * Second
+	offsetInMs := currentInMs % GenerationInterval
+	log.Debug("timestamp %", offsetInMs, (offsetInMs*Second)%BlockInterval)
+	var err error
+	consensusState.leader, err = FindLeader(consensusState.timestamp, bookkeepers)
+	if err != nil {
+		log.Debug(err)
+		return nil, err
+	}
+	return consensusState, nil
+}
+
+func FindLeader(current int64, bookkeepers []common.Hash) (leader common.Hash, err error) {
+	currentInMs := current * Second
+	offsetInMs := currentInMs % GenerationInterval
+	log.Debug("offsetMs = ", offsetInMs)
+	if offsetInMs % BlockInterval != 0 {
+		log.Debug("In FindLeader, mod not 0")
+		return common.NewHash(nil), ErrNotBlockForgTime
+	}
+	offset := offsetInMs / BlockInterval
+	offset %= GenerationSize
+
+	if offset >= 0 && int(offset) < len(bookkeepers) {
+		log.Debug("offset = ", offset)
+		leader = bookkeepers[offset]
+	} else {
+		log.Warn("Can't find Leader")
+		return common.NewHash(nil), ErrFoundNilLeader
+	}
+	return leader, nil
+}
+
+func (ds *DPosData) Bookkeepers() ([]common.Hash, error) {
+	return ds.bookkeepers, nil
 }
 
 func GenesisStateInit(timestamp int64) *DPosData {
