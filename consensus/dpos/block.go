@@ -24,8 +24,7 @@ import (
 	"errors"
 )
 var (
-	ErrNotBlockForgTime = errors.New("current is not time to forge block")
-	ErrFoundNilLeader   = errors.New("found a nil leader")
+
 	ErrNilArgument      = errors.New("arguments is nil")
 
 	ErrTypeWrong               = errors.New("wrong type")
@@ -37,7 +36,7 @@ var log = elog.NewLogger("Consensus", elog.DebugLog)
 
 type DposBlock struct {
 	*types.Block
-	state ConsensusState
+	state types.ConsensusState
 }
 
 func (block *DposBlock) Timestamp() int64{
@@ -79,7 +78,7 @@ func LoadBlockFromStorage(hash common.Hash, chain *Blockchain) (*DposBlock, erro
 	}
 	//state, err := chain.chainTx.GetConsensusState(hash)
 
-	state := block.ConsensusData.Payload.GetObject().(ConsensusState)
+	state := block.ConsensusData.Payload.GetObject().(types.ConsensusState)
 
 	if err != nil {
 		log.Error(err)
@@ -93,7 +92,7 @@ func LoadBlockFromStorage(hash common.Hash, chain *Blockchain) (*DposBlock, erro
 	return dposBlock, nil
 }
 
-func (block *DposBlock) DposState() (ConsensusState) {
+func (block *DposBlock) DposState() (types.ConsensusState) {
 	return block.state
 }
 

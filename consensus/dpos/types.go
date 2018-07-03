@@ -17,19 +17,7 @@
 
 package dpos
 
-import (
-	"github.com/ecoball/go-ecoball/common"
-)
 
-type ConsensusState interface {
-
-	Timestamp() int64
-	NextConsensusState(int64) (ConsensusState, error)
-	Leader() common.Hash
-
-	Bookkeepers() ([]common.Hash, error)
-
-}
 
 
 type ForkConsensus interface {
