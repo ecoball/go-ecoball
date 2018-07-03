@@ -82,14 +82,14 @@ func TestStateRoot(t *testing.T) {
 }
 
 func TestHashRoot(t *testing.T) {
-	diskDb, _ := store.NewLevelDBStore("/tmp/test", 0, 0)
+	diskDb, _ := store.NewLevelDBStore("/tmp/state", 0, 0)
 	Db := state.NewDatabase(diskDb)
 
 	root := common.HexToHash("c9a4c610b1068a32f091a091ee46836b5425d9dfc9dc58c32a70e2b5e5d67a7b")
-	fmt.Println(root.HexString())
+	fmt.Println("open trie with root:", root.HexString())
 	tree, err := Db.OpenTrie(root)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("can't open trie:", err)
 		tree, _ = Db.OpenTrie(common.Hash{})
 	}
 	fmt.Println("Root0:", tree.Hash().HexString())
@@ -98,13 +98,20 @@ func TestHashRoot(t *testing.T) {
 		fmt.Println(err)
 		return
 	}
-	fmt.Println("dog value:", string(value))
+	fmt.Println("dog1 value:", string(value))
 
 	tree.TryUpdate([]byte("doe"), []byte("reindeer"))
 	fmt.Println("root1:", tree.Hash().HexString())
 
 	tree.TryUpdate([]byte("dog"), []byte("puppy"))
-	fmt.Println("root2:", tree.Hash().HexString())
+	fmt.Println("update dog to puppy, root2:", tree.Hash().HexString())
+
+	value, err = tree.TryGet([]byte("dog"))
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println("dog value:", string(value))
 
 	tree.TryUpdate([]byte("dogglesworth"), []byte("cat"))
 	fmt.Println("root3:", tree.Hash().HexString())
@@ -112,13 +119,35 @@ func TestHashRoot(t *testing.T) {
 	tree.TryUpdate([]byte("dogglesworth"), []byte("cat"))
 	fmt.Println("root4:", tree.Hash().HexString())
 
+	fmt.Println("Commit DB")
 	tree.Commit(nil)
 	lDB := Db.TrieDB()
 	lDB.Commit(tree.Hash(), true)
+	hash := tree.Hash()
 
 	tree.TryUpdate([]byte("dog"), []byte("puppy2"))
+	fmt.Println("update dog to puppy2, root5:", tree.Hash().HexString())
+
+	value, err = tree.TryGet([]byte("dog"))
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println("dog value:", string(value))
+
+	fmt.Println("ReOpen trie with hash:", hash.HexString())
+	tree, err = Db.OpenTrie(hash)
+	if err != nil {
+		t.Fatal(err)
+	}
 	fmt.Println("root5:", tree.Hash().HexString())
 
+	value, err = tree.TryGet([]byte("dog"))
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println("dog value:", string(value))
 	tree.Commit(nil)
 	lDB = Db.TrieDB()
 	lDB.Commit(tree.Hash(), true)
