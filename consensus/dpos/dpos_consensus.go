@@ -198,7 +198,7 @@ func (dpos *DposService) pushAndBroadcast(tail *DposBlock, block *DposBlock) err
 	return nil
 }
 
-func (dpos *DposService) isLeader(tail *DposBlock, nowInMs int64) (types.ConsensusState, error) {
+func (dpos *DposService) isLeader(tail *DposBlock, nowInMs int64) (*types.DPosData, error) {
 	pointInMs := nextChance(nowInMs)
 	elapsedInMs := pointInMs - tail.TimeStamp *Second
 	consensusState, err := tail.state.NextConsensusState(elapsedInMs / Second)
@@ -261,7 +261,7 @@ func (dpos *DposService) Receive(context actor.Context) {
 	}
 }
 
-func (dpos *DposService) newBlock(tail *DposBlock, consensusState types.ConsensusState, deadlineInMs int64) (*DposBlock, error) {
+func (dpos *DposService) newBlock(tail *DposBlock, consensusState *types.DPosData, deadlineInMs int64) (*DposBlock, error) {
 	startAt := time.Now().Unix()
 
 	secondInMs := int64(1000)
@@ -297,7 +297,7 @@ func (dpos *DposService) newBlock(tail *DposBlock, consensusState types.Consensu
 
 	dposBlock := &DposBlock {
 		block,
-		consensusState,
+		*consensusState,
 	}
 
 	//TODO, remote sign

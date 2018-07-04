@@ -36,7 +36,7 @@ var log = elog.NewLogger("Consensus", elog.DebugLog)
 
 type DposBlock struct {
 	*types.Block
-	state types.ConsensusState
+	state types.DPosData
 }
 
 func (block *DposBlock) Timestamp() int64{
@@ -78,7 +78,11 @@ func LoadBlockFromStorage(hash common.Hash, chain *Blockchain) (*DposBlock, erro
 	}
 	//state, err := chain.chainTx.GetConsensusState(hash)
 
-	state := block.ConsensusData.Payload.GetObject().(types.ConsensusState)
+	tmp := block.ConsensusData.Payload.GetObject()
+	//log.Debug("type = ", reflect.TypeOf(state))
+	state:= tmp.(types.DPosData)
+
+	//log.Debug("type = ", reflect.TypeOf(state))
 
 	if err != nil {
 		log.Error(err)
@@ -92,7 +96,7 @@ func LoadBlockFromStorage(hash common.Hash, chain *Blockchain) (*DposBlock, erro
 	return dposBlock, nil
 }
 
-func (block *DposBlock) DposState() (types.ConsensusState) {
+func (block *DposBlock) DposState() (types.DPosData) {
 	return block.state
 }
 

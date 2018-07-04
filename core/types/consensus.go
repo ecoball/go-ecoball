@@ -17,12 +17,12 @@
 package types
 
 import (
-"encoding/binary"
 "errors"
-"fmt"
 "github.com/ecoball/go-ecoball/common"
 "github.com/ecoball/go-ecoball/core/pb"
 "github.com/ecoball/go-ecoball/common/config"
+	"encoding/binary"
+	"fmt"
 )
 
 type ConType uint32
@@ -132,7 +132,7 @@ var (
 	ErrNotBlockForgTime = errors.New("current is not time to forge block")
 	ErrFoundNilLeader   = errors.New("found a nil leader")
 )
-
+/*
 type ConsensusState interface {
 
 	Timestamp() int64
@@ -141,7 +141,7 @@ type ConsensusState interface {
 
 	Bookkeepers() ([]common.Hash, error)
 
-}
+}*/
 
 
 type DPosData struct {
@@ -161,7 +161,7 @@ func (ds *DPosData) Leader() common.Hash  {
 	return ds.leader
 }
 
-func (ds *DPosData) NextConsensusState(passedSecond int64) (ConsensusState, error){
+func (ds *DPosData) NextConsensusState(passedSecond int64) (*DPosData, error){
 	elapsedSecondInMs := passedSecond * Second
 	if elapsedSecondInMs <= 0 || elapsedSecondInMs % BlockInterval != 0 {
 		return nil, ErrNotBlockForgTime
@@ -188,6 +188,11 @@ func (ds *DPosData) NextConsensusState(passedSecond int64) (ConsensusState, erro
 	return consensusState, nil
 }
 
+
+func (dposData *DPosData) Bookkeepers() ([]common.Hash, error) {
+	return dposData.bookkeepers, nil
+}
+
 func FindLeader(current int64, bookkeepers []common.Hash) (leader common.Hash, err error) {
 	currentInMs := current * Second
 	offsetInMs := currentInMs % GenerationInterval
@@ -209,9 +214,6 @@ func FindLeader(current int64, bookkeepers []common.Hash) (leader common.Hash, e
 	return leader, nil
 }
 
-func (ds *DPosData) Bookkeepers() ([]common.Hash, error) {
-	return ds.bookkeepers, nil
-}
 
 func GenesisStateInit(timestamp int64) *DPosData {
 
