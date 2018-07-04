@@ -11,7 +11,7 @@ type MerkleTree struct {
 }
 
 /**
-** 叶子节点
+** Leaf Node
  */
 type MerkleNode struct {
 	hash  common.Hash
@@ -39,7 +39,7 @@ func NewMerkleTree(hashes []common.Hash) *MerkleTree {
 }
 
 /**
-** 构建默克尔树
+** Create Merkle
  */
 func buildTree(nodes []*MerkleNode) []*MerkleNode {
 	var rootNode []*MerkleNode
@@ -71,7 +71,7 @@ func buildTree(nodes []*MerkleNode) []*MerkleNode {
 }
 
 /**
-** 通过两个节点计算它们父节点的哈希
+** Compute parent hash
  */
 func merkleHash(hashes []common.Hash) common.Hash {
 	var joinHash []byte
@@ -84,7 +84,7 @@ func merkleHash(hashes []common.Hash) common.Hash {
 }
 
 /**
-** 根据哈希列表计算默克尔数的根节点
+** compute merkle hash of hash list
  */
 func GetMerkleRoot(hashes []common.Hash) (common.Hash, error) {
 	if len(hashes) == 0 {
