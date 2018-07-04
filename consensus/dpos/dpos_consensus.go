@@ -288,7 +288,7 @@ func (dpos *DposService) newBlock(tail *DposBlock, consensusState *types.DPosDat
 		txs = append(txs, v)
 	}
 
-	conData := types.ConsensusData{Type:types.ConSolo, Payload:&types.SoloData{}}
+	conData := types.ConsensusData{Type:types.CondPos, Payload:consensusState}
 	block, err := dpos.chain.chainTx.NewBlock(dpos.ledger ,txs, conData)
 	if err != nil {
 		log.Error("Failed to create new block")
