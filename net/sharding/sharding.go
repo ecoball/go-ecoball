@@ -15,43 +15,25 @@
 // along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
 package sharding
 
-
-type RegReq struct {
-
+type Sharding struct {
+	cm     *Committee
+	node   *ShardNode
 }
 
-type RegRsp struct {
-	addrInfo string   //
-	upTime   uint32
+func (sd *Sharding) checkShardingAuth() bool {
+	//TODO
+	return true
 }
 
+func (sd *Sharding) HandShardingCmd()  {
+	ok := sd.checkShardingAuth()
+	if !ok {
+		return
+	}
 
-type CommitteeInfoNotify struct {
-	members []string
-	leader  string
+	sd.cm = NewCommittee(sd.node)
 }
 
-type CommitteeInfoAck struct {
-
+func (sd *Sharding) LoadConfig()  {
+	
 }
-
-type ShardPreReq struct {
-
-}
-
-type ShardPreRsp struct {
-	memberCount uint32
-	preLeader   string
-	preBackup   string
-}
-
-type ShardingInfo struct {
-	shardCount uint32
-	newLeader  string
-	neweBackup string
-}
-
-
-
-
-

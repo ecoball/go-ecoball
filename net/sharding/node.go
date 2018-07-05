@@ -19,7 +19,7 @@ import (
 	host "gx/ipfs/QmdHyfNVTZ5VtUx4Xz23z8wtnioSrFQ28XSfpVkdhQBkGA/go-libp2p-host"
 )
 
-type node struct {
+type ShardNode struct {
 	host          host.Host
 	isPowerNode   bool
 	isPrimary     bool
@@ -31,4 +31,16 @@ type node struct {
 	shardNums     uint32
 }
 
+func NewShardNode(host host.Host) *ShardNode {
+	return &ShardNode{
+		host: host,
+	}
+}
 
+func (node *ShardNode) isFirstSharding() bool {
+	if len(node.shards) > 0 {
+		return false
+	}
+
+	return true
+}

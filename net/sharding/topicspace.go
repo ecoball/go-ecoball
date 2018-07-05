@@ -15,43 +15,39 @@
 // along with the go-ecoball. If not, see <http://www.gnu.org/licenses/>.
 package sharding
 
+import (
+	"gx/ipfs/QmaWsab8a1KQgoxWP3RjK7mBhSi5PB9pR6NwZUrSXvVd1i/go-libp2p-floodsub"
+)
+type TopicSpaceRouter struct {
+	p         *floodsub.PubSub
+}
 
-type RegReq struct {
+type TopicSpace struct {
+	p *floodsub.PubSub
+}
+
+func (ts *TopicSpace)joinCheck()  {
 
 }
 
-type RegRsp struct {
-	addrInfo string   //
-	upTime   uint32
-}
-
-
-type CommitteeInfoNotify struct {
-	members []string
-	leader  string
-}
-
-type CommitteeInfoAck struct {
+func (ts *TopicSpace)Join()  {
 
 }
 
-type ShardPreReq struct {
+func (ts *TopicSpace)Leave()  {
 
 }
 
-type ShardPreRsp struct {
-	memberCount uint32
-	preLeader   string
-	preBackup   string
+func (ts *TopicSpace)MemberCount() uint32 {
+	return 0
 }
 
-type ShardingInfo struct {
-	shardCount uint32
-	newLeader  string
-	neweBackup string
+func (ts *TopicSpace)PutMsg()  {
+
 }
 
+func (ts *TopicSpace)GetMsg()  {
 
-
+}
 
 
