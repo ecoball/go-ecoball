@@ -154,3 +154,7 @@ func (l *LedgerImpl) TokenCreate(addr common.Address, token string, maximum uint
 func (l *LedgerImpl) TokenIsExisted(token string) bool {
 	return l.ChainTx.TokenExisted(token)
 }
+
+func (l *LedgerImpl) ResetStateDB(hash common.Hash) error {
+	return l.ChainTx.ResetStateDB(hash)
+}

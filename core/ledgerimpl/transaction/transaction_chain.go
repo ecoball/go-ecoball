@@ -93,8 +93,8 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 /**
 ** If create a new block failed, then need to reset state DB
  */
-func (c *ChainTx) ResetStateDB() error {
-	return c.StateDB.Reset(c.CurrentHeader.StateHash)
+func (c *ChainTx) ResetStateDB(hash common.Hash) error {
+	return c.StateDB.Reset(hash)
 }
 
 
