@@ -51,6 +51,13 @@ type ShardingInfo struct {
 	neweBackup string
 }
 
+type JoinTopicSpaceReq struct {
+	id string
+}
+
+type JoinTopicSpaceRsp struct {
+	ret string
+}
 
 
 

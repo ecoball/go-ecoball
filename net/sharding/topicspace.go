@@ -18,15 +18,22 @@ package sharding
 import (
 	"gx/ipfs/QmaWsab8a1KQgoxWP3RjK7mBhSi5PB9pR6NwZUrSXvVd1i/go-libp2p-floodsub"
 )
+
+type TopicSpaceAuther struct {
+
+}
+
 type TopicSpaceRouter struct {
 	p         *floodsub.PubSub
 }
 
 type TopicSpace struct {
-	p *floodsub.PubSub
+	p       *floodsub.PubSub
+	leader  string
+	topic   string
 }
 
-func (ts *TopicSpace)joinCheck()  {
+func (ts *TopicSpace)joinAuth()  {
 
 }
 
