@@ -137,6 +137,10 @@ func (l *LedgerImpl) GetTxBlock(hash common.Hash) (*types.Block, error) {
 	return l.ChainTx.GetBlock(hash)
 }
 
+func (l *LedgerImpl) GetTxBlockByHeight(height uint64) (*types.Block, error) {
+	return l.ChainTx.GetBlockByHeight(height)
+}
+
 func (l *LedgerImpl) CheckTransaction(tx *types.Transaction) error {
 	if err := l.ChainTx.CheckTransaction(tx); err != nil {
 		return err

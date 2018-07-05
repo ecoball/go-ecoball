@@ -152,7 +152,31 @@ func (c *ChainTx) GetBlock(hash common.Hash) (*types.Block, error) {
 	return block, nil
 }
 
-
+func (c *ChainTx) GetBlockByHeight(height uint64) (*types.Block, error) {
+	headers, err := c.HeaderStore.SearchAll()
+	if err != nil {
+		return nil, err
+	}
+	if len(headers) == 0 {
+		return nil, nil
+	}
+	log.Info("The geneses block is existed:", len(headers))
+	var hash common.Hash
+	for _, v := range headers {
+		header := new(types.Header)
+		if err := header.Deserialize([]byte(v)); err != nil {
+			return nil, err
+		}
+		if header.Height == height {
+			hash = header.Hash
+			break
+		}
+	}
+	if hash.Equals(&common.Hash{}) {
+		return nil, errors.New(fmt.Sprintf("can't find the block by height:%d", height))
+	}
+	return c.GetBlock(hash)
+}
 
 func (c *ChainTx) GenesesBlockInit() error {
 	geneses, err := types.GenesesBlockInit()
