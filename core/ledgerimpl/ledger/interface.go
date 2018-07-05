@@ -12,6 +12,7 @@ type Ledger interface {
 	CheckTransaction(tx *types.Transaction) error
 	GetCurrentHeader() *types.Header
 	GetCurrentHeight() uint64
+	ResetStateDB(hash common.Hash) error
 
 	AccountGetBalance(addr common.Address, token string) (uint64, error)
 	AccountAddBalance(addr common.Address, token string, value uint64) error

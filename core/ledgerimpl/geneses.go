@@ -16,4 +16,48 @@
 
 package ledgerimpl
 
+import (
+	"time"
+	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/core/bloom"
+	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
+)
 
+func GenesesBlockInit() (*types.Block, error) {
+	tm, err := time.Parse("02/01/2006 15:04:05 PM", "21/02/1990 00:00:00 AM")
+	if err != nil {
+		return nil, err
+	}
+	timeStamp := tm.Unix()
+
+
+
+	//TODO start
+	SecondInMs               := int64(1000)
+	BlockIntervalInMs        := int64(15000)
+	timeStamp = int64((timeStamp*SecondInMs-SecondInMs)/BlockIntervalInMs) * BlockIntervalInMs
+	timeStamp = timeStamp/SecondInMs
+	//TODO end
+
+	hash := common.NewHash([]byte("EcoBall Geneses Block"))
+	conData := types.GenesesBlockInitConsensusData(timeStamp)
+	header, err := types.NewHeader(types.VersionHeader, 1, hash, hash, hash, *conData, bloom.Bloom{}, timeStamp)
+	if err != nil {
+		return nil, err
+	}
+	block := types.Block{header, 0, nil}
+	return &block, nil
+}
+
+func createTransactions() ([]*types.Transaction, error) {
+	code, err := wasmservice.ReadWasm("../../../test/token.wasm")
+	if err != nil {
+		return nil, err
+	}
+	tx := types.NewTestDeploy(code)
+	tx = types.NewTestDeploy(code)
+	var txs []*types.Transaction
+	txs = append(txs, tx)
+	return txs, nil
+}
