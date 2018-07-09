@@ -23,6 +23,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/store"
 	"math/big"
 	"fmt"
+	"github.com/ecoball/go-ecoball/common/bijection"
 )
 
 var log = elog.NewLogger("state", elog.DebugLog)
@@ -30,20 +31,22 @@ var IndexAbaRoot = common.NameToIndex("root")
 var IndexAbaToken = common.NameToIndex("aba")
 
 type State struct {
-	path     string
-	diskDb   *store.LevelDBStore
-	hashRoot common.Hash
+	path string
 	trie     Trie
 	db       Database
+	diskDb   *store.LevelDBStore
+
+	accounts bijection.Bijection
 }
 
 func NewState(path string, root common.Hash) (st *State, err error) {
-	st = new(State)
-	diskDb, err := store.NewLevelDBStore(path, 0, 0)
+	st = &State{path:path}
+	st.diskDb, err = store.NewLevelDBStore(path, 0, 0)
 	if err != nil {
 		return nil, err
 	}
-	st.db = NewDatabase(diskDb)
+	st.accounts = bijection.New()
+	st.db = NewDatabase(st.diskDb)
 	log.Notice("Open Trie Hash:", root.HexString())
 	st.trie, err = st.db.OpenTrie(root)
 	if err != nil {
@@ -57,6 +60,9 @@ func (s *State) Close() {
 }
 
 func (s *State) AddAccount(index uint64, addr common.Address) error {
+	if err := s.accounts.Set(index, common.NameToIndex(string(addr.Bytes()))); err != nil {
+		return err
+	}
 	obj, err := NewAccount(index, addr)
 	if err != nil {
 		return err
@@ -143,8 +149,7 @@ func (s *State) TokenExisted(indexToken uint64) bool {
 }
 
 func (s *State) GetHashRoot() common.Hash {
-	s.hashRoot = common.NewHash(s.trie.Hash().Bytes())
-	return s.hashRoot
+	return common.NewHash(s.trie.Hash().Bytes())
 }
 
 func (s *State) CommitToMemory() error {
@@ -152,7 +157,7 @@ func (s *State) CommitToMemory() error {
 	if err != nil {
 		return err
 	}
-	s.hashRoot = common.BytesToHash(root.Bytes())
+	log.Debug("Commit State DB:", root.HexString())
 	return nil
 }
 

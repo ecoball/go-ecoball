@@ -30,9 +30,6 @@ type DeployInfo struct {
 }
 
 func NewDeployContract(from, addr uint64, vm VmType, des string, code []byte, nonce uint64, time int64) (*Transaction, error) {
-	if len(code) == 0 {
-		return nil, errors.New("code's len is 0")
-	}
 	deploy := &DeployInfo{
 		TypeVm:   vm,
 		Describe: []byte(des),
