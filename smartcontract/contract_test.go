@@ -27,7 +27,7 @@ import (
 	"bytes"
 )
 
-func TestNewInvokeContract(t *testing.T) {
+func xTestNewInvokeContract(t *testing.T) {
 	code, err := wasmservice.ReadWasm("../test/contract_test.wasm")
 	if err != nil {
 		t.Fatal("read contract error\n")
@@ -40,7 +40,7 @@ func TestNewInvokeContract(t *testing.T) {
 }
 
 func TestAdd(t *testing.T) {
-	code, err := wasmservice.ReadWasm("../test/aba_add.wasm")
+	code, err := wasmservice.ReadWasm("../test/add/aba_add.wasm")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,7 +49,7 @@ func TestAdd(t *testing.T) {
 }
 
 func TestLog(t *testing.T) {
-	code, err := wasmservice.ReadWasm("../test/print.wasm")
+	code, err := wasmservice.ReadWasm("../test/hello/hello.wasm")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,12 +57,12 @@ func TestLog(t *testing.T) {
 	fmt.Println(s.Execute())
 }
 
-func TestCreate(t *testing.T) {
+func xTestCreate(t *testing.T) {
 	l, err := ledgerimpl.NewLedger("/tmp/quaker")
 	if err != nil {
 		t.Fatal(err)
 	}
-	server, err := smartcontract.NewContractService(l, nil)
+	server, err := smartcontract.NewContractService(l)
 	if err != nil {
 		t.Fatal(err)
 	}

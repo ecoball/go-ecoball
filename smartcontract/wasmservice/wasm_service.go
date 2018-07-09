@@ -133,7 +133,7 @@ func (ws *WasmService) RegisterApi() {
 	funs := wasm.InitNativeFuns()
 	funs.Register("AbaAdd", ws.AbaAdd)
 	funs.Register("AbaLog", ws.AbaLog)
-	//funs.Register("print", ws.Print)
+	funs.Register("Println", ws.Println)
 	funs.Register("AbaLogString", ws.AbaLogString)
 	funs.Register("AbaLogInt", ws.AbaLogInt)
 	funs.Register("AbaGetCurrentHeight", ws.AbaGetCurrentHeight)
@@ -154,15 +154,10 @@ func (ws *WasmService) AbaLogString(str string) int32 {
 	return 0
 }
 
-/*func (ws *WasmService) Print(arg uint64) int32 {
-	fmt.Println(arg)
-	memory := ws.vm.Memory()
-	data := memory[arg:]
-	index := bytes.IndexByte(data, 0)
-	para := data[:index]
-	fmt.Println(string(para))
+func (ws *WasmService) Println(str string) int32 {
+	fmt.Println(str)
 	return 0
-}*/
+}
 func (ws *WasmService) AbaLog(strP uint64) int32 {
 	fmt.Println("AbaLog:---------")
 	str := common.PointerToString(strP)

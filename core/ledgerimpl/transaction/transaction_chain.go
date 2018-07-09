@@ -299,7 +299,7 @@ func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction)
 		log.Info("Deploy Execute:", common.ToHex(payload.Code))
 	case types.TxInvoke:
 		log.Info("InvokeInfo Execute()")
-		payload, ok := tx.Payload.GetObject().(types.InvokeInfo)
+		invoke, ok := tx.Payload.GetObject().(types.InvokeInfo)
 		if !ok {
 			return nil, errors.New("transaction type error[invoke]")
 		}
@@ -317,13 +317,13 @@ func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction)
 			return nil, errors.New(fmt.Sprintf("can't find the deploy contract:%s", common.IndexToName(tx.Addr)))
 		}
 		fmt.Println("execute code:", common.ToHex(deployInfo.Code))
-		fmt.Println("method:", string(payload.Method))
-		fmt.Println("param:", payload.Param)
-		service, err := smartcontract.NewContractService(ledger, tx)
+		fmt.Println("method:", string(invoke.Method))
+		fmt.Println("param:", invoke.Param)
+		service, err := smartcontract.NewContractService(ledger)
 		if err != nil {
 			return nil, err
 		}
-		return service.ExecuteContract(payload.TypeVm, string(payload.Method), deployInfo.Code, payload.Param)
+		return service.ExecuteContract(invoke.TypeVm, string(invoke.Method), deployInfo.Code, invoke.Param)
 	default:
 		return nil, errors.New("the transaction's type error")
 	}
