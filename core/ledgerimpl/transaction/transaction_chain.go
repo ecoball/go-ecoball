@@ -294,8 +294,8 @@ func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
 	return errs.ErrNoError
 }
 
-func (c *ChainTx) AccountAdd(indexName uint64, addr common.Address) error {
-	return c.StateDB.AddAccount(indexName, addr)
+func (c *ChainTx) AccountAdd(index uint64, addr common.Address) error {
+	return c.StateDB.AddAccount(index, addr)
 }
 
 func (c *ChainTx) AccountGetBalance(indexAcc, indexToken uint64) (*big.Int, error) {
@@ -357,7 +357,7 @@ func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction)
 		if err != nil {
 			return nil, err
 		}
-		return service.ExecuteContract(invoke.TypeVm, string(invoke.Method), deployInfo.Code, invoke.Param)
+		return service.ExecuteContract(invoke.TypeVm, string(invoke.Method), deployInfo.Code, invoke.Param, tx.Addr)
 	default:
 		return nil, errors.New("the transaction's type error")
 	}

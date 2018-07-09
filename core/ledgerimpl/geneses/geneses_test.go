@@ -19,14 +19,12 @@ func TestGenesesBlockInit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	header := l.GetCurrentHeader()
-	header.Show()
 
 	timeStamp := time.Now().Unix()
 	addr := common.NameToIndex("root")
 	invoke, err := types.NewInvokeContract(
-		addr, addr, types.VmNative, "create",
-		[]string{"01b1a6569a557eafcccc71e0d02461fd4b601aea", "pct"},
+		addr, addr, types.VmNative, "new_account",
+		[]string{"pct", "01b1a6569a557eafcccc71e0d02461fd4b601aea"},
 		0, timeStamp)
 	invoke.SetSignature(&config.Root)
 	txs := []*types.Transaction{invoke}
@@ -45,4 +43,10 @@ func TestGenesesBlockInit(t *testing.T) {
 	if err := l.SaveTxBlock(block); err != nil {
 		t.Fatal(err)
 	}
+
+	acc, err := l.GetAccount(common.NameToIndex("pct"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	acc.Show()
 }

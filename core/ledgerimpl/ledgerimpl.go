@@ -113,8 +113,12 @@ func (l *LedgerImpl) ContractGetInfo(key []byte) ([]byte, error) {
 	return l.ChainTx.TxsStore.Get(key)
 }
 
-func (l *LedgerImpl) AccountAdd(indexName uint64, addr common.Address) error {
-	return l.ChainTx.AccountAdd(indexName, addr)
+func (l *LedgerImpl) GetAccount(index uint64) (*state.Account, error) {
+	return l.ChainTx.StateDB.GetAccount(index)
+}
+
+func (l *LedgerImpl) AccountAdd(index uint64, addr common.Address) error {
+	return l.ChainTx.AccountAdd(index, addr)
 }
 
 func (l *LedgerImpl) AccountAddBalance(indexAcc, indexToken uint64, value uint64) error {

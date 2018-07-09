@@ -2,8 +2,8 @@ package ledger
 
 import (
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/core/state"
+	"github.com/ecoball/go-ecoball/core/types"
 )
 
 type Ledger interface {
@@ -18,7 +18,8 @@ type Ledger interface {
 	StateDB() *state.State
 	ResetStateDB(hash common.Hash) error
 
-	AccountAdd(indexName uint64, addr common.Address) error
+	AccountAdd(index uint64, addr common.Address) error
+	GetAccount(index uint64) (*state.Account, error)
 	AccountGetBalance(indexAcc, indexToken uint64) (uint64, error)
 	AccountAddBalance(indexAcc, indexToken uint64, value uint64) error
 	AccountSubBalance(indexAcc, indexToken uint64, value uint64) error

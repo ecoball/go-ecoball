@@ -67,12 +67,12 @@ func ReadWasm(file string) ([]byte, error) {
 	return raw, nil
 }
 
-func (ws *WasmService) Execute() []byte {
+func (ws *WasmService) Execute() ([]byte, error) {
 	bf := bytes.NewBuffer(ws.Code)
 	m, err := wasm.ReadModule(bf, importer)
 	if err != nil {
 		log.Error("could not read module:", err)
-		return nil
+		return nil, err
 	}
 
 	if m.Export == nil {
@@ -100,15 +100,15 @@ func (ws *WasmService) Execute() []byte {
 	fmt.Printf("res:%[1]v (%[1]T)\n", res)
 	switch fType.ReturnTypes[0] {
 	case wasm.ValueTypeI32:
-		return util.Int32ToBytes(res.(uint32))
+		return util.Int32ToBytes(res.(uint32)), nil
 	case wasm.ValueTypeI64:
-		return util.Int64ToBytes(res.(uint64))
+		return util.Int64ToBytes(res.(uint64)), nil
 	case wasm.ValueTypeF32:
-		return util.Float32ToBytes(res.(float32))
+		return util.Float32ToBytes(res.(float32)), nil
 	case wasm.ValueTypeF64:
-		return util.Float64ToBytes(res.(float64))
+		return util.Float64ToBytes(res.(float64)), nil
 	default:
-		return nil
+		return nil, errors.New("unknown return type")
 	}
 }
 
