@@ -19,7 +19,6 @@ package common
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"github.com/ecoball/go-ecoball/crypto/sha3"
 	"math/big"
 )
@@ -80,7 +79,12 @@ func Keccak256Hash(data ...[]byte) (hash Hash) {
 }
 
 func (h Hash) HexString() string {
-	return fmt.Sprintf("%x", h[:])
+	return ToHex(h[:])
+}
+
+func (h* Hash)FormHexString(data string) Hash{
+	hash := NewHash(FromHex(data))
+	return hash
 }
 
 func (h *Hash) Equals(b *Hash) bool {

@@ -19,10 +19,8 @@ package types
 import (
 	"errors"
 	"fmt"
-	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/pb"
-	"time"
 )
 
 type DeployInfo struct {
@@ -34,7 +32,7 @@ type DeployInfo struct {
 	Code     []byte
 }
 
-func NewDeployContract(from, addr common.Address, vm VmType, author, name, email, des string, code []byte, nonce uint64, time int64) (*Transaction, error) {
+func NewDeployContract(from, addr uint64, vm VmType, author, name, email, des string, code []byte, nonce uint64, time int64) (*Transaction, error) {
 	if len(code) == 0 {
 		return nil, errors.New("code's len is 0")
 	}
@@ -98,22 +96,4 @@ func (d *DeployInfo) Show() {
 	fmt.Println("\tName          :", string(d.Name))
 	fmt.Println("\tEmail         :", string(d.Email))
 	fmt.Println("\tDescribe      :", string(d.Describe))
-}
-
-func NewTestDeploy(code []byte) *Transaction {
-	from := common.NewAddress(common.FromHex("01b1a6569a557eafcccc71e0d02461fd4b601aea"))
-	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
-	deploy, err := NewDeployContract(from, addr, VmWasm, "pct", "func", "test@163.com", "test deploy", code, 0, time.Now().Unix())
-	if err != nil {
-		panic(err)
-		return nil
-	}
-	acc, err := account.NewAccount(0)
-	if err != nil {
-		panic(err)
-	}
-	if err := deploy.SetSignature(&acc); err != nil {
-		panic(err)
-	}
-	return deploy
 }

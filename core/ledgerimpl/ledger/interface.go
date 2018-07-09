@@ -3,6 +3,7 @@ package ledger
 import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/core/state"
 )
 
 type Ledger interface {
@@ -13,15 +14,16 @@ type Ledger interface {
 	CheckTransaction(tx *types.Transaction) error
 	GetCurrentHeader() *types.Header
 	GetCurrentHeight() uint64
+	StateDB() *state.State
 	ResetStateDB(hash common.Hash) error
 
-	AccountGetBalance(addr common.Address, token string) (uint64, error)
-	AccountAddBalance(addr common.Address, token string, value uint64) error
-	AccountSubBalance(addr common.Address, token string, value uint64) error
+	AccountGetBalance(indexAcc, indexToken uint64) (uint64, error)
+	AccountAddBalance(indexAcc, indexToken uint64, value uint64) error
+	AccountSubBalance(indexAcc, indexToken uint64, value uint64) error
 	ContractGetInfo(key []byte) ([]byte, error)
 
-	TokenCreate(addr common.Address, token string, maximum uint64) error
-	TokenIsExisted(token string) bool
+	TokenCreate(indexAcc, indexToken uint64, maximum uint64) error
+	TokenIsExisted(indexToken uint64) bool
 	//SignatureTransaction()
 	//GetContractInfo()
 	Start()

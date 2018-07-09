@@ -20,11 +20,12 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/core/types"
 	"testing"
+	"github.com/ecoball/go-ecoball/test/example"
 )
 
 func TestTransfer(t *testing.T) {
 	fmt.Println("test create transaction")
-	tx := types.NewTestTx()
+	tx := example.ExampleTestTx()
 	fmt.Println("Hash1:", tx.Hash.HexString())
 	tx.Show()
 
@@ -44,7 +45,7 @@ func TestTransfer(t *testing.T) {
 }
 
 func TestDeploy(t *testing.T) {
-	deploy := types.NewTestDeploy([]byte("test"))
+	deploy := example.ExampleTestDeploy([]byte("test"))
 	deploy.Show()
 	fmt.Println("--------------")
 	data, err := deploy.Serialize()
@@ -62,7 +63,7 @@ func TestDeploy(t *testing.T) {
 }
 
 func TestInvoke(t *testing.T) {
-	i := types.NewTestInvoke("main")
+	i := example.ExampleTestInvoke("main")
 	i.Show()
 	data, err := i.Serialize()
 	if err != nil {

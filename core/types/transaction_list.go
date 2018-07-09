@@ -98,7 +98,7 @@ func (t *TxsList) Show() {
 	defer t.mux.RUnlock()
 	for _, v := range t.Txs {
 		fmt.Println("Version:", v.Version)
-		fmt.Println("From:", v.From.HexString())
+		fmt.Println("From:", v.From)
 		fmt.Println("Hash:", v.Hash.HexString())
 	}
 }

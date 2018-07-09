@@ -19,99 +19,96 @@ package state
 import (
 	"errors"
 	"fmt"
-	"github.com/gogo/protobuf/proto"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/pb"
+	"github.com/gogo/protobuf/proto"
 	"math/big"
 )
 
-type StateObject struct {
-	Address  common.Address //User Address
-	addrHash common.Hash    //Address Hash, used to key
-	Account  map[string]Account
-}
-
 type Account struct {
-	//Address common.Address //Token Address
-	Name    string         //Token Name
-	Nonce   uint64         //Account Random Number
-	Balance *big.Int       //Balance
+	Index   uint64
+	Nonce   uint64         //Token Random Number
+	Address common.Address //User Address
+	Tokens  map[uint64]Token
 }
 
-func NewStateObject(address common.Address) (*StateObject, error) {
-	state := StateObject{Address: address, Account: make(map[string]Account, 1)}
-	state.addrHash = common.SingleHash(address.Bytes())
+type Token struct {
+	Index   uint64   //Token Name UUID
+	Balance *big.Int //Value
+}
 
+func NewAccount(index uint64, address common.Address) (*Account, error) {
+	state := Account{Index: index, Nonce: 0, Address: address, Tokens: make(map[uint64]Token, 1)}
 	return &state, nil
 }
 
-func (s *StateObject) AddAccount(name string) error {
-	ac := Account{Name: name, Nonce: 1, Balance: new(big.Int).SetUint64(0)}
-	s.Account[name] = ac
+func (s *Account) AddToken(index uint64) error {
+	ac := Token{Index: index, Balance: new(big.Int).SetUint64(0)}
+	s.Tokens[index] = ac
 	return nil
 }
 
-func (s *StateObject) AccountExisted(name string) bool {
-	_, ok := s.Account[name]
+func (s *Account) TokenExisted(index uint64) bool {
+	_, ok := s.Tokens[index]
 	if ok {
 		return true
 	}
 	return false
 }
 
-func (s *StateObject) AddBalance(name string, amount *big.Int) error {
+func (s *Account) AddBalance(index uint64, amount *big.Int) error {
 	if amount.Sign() == 0 {
 		return errors.New("amount is zero")
 	}
-	ac, ok := s.Account[name]
+	ac, ok := s.Tokens[index]
 	if !ok {
-		if err := s.AddAccount(name); err != nil {
+		if err := s.AddToken(index); err != nil {
 			return err
 		}
-		ac, _ = s.Account[name]
+		ac, _ = s.Tokens[index]
 	}
 	ac.SetBalance(new(big.Int).Add(ac.GetBalance(), amount))
-	ac.Nonce++
-	s.Account[name] = ac
+	s.Nonce++
+	s.Tokens[index] = ac
 	return nil
 }
 
-func (s *StateObject) SubBalance(name string, amount *big.Int) error {
+func (s *Account) SubBalance(index uint64, amount *big.Int) error {
 	if amount.Sign() == 0 {
 		return errors.New("amount is zero")
 	}
-	ac, ok := s.Account[name]
+	ac, ok := s.Tokens[index]
 	if !ok {
 		return errors.New("not sufficient funds")
 	}
 	ac.SetBalance(new(big.Int).Sub(ac.GetBalance(), amount))
-	ac.Nonce++
-	s.Account[name] = ac
+	s.Nonce++
+	s.Tokens[index] = ac
 	return nil
 }
 
-func (s *StateObject) Balance(name string) (*big.Int, error) {
-	ac, ok := s.Account[name]
+func (s *Account) Balance(index uint64) (*big.Int, error) {
+	ac, ok := s.Tokens[index]
 	if !ok {
 		return nil, errors.New("can't find token account")
 	}
 	return ac.GetBalance(), nil
 }
 
-func (a *Account) SetBalance(amount *big.Int) {
+func (a *Token) SetBalance(amount *big.Int) {
 	//TODO:将变动记录存到日志文件
 	a.setBalance(amount)
 }
 
-func (a *Account) setBalance(amount *big.Int) {
+func (a *Token) setBalance(amount *big.Int) {
 	a.Balance = amount
 }
 
-func (a *Account) GetBalance() *big.Int {
+func (a *Token) GetBalance() *big.Int {
 	return a.Balance
 }
 
-func (s *StateObject) Serialize() ([]byte, error) {
+func (s *Account) Serialize() ([]byte, error) {
 	p, err := s.ProtoBuf()
 	if err != nil {
 		return nil, err
@@ -123,60 +120,64 @@ func (s *StateObject) Serialize() ([]byte, error) {
 	return data, nil
 }
 
-func (s *StateObject) ProtoBuf() (*pb.StateObject, error) {
-	pbState := pb.StateObject{}
-	pbState.Address = s.Address.Bytes()
-	pbState.AddrHash = s.addrHash.Bytes()
-	var acs []*pb.Account
-	for _, v := range s.Account {
+func (s *Account) ProtoBuf() (*pb.StateObject, error) {
+	var tokens []*pb.Token
+	for _, v := range s.Tokens {
 		balance, err := v.Balance.GobEncode()
 		if err != nil {
 			return nil, err
 		}
-		ac := pb.Account{
-			Name:    common.CopyBytes([]byte(v.Name)),
-			Nonce:   v.Nonce,
+		ac := pb.Token{
+			Index:   v.Index,
 			Balance: balance,
 		}
-		acs = append(acs, &ac)
+		tokens = append(tokens, &ac)
 	}
-	pbState.Account = acs
+	pbState := pb.StateObject{
+		Index:   s.Index,
+		Nonce:   s.Nonce,
+		Address: s.Address.Bytes(),
+		Tokens:  tokens,
+	}
 
 	return &pbState, nil
 }
 
-func (s *StateObject) Deserialize(data []byte) error {
+func (s *Account) Deserialize(data []byte) error {
 	if len(data) == 0 {
-		return errors.New("input Account's length is zero")
+		return errors.New("input Token's length is zero")
 	}
 	var pbObject pb.StateObject
 	if err := proto.Unmarshal(data, &pbObject); err != nil {
 		return err
 	}
+	s.Index = pbObject.Index
+	s.Nonce = pbObject.Nonce
 	s.Address = common.NewAddress(pbObject.Address)
-	s.addrHash = common.NewHash(pbObject.AddrHash)
-	s.Account = make(map[string]Account)
-	for _, v := range pbObject.Account {
-		ac := Account{
-			Name:    string(common.CopyBytes(v.Name)),
-			Nonce:   v.Nonce,
+	s.Tokens = make(map[uint64]Token)
+	for _, v := range pbObject.Tokens {
+		ac := Token{
+			Index:   v.Index,
 			Balance: new(big.Int),
 		}
 		if err := ac.Balance.GobDecode(v.Balance); err != nil {
 			return err
 		}
-		s.Account[ac.Name] = ac
+		s.Tokens[ac.Index] = ac
 	}
 
 	return nil
 }
 
-func (s *StateObject) Show() {
-	fmt.Println("\t-----------StateObject------------")
+func (s *Account) Show() {
+	fmt.Println("\t-----------Tokens------------")
+	fmt.Println("\tIndex          :", s.Index)
+	fmt.Println("\tName           :", common.IndexToName(s.Index))
+	fmt.Println("\tNonce          :", s.Nonce)
 	fmt.Println("\tAddress        :", s.Address.HexString())
-	fmt.Println("\tAccount Len    :", len(s.Account))
-	for _, v := range s.Account {
-		fmt.Println("\tName           :", v.Name)
+	fmt.Println("\tTokens Len     :", len(s.Tokens))
+	for _, v := range s.Tokens {
+		fmt.Println("\tName           :", common.IndexToName(v.Index))
 		fmt.Println("\tBalance        :", v.Balance)
 	}
 }

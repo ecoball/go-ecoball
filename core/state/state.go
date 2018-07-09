@@ -17,7 +17,6 @@
 package state
 
 import (
-	"bytes"
 	"errors"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/elog"
@@ -27,7 +26,8 @@ import (
 )
 
 var log = elog.NewLogger("state", elog.DebugLog)
-var AbaToken = "Aba"
+var IndexAbaRoot = common.NameToIndex("root")
+var IndexAbaToken = common.NameToIndex("aba")
 
 type State struct {
 	path     string
@@ -56,89 +56,90 @@ func (s *State) Close() {
 	s.diskDb.Close()
 }
 
-func (s *State) GetStateObject(addr common.Address) (*StateObject, error) {
-	fHash := common.SingleHash(addr.Bytes())
-	fData, err := s.trie.TryGet(fHash.Bytes())
+func (s *State) AddAccount(index uint64, addr common.Address) error {
+	obj, err := NewAccount(index, addr)
+	if err != nil {
+		return err
+	}
+	d, err := obj.Serialize()
+	if err != nil {
+		return err
+	}
+	if err := s.trie.TryUpdate(common.IndexToBytes(obj.Index), d); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *State) GetAccount(index uint64) (*Account, error) {
+	key := common.IndexToBytes(index)
+	fData, err := s.trie.TryGet(key)
 	if err != nil {
 		return nil, err
 	}
-	fObj := new(StateObject)
 	if fData == nil {
-		if fObj, err = NewStateObject(addr); err != nil {
-			return nil, err
-		}
-	} else {
-		if err := fObj.Deserialize(fData); err != nil {
-			return nil, err
-		}
+		return nil, errors.New(fmt.Sprintf("no this account named:%s", common.IndexToName(index)))
 	}
-	return fObj, nil
+
+	acc := new(Account)
+	if err := acc.Deserialize(fData); err != nil {
+		return nil, err
+	}
+
+	return acc, nil
 }
 
-func (s *State) SubBalance(addr common.Address, name string, value *big.Int) error {
-	key := common.SingleHash(addr.Bytes())
-	data, err := s.trie.TryGet(key.Bytes())
+func (s *State) SubBalance(indexAcc, indexToken uint64, value *big.Int) error {
+	acc, err := s.GetAccount(indexAcc)
 	if err != nil {
-		log.Error(err)
-		return err
-	}
-	if data == nil {
-		return errors.New(fmt.Sprintf("can't find address[%s] account in MPT tree", addr.HexString()))
-	}
-	fObj := new(StateObject)
-	err = fObj.Deserialize(data)
-	if err != nil {
-		log.Error(err)
 		return err
 	}
 
-	balance, err := fObj.Balance(name)
+	balance, err := acc.Balance(indexToken)
 	if err != nil {
 		return err
 	}
 	if balance.Cmp(value) == -1 {
 		return errors.New("no enough balance")
 	}
-	fObj.SubBalance(name, value)
-	d, err := fObj.Serialize()
+	acc.SubBalance(indexToken, value)
+	d, err := acc.Serialize()
 	if err != nil {
 		return err
 	}
-	if err := s.trie.TryUpdate(fObj.addrHash.Bytes(), d); err != nil {
+	if err := s.trie.TryUpdate(common.IndexToBytes(indexAcc), d); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *State) AddBalance(addr common.Address, name string, value *big.Int) error {
-	tObj, err := s.GetStateObject(addr)
+func (s *State) AddBalance(indexAcc, indexToken uint64, value *big.Int) error {
+	acc, err := s.GetAccount(indexAcc)
 	if err != nil {
 		return err
 	}
-	tObj.AddBalance(name, value)
-	d, err := tObj.Serialize()
+	acc.AddBalance(indexToken, value)
+	d, err := acc.Serialize()
 	if err != nil {
 		return err
 	}
-	if err := s.trie.TryUpdate(tObj.addrHash.Bytes(), d); err != nil {
+	if err := s.trie.TryUpdate(common.IndexToBytes(indexAcc), d); err != nil {
 		return err
 	}
 	//add token into trie
-	hash := common.SingleHash([]byte(name))
-	if err := s.trie.TryUpdate(hash.Bytes(), []byte(name)); err != nil {
+	if err := s.trie.TryUpdate(common.IndexToBytes(indexToken), common.IndexToBytes(indexToken)); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *State) TokenExisted(name string) bool {
-	hash := common.SingleHash([]byte(name))
-	data, err := s.trie.TryGet(hash.Bytes())
+func (s *State) TokenExisted(indexToken uint64) bool {
+	data, err := s.trie.TryGet(common.IndexToBytes(indexToken))
 	if err != nil {
 		log.Error(err)
 		return false
 	}
-	return bytes.Equal(data, []byte(name))
+	return common.IndexSetBytes(data) == indexToken
 }
 
 func (s *State) GetHashRoot() common.Hash {
@@ -162,25 +163,13 @@ func (s *State) CommitToDB() error {
 	return s.db.TrieDB().Commit(s.trie.Hash(), false)
 }
 
-func (s *State) GetBalance(addr common.Address, token string) (*big.Int, error) {
-	val := new(big.Int).SetUint64(0)
-	key := common.SingleHash(addr.Bytes())
-	data, err := s.trie.TryGet(key.Bytes())
+func (s *State) GetBalance(indexAcc, indexToken uint64) (*big.Int, error) {
+	acc, err := s.GetAccount(indexAcc)
 	if err != nil {
-		log.Error(err)
-		return val, err
-	}
-	if data == nil {
-		return nil, errors.New("can't find account in MPT tree")
-	}
-	obj := new(StateObject)
-	err = obj.Deserialize(data)
-	if err != nil {
-		log.Error(err)
-		return val, err
+		return nil, err
 	}
 
-	return obj.Balance(token)
+	return acc.Balance(indexToken)
 }
 
 func (s *State) Reset(hash common.Hash) error {

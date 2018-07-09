@@ -19,10 +19,8 @@ package types
 import (
 	"errors"
 	"fmt"
-	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/pb"
-	"time"
 )
 
 type InvokeInfo struct {
@@ -31,7 +29,7 @@ type InvokeInfo struct {
 	Param  []string
 }
 
-func NewInvokeContract(from, addr common.Address, vm VmType, method string, param []string, nonce uint64, time int64) (*Transaction, error) {
+func NewInvokeContract(from, addr uint64, vm VmType, method string, param []string, nonce uint64, time int64) (*Transaction, error) {
 	invoke := &InvokeInfo{TypeVm: vm, Method: []byte(method), Param: param}
 	trans, err := NewTransaction(TxInvoke, from, addr, invoke, nonce, time)
 	if err != nil {
@@ -92,20 +90,3 @@ func (i *InvokeInfo) Deserialize(data []byte) error {
 	return nil
 }
 
-func NewTestInvoke(method string) *Transaction {
-	from := common.NewAddress(common.FromHex("01b1a6569a557eafcccc71e0d02461fd4b601aea"))
-	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
-	invoke, err := NewInvokeContract(from, addr, VmWasm, method, []string{"01b1a6569a557eafcccc71e0d02461fd4b601aea", "Token.Test", "20000"}, 0, time.Now().Unix())
-	if err != nil {
-		panic(err)
-		return nil
-	}
-	acc, err := account.NewAccount(0)
-	if err != nil {
-		panic(err)
-	}
-	if err := invoke.SetSignature(&acc); err != nil {
-		panic(err)
-	}
-	return invoke
-}

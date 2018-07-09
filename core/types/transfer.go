@@ -19,10 +19,7 @@ package types
 import (
 	"errors"
 	"fmt"
-	"github.com/ecoball/go-ecoball/account"
-	"github.com/ecoball/go-ecoball/common"
 	"math/big"
-	"time"
 )
 
 type TransferInfo struct {
@@ -35,7 +32,7 @@ func NewTransferInfo(v *big.Int) *TransferInfo {
 	return t
 }
 
-func NewTransfer(from, to common.Address, value *big.Int, nonce uint64, time int64) (*Transaction, error) {
+func NewTransfer(from, to uint64, value *big.Int, nonce uint64, time int64) (*Transaction, error) {
 	payload := NewTransferInfo(value)
 	return NewTransaction(TxTransfer, from, to, payload, nonce, time)
 }
@@ -62,28 +59,6 @@ func (t TransferInfo) GetObject() interface{} {
 
 func (t *TransferInfo) Show() {
 	fmt.Println("\tValue          :", t.Value)
-}
-
-func NewTestTx() *Transaction {
-	from := common.NewAddress(common.FromHex("01b1a6569a557eafcccc71e0d02461fd4b601aea"))
-	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
-	value := big.NewInt(100)
-	tx, err := NewTransfer(from, addr, value, 0, time.Now().Unix())
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	}
-	acc, err := account.NewAccount(0)
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	}
-	if err := tx.SetSignature(&acc); err != nil {
-		fmt.Println(err)
-		return nil
-	}
-	tx.Show()
-	return tx
 }
 
 

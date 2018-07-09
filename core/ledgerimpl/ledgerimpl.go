@@ -27,6 +27,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/transaction"
 	"github.com/ecoball/go-ecoball/core/types"
 	"time"
+	"github.com/ecoball/go-ecoball/core/state"
 )
 
 var log = elog.NewLogger("LedgerImpl", elog.DebugLog)
@@ -94,8 +95,12 @@ func (l *LedgerImpl) Start() {
 	}
 }
 
-func (l *LedgerImpl) AccountGetBalance(addr common.Address, token string) (uint64, error) {
-	value, err := l.ChainTx.AccountGetBalance(addr, token)
+func (l *LedgerImpl) StateDB() *state.State {
+	return l.ChainTx.StateDB
+}
+
+func (l *LedgerImpl) AccountGetBalance(indexAcc, indexToken uint64) (uint64, error) {
+	value, err := l.ChainTx.AccountGetBalance(indexAcc, indexToken)
 	if err != nil {
 		return 0, err
 	}
@@ -106,12 +111,12 @@ func (l *LedgerImpl) ContractGetInfo(key []byte) ([]byte, error) {
 	return l.ChainTx.TxsStore.Get(key)
 }
 
-func (l *LedgerImpl) AccountAddBalance(addr common.Address, token string, value uint64) error {
-	return l.ChainTx.AccountAddBalance(addr, token, value)
+func (l *LedgerImpl) AccountAddBalance(indexAcc, indexToken uint64, value uint64) error {
+	return l.ChainTx.AccountAddBalance(indexAcc, indexToken, value)
 }
 
-func (l *LedgerImpl) AccountSubBalance(addr common.Address, token string, value uint64) error {
-	return l.ChainTx.AccountSubBalance(addr, token, value)
+func (l *LedgerImpl) AccountSubBalance(indexAcc, indexToken uint64, value uint64) error {
+	return l.ChainTx.AccountSubBalance(indexAcc, indexToken, value)
 }
 
 func (l *LedgerImpl) NewTxBlock(txs []*types.Transaction, consensusData types.ConsensusData) (*types.Block, error) {
@@ -151,12 +156,12 @@ func (l *LedgerImpl) CheckTransaction(tx *types.Transaction) error {
 	return nil
 }
 
-func (l *LedgerImpl) TokenCreate(addr common.Address, token string, maximum uint64) error {
-	return l.ChainTx.AccountAddBalance(addr, token, maximum)
+func (l *LedgerImpl) TokenCreate(indexAcc, indexToken uint64, maximum uint64) error {
+	return l.ChainTx.AccountAddBalance(indexAcc, indexToken, maximum)
 }
 
-func (l *LedgerImpl) TokenIsExisted(token string) bool {
-	return l.ChainTx.TokenExisted(token)
+func (l *LedgerImpl) TokenIsExisted(indexToken uint64) bool {
+	return l.ChainTx.TokenExisted(indexToken)
 }
 
 func (l *LedgerImpl) ResetStateDB(hash common.Hash) error {

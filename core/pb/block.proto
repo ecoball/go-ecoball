@@ -73,8 +73,8 @@ message AbaBftData {
 message TransactionPayload {
     uint32      version     = 1;
     uint32      type        = 7;
-    bytes       from        = 2;
-    bytes       addr        = 3;
+    uint64      from        = 2;
+    uint64      addr        = 3;
     bytes       payload     = 4; //store DeployInfo and InvokeInfo
     uint64      nonce       = 5;
     int64       timestamp   = 6;
@@ -132,16 +132,16 @@ message Signature {
 ** Account Object
 */
 message stateObject {
+    uint64      Index        = 4;
+    uint64      nonce       = 5;
     bytes       address     = 1;
-    bytes       addrHash    = 2;
-    repeated    Account     account = 3;
+    repeated    Token     Tokens = 3;
 }
 /**
 ** Account Info
 */
-message Account {
-    bytes       Name        = 4;
-    uint64      Nonce       = 1;
+message Token {
+    uint64      Index        = 4;
     bytes       Balance     = 2;
 }
 

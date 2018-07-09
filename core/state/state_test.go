@@ -26,53 +26,64 @@ import (
 )
 
 func TestStateNew(t *testing.T) {
-	root := common.HexToHash("0x2bf44335cf189dba789158d70bace19b83d3d60d113aa9efe5f53003da66e141")
+	root := common.HexToHash("0xec70375675a554d08bb95d51c5602f5c682f9681d0d2cb55bea2e463ed21b7e1")
 	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
+	indexAcc := common.NameToIndex("pct")
+	indexToken := common.NameToIndex("aba")
 	s, err := state.NewState("/tmp/state", root)
 	if err != nil {
 		t.Fatal(err)
 	}
 	fmt.Println("Trie Root:", s.GetHashRoot().HexString())
 
-	balance, err := s.GetBalance( addr, "aba")
+	balance, err := s.GetBalance( indexAcc, indexToken)
 	if err != nil {
 		fmt.Println("get balance error:", err)
+		if err := s.AddAccount(indexAcc, addr); err != nil {
+			t.Fatal(err)
+		}
+	} else {
+		fmt.Println("Value From:", balance)
 	}
-	fmt.Println("Balance From:", balance)
 	value := new(big.Int).SetUint64(100)
-	if err := s.AddBalance(addr, "aba", value); err != nil {
+	if err := s.AddBalance(indexAcc, indexToken, value); err != nil {
 		fmt.Println("Update Error:", err)
 	}
 
 	fmt.Println("Hash Root:", s.GetHashRoot().HexString())
 	s.CommitToDB()
-	balance, err = s.GetBalance(addr, "aba")
+	balance, err = s.GetBalance(indexAcc, indexToken)
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println("Balance:", balance)
+	fmt.Println("Value:", balance)
 }
 
 func TestStateRoot(t *testing.T) {
 	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
+	indexAcc := common.NameToIndex("pct")
+	indexToken := common.NameToIndex("aba")
 	s, err := state.NewState("/tmp/state_root", common.HexToHash("cf4bfc19264aa4bbd6898c0ef43ce5465c794fd587e622fccc19980e634cd9f2"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := s.AddBalance(addr, "aba", new(big.Int).SetInt64(100)); err != nil {
+	if err := s.AddAccount(indexAcc, addr); err != nil {
 		t.Fatal(err)
 	}
-	value, err := s.GetBalance(addr, "aba")
+	if err := s.AddBalance(indexAcc, indexToken, new(big.Int).SetInt64(100)); err != nil {
+		t.Fatal(err)
+	}
+	value, err := s.GetBalance(indexAcc, indexToken)
 	if err != nil {
 		t.Fatal(err)
 	}
 	fmt.Println("value:", value)
 	fmt.Println("root:", s.GetHashRoot().HexString())
 
-	if err := s.AddBalance(addr, "aba", new(big.Int).SetInt64(150)); err != nil {
+	if err := s.AddBalance(indexAcc, indexToken, new(big.Int).SetInt64(150)); err != nil {
 		t.Fatal(err)
 	}
-	value, err = s.GetBalance(addr, "aba")
+	value, err = s.GetBalance(indexAcc, indexToken)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +93,7 @@ func TestStateRoot(t *testing.T) {
 }
 
 func TestHashRoot(t *testing.T) {
-	diskDb, _ := store.NewLevelDBStore("/tmp/state", 0, 0)
+	diskDb, _ := store.NewLevelDBStore("/tmp/state_hash", 0, 0)
 	Db := state.NewDatabase(diskDb)
 
 	root := common.HexToHash("c9a4c610b1068a32f091a091ee46836b5425d9dfc9dc58c32a70e2b5e5d67a7b")

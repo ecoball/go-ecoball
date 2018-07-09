@@ -21,7 +21,6 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/bloom"
-	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
 )
 
 func GenesesBlockInit() (*types.Block, error) {
@@ -48,16 +47,4 @@ func GenesesBlockInit() (*types.Block, error) {
 	}
 	block := types.Block{header, 0, nil}
 	return &block, nil
-}
-
-func createTransactions() ([]*types.Transaction, error) {
-	code, err := wasmservice.ReadWasm("../../../test/token.wasm")
-	if err != nil {
-		return nil, err
-	}
-	tx := types.NewTestDeploy(code)
-	tx = types.NewTestDeploy(code)
-	var txs []*types.Transaction
-	txs = append(txs, tx)
-	return txs, nil
 }

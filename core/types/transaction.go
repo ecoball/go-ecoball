@@ -38,6 +38,7 @@ type VmType uint32
 
 const (
 	VmWasm VmType = 0x01
+	VmNative VmType = 0x02
 )
 
 type Payload interface {
@@ -50,8 +51,8 @@ type Payload interface {
 type Transaction struct {
 	Version    uint32
 	Type       TxType
-	From       common.Address
-	Addr       common.Address
+	From       uint64
+	Addr       uint64
 	Nonce      uint64
 	TimeStamp  int64
 	Payload    Payload
@@ -59,7 +60,7 @@ type Transaction struct {
 	Hash       common.Hash
 }
 
-func NewTransaction(t TxType, from, addr common.Address, payload Payload, nonce uint64, time int64) (*Transaction, error) {
+func NewTransaction(t TxType, from, addr uint64, payload Payload, nonce uint64, time int64) (*Transaction, error) {
 	if payload == nil {
 		return nil, errors.New("the transaction's payload is nil")
 	}
@@ -102,8 +103,8 @@ func (t *Transaction) unSignatureData() ([]byte, error) {
 	}
 	p := &pb.TransactionPayload{
 		Version:   t.Version,
-		From:      t.From.Bytes(),
-		Addr:      t.Addr.Bytes(),
+		From:      t.From,
+		Addr:      t.Addr,
 		Payload:   payload,
 		Nonce:     t.Nonce,
 		Timestamp: t.TimeStamp,
@@ -129,8 +130,8 @@ func (t *Transaction) protoBuf() (*pb.Transaction, error) {
 		Payload: &pb.TransactionPayload{
 			Version:   t.Version,
 			Type:      uint32(t.Type),
-			From:      t.From.Bytes(),
-			Addr:      t.Addr.Bytes(),
+			From:      t.From,
+			Addr:      t.Addr,
 			Payload:   payload,
 			Nonce:     t.Nonce,
 			Timestamp: t.TimeStamp,
@@ -165,8 +166,8 @@ func (t *Transaction) Deserialize(data []byte) error {
 
 	t.Version = tx.Payload.Version
 	t.Type = TxType(tx.Payload.Type)
-	t.From = common.NewAddress(tx.Payload.From)
-	t.Addr = common.NewAddress(tx.Payload.Addr)
+	t.From = tx.Payload.From
+	t.Addr = tx.Payload.Addr
 	t.Nonce = tx.Payload.Nonce
 	t.TimeStamp = tx.Payload.Timestamp
 	if t.Payload == nil {
@@ -199,8 +200,8 @@ func (t *Transaction) Deserialize(data []byte) error {
 func (t *Transaction) Show() {
 	fmt.Println("\t---------------Transaction-------------")
 	fmt.Println("\tVersion        :", t.Version)
-	fmt.Println("\tFrom           :", t.From.HexString())
-	fmt.Println("\tAddr           :", t.Addr.HexString())
+	fmt.Println("\tFrom           :", common.IndexToName(t.From))
+	fmt.Println("\tAddr           :", common.IndexToName(t.Addr))
 	fmt.Println("\tTime           :", t.TimeStamp)
 	fmt.Println("\tHash           :", t.Hash.HexString())
 	fmt.Println("\tSig Len        :", len(t.Signatures))

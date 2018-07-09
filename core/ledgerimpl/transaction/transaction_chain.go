@@ -67,7 +67,10 @@ func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err err
 	if c.StateDB, err = state.NewState(path+config.StringState, c.CurrentHeader.StateHash); err != nil {
 		return nil, err
 	}
-	if err := c.StateDB.AddBalance(common.Address{}, state.AbaToken, new(big.Int).SetUint64(2100000)); err != nil {
+	if err := c.StateDB.AddAccount(state.IndexAbaRoot, common.Address{}); err != nil {
+		return nil, err
+	}
+	if err := c.StateDB.AddBalance(state.IndexAbaRoot, state.IndexAbaToken, new(big.Int).SetUint64(2100000)); err != nil {
 		return nil, err
 	}
 	if f == false {
@@ -109,7 +112,7 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	for _, t := range block.Transactions {
 		payload, _ := t.Serialize()
 		if t.Type == types.TxDeploy {
-			c.TxsStore.BatchPut(t.Addr.Bytes(), payload)
+			c.TxsStore.BatchPut(common.IndexToBytes(t.Addr), payload)
 		} else {
 			c.TxsStore.BatchPut(t.Hash.Bytes(), payload)
 		}
@@ -239,13 +242,13 @@ func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
 				return errs.ErrDuplicatedTx
 			}
 		}
-		if value, err := c.AccountGetBalance(tx.From, state.AbaToken); err != nil {
+		if value, err := c.AccountGetBalance(tx.From, state.IndexAbaToken); err != nil {
 			return err
 		} else if value.Sign() <= 0 {
 			return errs.ErrDoubleSpend
 		}
 	case types.TxDeploy:
-		if data, err = c.TxsStore.Get(tx.Addr.Bytes()); err != nil {
+		if data, err = c.TxsStore.Get(common.IndexToBytes(tx.Addr)); err != nil {
 			return err
 		} else if data != nil {
 			return errs.ErrDuplicatedTx
@@ -261,16 +264,16 @@ func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
 	return errs.ErrNoError
 }
 
-func (c *ChainTx) AccountGetBalance(addr common.Address, token string) (*big.Int, error) {
-	return c.StateDB.GetBalance(addr, token)
+func (c *ChainTx) AccountGetBalance(indexAcc, indexToken uint64) (*big.Int, error) {
+	return c.StateDB.GetBalance(indexAcc, indexToken)
 }
 
-func (c *ChainTx) AccountAddBalance(addr common.Address, token string, value uint64) error {
-	return c.StateDB.AddBalance(addr, token, new(big.Int).SetUint64(value))
+func (c *ChainTx) AccountAddBalance(indexAcc, indexToken uint64, value uint64) error {
+	return c.StateDB.AddBalance(indexAcc, indexToken, new(big.Int).SetUint64(value))
 }
 
-func (c *ChainTx) AccountSubBalance(addr common.Address, token string, value uint64) error {
-	return c.StateDB.SubBalance(addr, token, new(big.Int).SetUint64(value))
+func (c *ChainTx) AccountSubBalance(indexAcc, indexToken uint64, value uint64) error {
+	return c.StateDB.SubBalance(indexAcc, indexToken, new(big.Int).SetUint64(value))
 }
 
 func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction) ([]byte, error) {
@@ -282,10 +285,10 @@ func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction)
 		if !ok {
 			return nil, errors.New("transaction type error[transfer]")
 		}
-		if err := c.AccountSubBalance(tx.From, state.AbaToken, payload.Value.Uint64()); err != nil {
+		if err := c.AccountSubBalance(tx.From, state.IndexAbaToken, payload.Value.Uint64()); err != nil {
 			return nil, err
 		}
-		if err := c.AccountAddBalance(tx.Addr, state.AbaToken, payload.Value.Uint64()); err != nil {
+		if err := c.AccountAddBalance(tx.Addr, state.IndexAbaToken, payload.Value.Uint64()); err != nil {
 			return nil, err
 		}
 	case types.TxDeploy:
@@ -300,7 +303,7 @@ func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction)
 		if !ok {
 			return nil, errors.New("transaction type error[invoke]")
 		}
-		data, err := c.TxsStore.Get(tx.Addr.Bytes())
+		data, err := c.TxsStore.Get(common.IndexToBytes(tx.Addr))
 		if err != nil {
 			return nil, err
 		}
@@ -311,7 +314,7 @@ func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction)
 		txDeploy.Show()
 		deployInfo, ok := txDeploy.Payload.GetObject().(types.DeployInfo)
 		if !ok {
-			return nil, errors.New(fmt.Sprintf("can't find the deploy contract:%s", tx.Addr.HexString()))
+			return nil, errors.New(fmt.Sprintf("can't find the deploy contract:%s", common.IndexToName(tx.Addr)))
 		}
 		fmt.Println("execute code:", common.ToHex(deployInfo.Code))
 		fmt.Println("method:", string(payload.Method))
@@ -328,6 +331,6 @@ func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction)
 	return nil, nil
 }
 
-func (c *ChainTx) TokenExisted(token string) bool {
-	return c.StateDB.TokenExisted(token)
+func (c *ChainTx) TokenExisted(indexToken uint64) bool {
+	return c.StateDB.TokenExisted(indexToken)
 }

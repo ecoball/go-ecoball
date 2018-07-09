@@ -25,10 +25,11 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
 	"testing"
+	"github.com/ecoball/go-ecoball/test/example"
 )
 
 func TestNewTransactionChain(t *testing.T) {
-	txChain, err := transaction.NewTransactionChain("/tmp/Tx")
+	txChain, err := transaction.NewTransactionChain("/tmp/Tx", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -41,7 +42,7 @@ func TestNewTransactionChain(t *testing.T) {
 }
 
 func TestBlockAdd(t *testing.T) {
-	c, err := transaction.NewTransactionChain("/tmp/quaker/Tx")
+	c, err := transaction.NewTransactionChain("/tmp/quaker/Tx", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -65,8 +66,9 @@ func TestLedgerTxAdd(t *testing.T) {
 		t.Fatal(err)
 	}
 	fmt.Println("Start LedgerImpl Module, hash:", l.GetCurrentHeader().Hash.HexString())
-	tx := types.NewTestTx()
-	l.AccountAddBalance(tx.From, state.AbaToken, 150)
+	example.ExampleAddAccount(l.StateDB())
+	tx := example.ExampleTestTx()
+	l.AccountAddBalance(tx.From, state.IndexAbaToken, 150)
 	var txs []*types.Transaction
 	txs = append(txs, tx)
 	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
@@ -77,12 +79,12 @@ func TestLedgerTxAdd(t *testing.T) {
 	if err := l.SaveTxBlock(block); err != nil {
 		t.Fatal(err)
 	}
-	value, err := l.AccountGetBalance(tx.From, state.AbaToken)
+	value, err := l.AccountGetBalance(tx.From, state.IndexAbaToken)
 	if err != nil {
 		t.Fatal(err)
 	}
 	fmt.Println("value:", value)
-	value, err = l.AccountGetBalance(tx.Addr, state.AbaToken)
+	value, err = l.AccountGetBalance(tx.Addr, state.IndexAbaToken)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -90,13 +92,13 @@ func TestLedgerTxAdd(t *testing.T) {
 }
 
 func TestLedgerDeployAdd(t *testing.T) {
-	l, err := ledgerimpl.NewLedger("/tmp/quaker")
+	l, err := ledgerimpl.NewLedger("/tmp/deploy")
 	if err != nil {
 		t.Fatal(err)
 	}
 	fmt.Println("Start LedgerImpl Module, hash:", l.GetCurrentHeader().Hash.HexString())
 	code, err := wasmservice.ReadWasm("../../../test/token.wasm")
-	tx := types.NewTestDeploy(code)
+	tx := example.ExampleTestDeploy(code)
 	var txs []*types.Transaction
 	txs = append(txs, tx)
 	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
@@ -108,7 +110,7 @@ func TestLedgerDeployAdd(t *testing.T) {
 		t.Fatal(err)
 	}
 	//Invoke Contract
-	invoke := types.NewTestInvoke("create")
+	invoke := example.ExampleTestInvoke("create")
 	var txs2 []*types.Transaction
 	txs2 = append(txs, invoke)
 	block, err = l.NewTxBlock(txs2, conData)
@@ -119,7 +121,7 @@ func TestLedgerDeployAdd(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-
+/*
 func TestLedgerInterface(t *testing.T) {
 	l, err := ledgerimpl.NewLedger("/tmp/quaker")
 	if err != nil {
@@ -150,3 +152,4 @@ func TestLedgerInterfaceTokenCreate(t *testing.T) {
 	fmt.Println("Token Test Value:", l.TokenIsExisted("Test"))
 
 }
+*/
