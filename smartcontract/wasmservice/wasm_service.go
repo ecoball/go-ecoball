@@ -37,7 +37,6 @@ var log = elog.NewLogger("wasm", config.LogLevel)
 
 type WasmService struct {
 	ledger ledger.Ledger
-	//vm *exec.VM
 	tx     *types.Transaction
 	Code   []byte
 	Args   []uint64
@@ -80,7 +79,6 @@ func (ws *WasmService) Execute() ([]byte, error) {
 	}
 
 	vm, err := exec.NewVM(m)
-	//ws.vm = vm
 	if err != nil {
 		fmt.Printf("could not create VM: %v", err)
 	}

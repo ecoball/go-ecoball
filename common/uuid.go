@@ -1,24 +1,52 @@
 package common
 
 import (
-	"math/big"
 	"encoding/binary"
-	"github.com/btcsuite/btcutil/base58"
 	"regexp"
 	"fmt"
 	"errors"
+	"strings"
 )
 
-func NameToIndex(name string) uint64 {
-	base := base58.Encode([]byte(name))
-	index := new(big.Int).SetBytes([]byte(base)).Uint64()
-	return index
+func NameToIndex(name string) (index uint64) {
+	var i uint32
+	sLen := uint32(len(name))
+	for ; i <= 12; i++ {
+		var c uint64
+		if i < sLen {
+			c = uint64(charToSymbol(name[i]))
+		}
+		if i < 12 {
+			c &= 0x1f
+			c <<= 64 - 5*(i+1)
+		} else {
+			c &= 0x0f
+		}
+		index |= c
+	}
+	return
 }
-
+var base32Alphabet = []byte(".12345abcdefghijklmnopqrstuvwxyz")
 func IndexToName(index uint64) string {
-	u := new(big.Int).SetUint64(index)
-	name := base58.Decode(string(u.Bytes()))
-	return string(name)
+	a := []byte{'.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'}
+	tmp := index
+	i := uint32(0)
+	for ; i <= 12; i++ {
+		bit := 0x1f
+		if i == 0 {
+			bit = 0x0f
+		}
+		c := base32Alphabet[tmp&uint64(bit)]
+		a[12-i] = c
+
+		shift := uint(5)
+		if i == 0 {
+			shift = 4
+		}
+		tmp >>= shift
+	}
+
+	return strings.TrimRight(string(a), ".")
 }
 
 
@@ -34,7 +62,7 @@ func IndexSetBytes(data []byte) uint64 {
 }
 
 func AccountNameCheck(name string) error {
-	reg := `^[1-5a-z]{1,12}$`
+	reg := `^[.1-5a-z]{1,12}$`
 	rgx := regexp.MustCompile(reg)
 	if !rgx.MatchString(name) {
 		e := fmt.Sprintf("Invalid name\n" +
@@ -42,4 +70,14 @@ func AccountNameCheck(name string) error {
 		return errors.New(e)
 	}
 	return nil
+}
+
+func charToSymbol(c byte) byte {
+	if c >= 'a' && c <= 'z' {
+		return c - 'a' + 6
+	}
+	if c >= '1' && c <= '5' {
+		return c - '1' + 1
+	}
+	return 0
 }
