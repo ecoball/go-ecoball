@@ -46,7 +46,7 @@ func ExampleTestInvoke(method string) *types.Transaction {
 func ExampleTestDeploy(code []byte) *types.Transaction {
 	indexFrom := common.NameToIndex("from")
 	indexAddr := common.NameToIndex("addr")
-	deploy, err := types.NewDeployContract(indexFrom, indexAddr, types.VmWasm, "pct", "func", "test@163.com", "test deploy", code, 0, time.Now().Unix())
+	deploy, err := types.NewDeployContract(indexFrom, indexAddr, types.VmWasm, "test deploy", code, 0, time.Now().Unix())
 	if err != nil {
 		panic(err)
 		return nil

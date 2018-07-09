@@ -25,22 +25,16 @@ import (
 
 type DeployInfo struct {
 	TypeVm   VmType
-	Author   []byte
-	Name     []byte
-	Email    []byte
 	Describe []byte
 	Code     []byte
 }
 
-func NewDeployContract(from, addr uint64, vm VmType, author, name, email, des string, code []byte, nonce uint64, time int64) (*Transaction, error) {
+func NewDeployContract(from, addr uint64, vm VmType, des string, code []byte, nonce uint64, time int64) (*Transaction, error) {
 	if len(code) == 0 {
 		return nil, errors.New("code's len is 0")
 	}
 	deploy := &DeployInfo{
 		TypeVm:   vm,
-		Author:   []byte(author),
-		Name:     []byte(name),
-		Email:    []byte(email),
 		Describe: []byte(des),
 		Code:     code,
 	}
@@ -54,9 +48,6 @@ func NewDeployContract(from, addr uint64, vm VmType, author, name, email, des st
 func (d *DeployInfo) Serialize() ([]byte, error) {
 	p := &pb.DeployInfo{
 		TypeVm:   uint32(d.TypeVm),
-		Author:   d.Author,
-		Name:     d.Name,
-		Email:    d.Email,
 		Describe: d.Describe,
 		Code:     d.Code,
 	}
@@ -76,9 +67,6 @@ func (d *DeployInfo) Deserialize(data []byte) error {
 		return err
 	}
 	d.TypeVm = VmType(deploy.TypeVm)
-	d.Author = common.CopyBytes(deploy.Author)
-	d.Name = common.CopyBytes(deploy.Name)
-	d.Email = common.CopyBytes(deploy.Email)
 	d.Describe = common.CopyBytes(deploy.Describe)
 	d.Code = common.CopyBytes(deploy.Code)
 
@@ -92,8 +80,5 @@ func (d DeployInfo) GetObject() interface{} {
 func (d *DeployInfo) Show() {
 	fmt.Println("\t---------Show Deploy Info ----------")
 	fmt.Println("\tTypeVm        :", d.TypeVm)
-	fmt.Println("\tAuthor        :", string(d.Author))
-	fmt.Println("\tName          :", string(d.Name))
-	fmt.Println("\tEmail         :", string(d.Email))
 	fmt.Println("\tDescribe      :", string(d.Describe))
 }

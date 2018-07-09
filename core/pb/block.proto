@@ -82,9 +82,6 @@ message TransactionPayload {
 
 message DeployInfo {
     uint32      TypeVm      = 5;
-    bytes       Author      = 1;
-	bytes       Name        = 2;
-	bytes       Email       = 3;
 	bytes       Describe    = 4;
 	bytes       Code        = 6;
 }
