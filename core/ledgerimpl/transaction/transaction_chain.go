@@ -30,6 +30,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/smartcontract"
 	"math/big"
+	"github.com/ecoball/go-ecoball/core/ledgerimpl/geneses"
 )
 
 var log = elog.NewLogger("Chain Tx", elog.NoticeLog)
@@ -46,7 +47,7 @@ type ChainTx struct {
 }
 
 func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err error) {
-	c = &ChainTx{CurrentHeader: &types.Header{}, ledger: ledger}
+	c = &ChainTx{ledger: ledger}
 	c.BlockStore, err = store.NewLevelDBStore(path+config.StringBlock, 0, 0)
 	if err != nil {
 		return nil, err
@@ -60,24 +61,27 @@ func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err err
 		return nil, err
 	}
 
-	f, err := c.RestoreBlock()
+	existed, err := c.RestoreBlock()
 	if err != nil {
 		return nil, err
 	}
-	if c.StateDB, err = state.NewState(path+config.StringState, c.CurrentHeader.StateHash); err != nil {
-		return nil, err
+	if existed {
+		if c.StateDB, err = state.NewState(path+config.StringState, c.CurrentHeader.StateHash); err != nil {
+			return nil, err
+		}
+	} else {
+		if c.StateDB, err = state.NewState(path+config.StringState, common.Hash{}); err != nil {
+			return nil, err
+		}
 	}
-	if err := c.StateDB.AddAccount(state.IndexAbaRoot, common.Address{}); err != nil {
-		return nil, err
-	}
-	if err := c.StateDB.AddBalance(state.IndexAbaRoot, state.IndexAbaToken, new(big.Int).SetUint64(2100000)); err != nil {
-		return nil, err
-	}
+	/*
+
+
 	if f == false {
 		if err := c.GenesesBlockInit(); err != nil {
 			return nil, err
 		}
-	}
+	}*/
 
 	return c, nil
 }
@@ -181,16 +185,21 @@ func (c *ChainTx) GetBlockByHeight(height uint64) (*types.Block, error) {
 }
 
 func (c *ChainTx) GenesesBlockInit() error {
-	geneses, err := types.GenesesBlockInit()
+	if c.CurrentHeader != nil {
+		c.CurrentHeader.Show()
+		return nil
+	}
+	//geneses, err := types.GenesesBlockInit()
+	block, err := geneses.GenesisBlockInit(c.ledger)
 	if err != nil {
 		return err
 	}
-	c.CurrentHeader = geneses.Header
-	if err := c.SaveBlock(geneses); err != nil {
+	c.CurrentHeader = block.Header
+	if err := c.SaveBlock(block); err != nil {
 		log.Error("Save geneses block error:", err)
 		return err
 	}
-	c.CurrentHeader = geneses.Header
+	c.CurrentHeader = block.Header
 	return nil
 }
 
@@ -336,4 +345,14 @@ func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction)
 
 func (c *ChainTx) TokenExisted(indexToken uint64) bool {
 	return c.StateDB.TokenExisted(indexToken)
+}
+
+func (c *ChainTx) TokenAllocation() error {
+	if err := c.StateDB.AddAccount(state.IndexAbaRoot, common.NewAddress([]byte("aba_token"))); err != nil {
+		return err
+	}
+	if err := c.StateDB.AddBalance(state.IndexAbaRoot, state.IndexAbaToken, new(big.Int).SetUint64(2100000)); err != nil {
+		return err
+	}
+	return nil
 }

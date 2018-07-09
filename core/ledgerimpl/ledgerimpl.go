@@ -49,7 +49,9 @@ func NewLedger(path string) (l ledger.Ledger, err error) {
 	if err != nil {
 		return nil, err
 	}
-
+	if err := ll.ChainTx.GenesesBlockInit(); err != nil {
+		return nil, err
+	}
 	//TODO
 	if config.ConsensusAlgorithm == "DPOS" {
 		ll.bc, err = dpos.NewBlockChain(ll.ChainTx)

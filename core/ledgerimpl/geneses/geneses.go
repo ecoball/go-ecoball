@@ -25,7 +25,7 @@ import (
 	"time"
 )
 
-func GenesesBlockInit(ledger ledger.Ledger) (*types.Block, error) {
+func GenesisBlockInit(ledger ledger.Ledger) (*types.Block, error) {
 	if ledger == nil {
 		return nil, errors.New("ledger is nil")
 	}
@@ -44,7 +44,7 @@ func GenesesBlockInit(ledger ledger.Ledger) (*types.Block, error) {
 
 	hash := common.NewHash([]byte("EcoBall Geneses Block"))
 	conData := types.GenesesBlockInitConsensusData(timeStamp)
-	txs, err := GenesesContract(ledger, timeStamp)
+	txs, err := PresetContract(ledger, timeStamp)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func GenesesBlockInit(ledger ledger.Ledger) (*types.Block, error) {
 	return &block, nil
 }
 
-func GenesesContract(ledger ledger.Ledger, t int64) ([]*types.Transaction, error) {
+func PresetContract(ledger ledger.Ledger, t int64) ([]*types.Transaction, error) {
 	var txs []*types.Transaction
 	if ledger == nil {
 		return nil, errors.New("ledger is nil")
