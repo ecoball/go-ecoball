@@ -24,6 +24,8 @@ import (
 	"github.com/gogo/protobuf/proto"
 
 	"github.com/btcsuite/btcutil/base58"
+	"crypto/sha256"
+	"golang.org/x/crypto/ripemd160"
 )
 
 const AddressLen = 20
@@ -34,6 +36,16 @@ func NewAddress(addr []byte) Address {
 	var address Address
 	copy(address[:], addr)
 	return address
+}
+
+func AddressFromPubKey(pubKey []byte) Address {
+	var addr Address
+	temp := sha256.Sum256(pubKey)
+	md := ripemd160.New()
+	md.Write(temp[:])
+	md.Sum(addr[:0])
+	addr[0] = 0x01
+	return addr
 }
 
 func AddressFromBase58(data string) Address {
