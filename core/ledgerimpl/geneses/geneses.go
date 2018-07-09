@@ -23,6 +23,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/types"
 	"time"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 func GenesisBlockInit(ledger ledger.Ledger) (*types.Block, error) {
@@ -54,6 +55,9 @@ func GenesisBlockInit(ledger ledger.Ledger) (*types.Block, error) {
 		return nil, err
 	}
 	block := types.Block{Header: header, CountTxs: uint32(len(txs)), Transactions: txs}
+	if err := block.SetSignature(&config.Root); err != nil {
+		return nil, err
+	}
 	return &block, nil
 }
 
@@ -62,24 +66,18 @@ func PresetContract(ledger ledger.Ledger, t int64) ([]*types.Transaction, error)
 	if ledger == nil {
 		return nil, errors.New("ledger is nil")
 	}
-	index := common.NameToIndex("token")
-	if err := ledger.AccountAdd(index, common.NewAddress([]byte("system token"))); err != nil {
+	index := common.NameToIndex("root")
+	if err := ledger.AccountAdd(index, common.NewAddress(common.FromHex(config.RootPubkey))); err != nil {
 		return nil, err
 	}
-	tokenContract, err := types.NewDeployContract(0, index, types.VmNative, "system token", nil, 0, t)
+	tokenContract, err := types.NewDeployContract(index, index, types.VmNative, "system control", nil, 0, t)
 	if err != nil {
+		return nil, err
+	}
+	if err := tokenContract.SetSignature(&config.Root); err != nil {
 		return nil, err
 	}
 	txs = append(txs, tokenContract)
 
-	index = common.NameToIndex("account")
-	if err := ledger.AccountAdd(index, common.NewAddress([]byte("system account"))); err != nil {
-		return nil, err
-	}
-	accountContract, err := types.NewDeployContract(0, index, types.VmNative, "system account", nil, 0, t)
-	if err != nil {
-		return nil, err
-	}
-	txs = append(txs, accountContract)
 	return txs, nil
 }

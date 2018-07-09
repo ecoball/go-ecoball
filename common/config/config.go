@@ -25,6 +25,8 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/ecoball/go-ecoball/common/utils"
+	"github.com/ecoball/go-ecoball/account"
+	"github.com/ecoball/go-ecoball/common"
 )
 
 const (
@@ -45,6 +47,8 @@ log_dir = "/tmp/Log/"        # log file location
 output_to_terminal = "true"	 	
 log_level = 1                # debug level	
 consensus_algorithm = "SOLO" # can set as SOLO, DPOS
+root_privkey = "0x33a0330cd18912c215c9b1125fab59e9a5ebfb62f0223bbea0c6c5f95e30b1c6"
+root_pubkey = "0x0463613734b23e5dd247b7147b63369bf8f5332f894e600f7357f3cfd56886f75544fd095eb94dac8401e4986de5ea620f5a774feb71243e95b4dd6b83ca49910c"
 `
 
 var (
@@ -54,6 +58,9 @@ var (
 	OutputToTerminal bool
 	LogLevel         int
 	ConsensusAlgorithm string
+	RootPrivkey	string
+	RootPubkey string
+	Root account.Account
 )
 
 type Config struct {
@@ -129,4 +136,7 @@ func initVariable() {
 	OutputToTerminal = viper.GetBool("output_to_terminal")
 	LogLevel = viper.GetInt("log_level")
 	ConsensusAlgorithm = viper.GetString("consensus_algorithm")
+	RootPrivkey = viper.GetString("root_privkey")
+	RootPubkey = viper.GetString("root_pubkey")
+	Root = account.Account{PrivateKey: common.FromHex(RootPrivkey), PublicKey: common.FromHex(RootPubkey), Alg: 0}
 }

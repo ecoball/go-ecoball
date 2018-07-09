@@ -22,6 +22,7 @@ import (
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/pb"
+	"github.com/ecoball/go-ecoball/crypto/secp256k1"
 )
 
 const VersionTx = 1
@@ -94,6 +95,10 @@ func (t *Transaction) SetSignature(account *account.Account) error {
 	sig.PubKey = common.CopyBytes(account.PublicKey)
 	t.Signatures = append(t.Signatures, sig)
 	return nil
+}
+
+func (t *Transaction) VerifySignature() (bool, error) {
+	return secp256k1.Verify(t.Hash.Bytes(), t.Signatures[0].SigData, t.Signatures[0].PubKey)
 }
 
 func (t *Transaction) unSignatureData() ([]byte, error) {

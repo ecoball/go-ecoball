@@ -21,6 +21,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"testing"
 	"github.com/ecoball/go-ecoball/test/example"
+	"errors"
 )
 
 func TestTransfer(t *testing.T) {
@@ -28,6 +29,13 @@ func TestTransfer(t *testing.T) {
 	tx := example.ExampleTestTx()
 	fmt.Println("Hash1:", tx.Hash.HexString())
 	tx.Show()
+	result, err := tx.VerifySignature()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result == false {
+		t.Fatal(errors.New("verify error"))
+	}
 
 	transferData, err := tx.Serialize()
 	if err != nil {

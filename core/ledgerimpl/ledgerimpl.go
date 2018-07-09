@@ -137,6 +137,10 @@ func (l *LedgerImpl) GetCurrentHeight() uint64 {
 	return l.ChainTx.CurrentHeader.Height
 }
 
+func (l *LedgerImpl) VerifyTxBlock(block *types.Block) error {
+	return l.ChainTx.VerifyTxBlock(block)
+}
+
 func (l *LedgerImpl) SaveTxBlock(block *types.Block) error {
 	if err := l.ChainTx.SaveBlock(block); err != nil {
 		return err

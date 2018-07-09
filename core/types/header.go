@@ -24,6 +24,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/common/elog"
+	"github.com/ecoball/go-ecoball/crypto/secp256k1"
 )
 
 const VersionHeader = 1
@@ -113,6 +114,11 @@ func (h *Header) SetSignature(account *account.Account) error {
 	sig.PubKey = common.CopyBytes(account.PublicKey)
 	h.Signatures = append(h.Signatures, sig)
 	return nil
+}
+
+func (h *Header) VerifySignature() (bool, error) {
+	h.Show()
+	return secp256k1.Verify(h.Hash.Bytes(), h.Signatures[0].SigData, h.Signatures[0].PubKey)
 }
 
 /**

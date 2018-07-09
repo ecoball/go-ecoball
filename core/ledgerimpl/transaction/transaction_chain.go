@@ -104,6 +104,24 @@ func (c *ChainTx) ResetStateDB(hash common.Hash) error {
 	return c.StateDB.Reset(hash)
 }
 
+func (c *ChainTx) VerifyTxBlock(block *types.Block) error {
+	result, err := block.VerifySignature()
+	if err != nil {
+		log.Error("Block VerifySignature Failed")
+		return err
+	}
+	if result == false {
+		return errors.New("block verify signature failed")
+	}
+	for _, v := range block.Transactions {
+		if err := c.CheckTransaction(v); err != errs.ErrNoError {
+			log.Error("Transactions VerifySignature Failed")
+			return err
+		}
+	}
+	return nil
+}
+
 func (c *ChainTx) SaveBlock(block *types.Block) error {
 	if block == nil {
 		return errors.New("block is nil")
@@ -240,31 +258,35 @@ func (c *ChainTx) GetTransaction(key []byte) (*types.Transaction, error) {
 }
 
 func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
+	result, err := tx.VerifySignature()
+	if err != nil {
+		return err
+	}
+	if result == false {
+		return errors.New("tx verify signature failed")
+	}
 	var data []byte
 	switch tx.Type {
 	case types.TxTransfer:
-		if data, err = c.TxsStore.Get(tx.Hash.Bytes()); err != nil {
-			return err
-		} else {
-			if data != nil {
-				return errs.ErrDuplicatedTx
-			}
+		if data, _ = c.TxsStore.Get(tx.Hash.Bytes()); data != nil {
+			return errs.ErrDuplicatedTx
 		}
 		if value, err := c.AccountGetBalance(tx.From, state.IndexAbaToken); err != nil {
 			return err
 		} else if value.Sign() <= 0 {
+			log.Error(err)
 			return errs.ErrDoubleSpend
 		}
 	case types.TxDeploy:
-		if data, err = c.TxsStore.Get(common.IndexToBytes(tx.Addr)); err != nil {
-			return err
-		} else if data != nil {
+		if data, _ = c.TxsStore.Get(common.IndexToBytes(tx.Addr)); data != nil {
 			return errs.ErrDuplicatedTx
 		}
 		//hash := c.StateDB.GetHashRoot()
 		//c.HandleTransaction(c, tx)
 	case types.TxInvoke:
-		data, err = c.TxsStore.Get(tx.Hash.Bytes())
+		if data, _ = c.TxsStore.Get(tx.Hash.Bytes()); data != nil {
+			return errs.ErrDuplicatedTx
+		}
 	default:
 		return errors.New("check transaction unknown tx type")
 	}

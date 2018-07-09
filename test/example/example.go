@@ -1,13 +1,14 @@
 package example
 
 import (
-	"time"
-	"github.com/ecoball/go-ecoball/core/state"
-	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/account"
-	"math/big"
 	"fmt"
+	"github.com/ecoball/go-ecoball/account"
+	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/core/state"
+	"github.com/ecoball/go-ecoball/core/types"
+	"math/big"
+	"time"
+	"github.com/ecoball/go-ecoball/common/config"
 )
 
 func ExampleAddAccount(state *state.State) error {
@@ -32,16 +33,12 @@ func ExampleTestInvoke(method string) *types.Transaction {
 		panic(err)
 		return nil
 	}
-	acc, err := account.NewAccount(0)
-	if err != nil {
-		panic(err)
-	}
+	acc := account.Account{PrivateKey: common.FromHex(config.RootPrivkey), PublicKey: common.FromHex(config.RootPubkey), Alg: 0}
 	if err := invoke.SetSignature(&acc); err != nil {
 		panic(err)
 	}
 	return invoke
 }
-
 
 func ExampleTestDeploy(code []byte) *types.Transaction {
 	indexFrom := common.NameToIndex("from")
@@ -51,10 +48,7 @@ func ExampleTestDeploy(code []byte) *types.Transaction {
 		panic(err)
 		return nil
 	}
-	acc, err := account.NewAccount(0)
-	if err != nil {
-		panic(err)
-	}
+	acc := account.Account{PrivateKey: common.FromHex(config.RootPrivkey), PublicKey: common.FromHex(config.RootPubkey), Alg: 0}
 	if err := deploy.SetSignature(&acc); err != nil {
 		panic(err)
 	}
@@ -70,11 +64,8 @@ func ExampleTestTx() *types.Transaction {
 		fmt.Println(err)
 		return nil
 	}
-	acc, err := account.NewAccount(0)
-	if err != nil {
-		fmt.Println(err)
-		return nil
-	}
+	fmt.Println(config.RootPrivkey)
+	acc := account.Account{PrivateKey: common.FromHex(config.RootPrivkey), PublicKey: common.FromHex(config.RootPubkey), Alg: 0}
 	if err := tx.SetSignature(&acc); err != nil {
 		fmt.Println(err)
 		return nil
@@ -82,4 +73,3 @@ func ExampleTestTx() *types.Transaction {
 	tx.Show()
 	return tx
 }
-
