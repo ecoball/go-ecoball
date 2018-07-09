@@ -31,14 +31,9 @@ type ActorIndex int
 const (
 	ActorNil ActorIndex = iota
 	ActorTxPool
-	ActorInputTx
-	ActorValidator
 	ActorP2P
-	ActorHttp
 	ActorConsensus
 	ActorLedger
-	ActorValidation
-	ActorNetRpc
 	maxActorNumber
 )
 
@@ -53,20 +48,12 @@ func (a ActorIndex) String() string {
 	switch a {
 	case ActorTxPool:
 		return "tx pool"
-	case ActorInputTx:
-		return "input tx"
-	case ActorValidator:
-		return "validator"
 	case ActorP2P:
 		return "p2p"
-	case ActorHttp:
-		return "http"
 	case ActorConsensus:
 		return "consensus"
 	case ActorLedger:
 		return "ledger"
-	case ActorValidation:
-		return "validation"
 	default:
 		return "unknown actor index"
 	}
