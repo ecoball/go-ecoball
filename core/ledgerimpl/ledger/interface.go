@@ -17,6 +17,7 @@ type Ledger interface {
 	StateDB() *state.State
 	ResetStateDB(hash common.Hash) error
 
+	AccountAdd(indexName uint64, addr common.Address) error
 	AccountGetBalance(indexAcc, indexToken uint64) (uint64, error)
 	AccountAddBalance(indexAcc, indexToken uint64, value uint64) error
 	AccountSubBalance(indexAcc, indexToken uint64, value uint64) error
