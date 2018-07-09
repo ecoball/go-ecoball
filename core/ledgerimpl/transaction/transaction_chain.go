@@ -24,13 +24,13 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	errs "github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
+	"github.com/ecoball/go-ecoball/core/ledgerimpl/geneses"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/store"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/smartcontract"
 	"math/big"
-	"github.com/ecoball/go-ecoball/core/ledgerimpl/geneses"
 )
 
 var log = elog.NewLogger("Chain Tx", elog.NoticeLog)
@@ -77,11 +77,11 @@ func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err err
 	/*
 
 
-	if f == false {
-		if err := c.GenesesBlockInit(); err != nil {
-			return nil, err
-		}
-	}*/
+		if f == false {
+			if err := c.GenesesBlockInit(); err != nil {
+				return nil, err
+			}
+		}*/
 
 	return c, nil
 }

@@ -25,9 +25,9 @@ import (
 	"github.com/ecoball/go-ecoball/consensus/dpos"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/transaction"
+	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
 	"time"
-	"github.com/ecoball/go-ecoball/core/state"
 )
 
 var log = elog.NewLogger("LedgerImpl", elog.DebugLog)
@@ -45,7 +45,7 @@ type LedgerImpl struct {
 
 func NewLedger(path string) (l ledger.Ledger, err error) {
 	ll := new(LedgerImpl)
-	ll.ChainTx, err = transaction.NewTransactionChain(path + "/Transaction", ll)
+	ll.ChainTx, err = transaction.NewTransactionChain(path+"/Transaction", ll)
 	if err != nil {
 		return nil, err
 	}

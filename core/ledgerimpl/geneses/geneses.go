@@ -19,11 +19,11 @@ package geneses
 import (
 	"errors"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/types"
 	"time"
-	"github.com/ecoball/go-ecoball/common/config"
 )
 
 func GenesisBlockInit(ledger ledger.Ledger) (*types.Block, error) {

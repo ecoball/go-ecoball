@@ -38,7 +38,7 @@ const (
 type VmType uint32
 
 const (
-	VmWasm VmType = 0x01
+	VmWasm   VmType = 0x01
 	VmNative VmType = 0x02
 )
 

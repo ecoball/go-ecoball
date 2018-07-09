@@ -1,13 +1,13 @@
 package geneses_test
 
 import (
-	"testing"
+	"fmt"
+	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl"
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/common"
+	"testing"
 	"time"
-	"fmt"
-	"github.com/ecoball/go-ecoball/common/config"
 )
 
 func TestGenesesBlockInit(t *testing.T) {
