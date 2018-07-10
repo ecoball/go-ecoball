@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/common/bijection"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/store"
 	"math/big"
@@ -36,7 +35,7 @@ type State struct {
 	db     Database
 	diskDb *store.LevelDBStore
 
-	accounts bijection.Bijection
+	//accounts bijection.Bijection
 }
 
 func NewState(path string, root common.Hash) (st *State, err error) {
@@ -45,7 +44,7 @@ func NewState(path string, root common.Hash) (st *State, err error) {
 	if err != nil {
 		return nil, err
 	}
-	st.accounts = bijection.New()
+	//st.accounts = bijection.New()
 	st.db = NewDatabase(st.diskDb)
 	log.Notice("Open Trie Hash:", root.HexString())
 	st.trie, err = st.db.OpenTrie(root)
@@ -59,9 +58,14 @@ func (s *State) Close() {
 	s.diskDb.Close()
 }
 
-func (s *State) AddAccount(index uint64, addr common.Address) error {
-	if err := s.accounts.Set(index, common.NameToIndex(string(addr.Bytes()))); err != nil {
+func (s *State) AddAccount(index common.AccountName, addr common.Address) error {
+	key := common.IndexToBytes(index)
+	acc, err := s.trie.TryGet(key)
+	if err != nil {
 		return err
+	}
+	if acc != nil {
+		return errors.New("reduplicate name")
 	}
 	obj, err := NewAccount(index, addr)
 	if err != nil {
@@ -77,7 +81,7 @@ func (s *State) AddAccount(index uint64, addr common.Address) error {
 	return nil
 }
 
-func (s *State) GetAccount(index uint64) (*Account, error) {
+func (s *State) GetAccount(index common.AccountName) (*Account, error) {
 	key := common.IndexToBytes(index)
 	fData, err := s.trie.TryGet(key)
 	if err != nil {
@@ -95,7 +99,7 @@ func (s *State) GetAccount(index uint64) (*Account, error) {
 	return acc, nil
 }
 
-func (s *State) SubBalance(indexAcc, indexToken uint64, value *big.Int) error {
+func (s *State) SubBalance(indexAcc, indexToken common.AccountName, value *big.Int) error {
 	acc, err := s.GetAccount(indexAcc)
 	if err != nil {
 		return err
@@ -119,7 +123,7 @@ func (s *State) SubBalance(indexAcc, indexToken uint64, value *big.Int) error {
 	return nil
 }
 
-func (s *State) AddBalance(indexAcc, indexToken uint64, value *big.Int) error {
+func (s *State) AddBalance(indexAcc, indexToken common.AccountName, value *big.Int) error {
 	acc, err := s.GetAccount(indexAcc)
 	if err != nil {
 		return err
@@ -139,7 +143,7 @@ func (s *State) AddBalance(indexAcc, indexToken uint64, value *big.Int) error {
 	return nil
 }
 
-func (s *State) TokenExisted(indexToken uint64) bool {
+func (s *State) TokenExisted(indexToken common.AccountName) bool {
 	data, err := s.trie.TryGet(common.IndexToBytes(indexToken))
 	if err != nil {
 		log.Error(err)
@@ -168,7 +172,7 @@ func (s *State) CommitToDB() error {
 	return s.db.TrieDB().Commit(s.trie.Hash(), false)
 }
 
-func (s *State) GetBalance(indexAcc, indexToken uint64) (*big.Int, error) {
+func (s *State) GetBalance(indexAcc, indexToken common.AccountName) (*big.Int, error) {
 	acc, err := s.GetAccount(indexAcc)
 	if err != nil {
 		return nil, err

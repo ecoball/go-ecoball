@@ -101,7 +101,7 @@ func (l *LedgerImpl) StateDB() *state.State {
 	return l.ChainTx.StateDB
 }
 
-func (l *LedgerImpl) AccountGetBalance(indexAcc, indexToken uint64) (uint64, error) {
+func (l *LedgerImpl) AccountGetBalance(indexAcc, indexToken common.AccountName) (uint64, error) {
 	value, err := l.ChainTx.AccountGetBalance(indexAcc, indexToken)
 	if err != nil {
 		return 0, err
@@ -113,19 +113,19 @@ func (l *LedgerImpl) ContractGetInfo(key []byte) ([]byte, error) {
 	return l.ChainTx.TxsStore.Get(key)
 }
 
-func (l *LedgerImpl) GetAccount(index uint64) (*state.Account, error) {
+func (l *LedgerImpl) GetAccount(index common.AccountName) (*state.Account, error) {
 	return l.ChainTx.StateDB.GetAccount(index)
 }
 
-func (l *LedgerImpl) AccountAdd(index uint64, addr common.Address) error {
+func (l *LedgerImpl) AccountAdd(index common.AccountName, addr common.Address) error {
 	return l.ChainTx.AccountAdd(index, addr)
 }
 
-func (l *LedgerImpl) AccountAddBalance(indexAcc, indexToken uint64, value uint64) error {
+func (l *LedgerImpl) AccountAddBalance(indexAcc, indexToken common.AccountName, value uint64) error {
 	return l.ChainTx.AccountAddBalance(indexAcc, indexToken, value)
 }
 
-func (l *LedgerImpl) AccountSubBalance(indexAcc, indexToken uint64, value uint64) error {
+func (l *LedgerImpl) AccountSubBalance(indexAcc, indexToken common.AccountName, value uint64) error {
 	return l.ChainTx.AccountSubBalance(indexAcc, indexToken, value)
 }
 
@@ -170,11 +170,11 @@ func (l *LedgerImpl) CheckTransaction(tx *types.Transaction) error {
 	return nil
 }
 
-func (l *LedgerImpl) TokenCreate(indexAcc, indexToken uint64, maximum uint64) error {
+func (l *LedgerImpl) TokenCreate(indexAcc, indexToken common.AccountName, maximum uint64) error {
 	return l.ChainTx.AccountAddBalance(indexAcc, indexToken, maximum)
 }
 
-func (l *LedgerImpl) TokenIsExisted(indexToken uint64) bool {
+func (l *LedgerImpl) TokenIsExisted(indexToken common.AccountName) bool {
 	return l.ChainTx.TokenExisted(indexToken)
 }
 

@@ -23,7 +23,10 @@ import (
 	"strings"
 )
 
-func NameToIndex(name string) (index uint64) {
+type AccountName uint64
+
+func NameToIndex(name string) AccountName {
+	var index uint64
 	var i uint32
 	sLen := uint32(len(name))
 	for ; i <= 12; i++ {
@@ -39,14 +42,14 @@ func NameToIndex(name string) (index uint64) {
 		}
 		index |= c
 	}
-	return
+	return AccountName(index)
 }
 
 var base32Alphabet = []byte(".12345abcdefghijklmnopqrstuvwxyz")
 
-func IndexToName(index uint64) string {
+func IndexToName(index AccountName) string {
 	a := []byte{'.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'}
-	tmp := index
+	tmp := uint64(index)
 	i := uint32(0)
 	for ; i <= 12; i++ {
 		bit := 0x1f
@@ -66,19 +69,30 @@ func IndexToName(index uint64) string {
 	return strings.TrimRight(string(a), ".")
 }
 
-func IndexToBytes(index uint64) []byte {
+func IndexToBytes(index AccountName) []byte {
 	b := make([]byte, 8)
 	binary.BigEndian.PutUint64(b, uint64(index))
 	return b
 }
 
-func IndexSetBytes(data []byte) uint64 {
+func IndexSetBytes(data []byte) AccountName {
 	index := binary.BigEndian.Uint64(data)
-	return index
+	return AccountName(index)
 }
 
 func AccountNameCheck(name string) error {
 	reg := `^[.1-5a-z]{1,12}$`
+	rgx := regexp.MustCompile(reg)
+	if !rgx.MatchString(name) {
+		e := fmt.Sprintf("Invalid name\n" +
+			" Name should be less than 13 characters and only contains the following symbol .12345abcdefghijklmnopqrstuvwxyz")
+		return errors.New(e)
+	}
+	return nil
+}
+
+func TokenNameCheck(name string) error {
+	reg := `^[1-5a-z]{1,12}$`
 	rgx := regexp.MustCompile(reg)
 	if !rgx.MatchString(name) {
 		e := fmt.Sprintf("Invalid name\n" +

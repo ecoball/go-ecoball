@@ -13,12 +13,12 @@ var log = elog.NewLogger("native", config.LogLevel)
 
 type NativeService struct {
 	ledger ledger.Ledger
-	owner  uint64
+	owner  common.AccountName
 	method string
 	params []string
 }
 
-func NewNativeService(ledger ledger.Ledger, owner uint64, method string, params []string) (*NativeService, error) {
+func NewNativeService(ledger ledger.Ledger, owner common.AccountName, method string, params []string) (*NativeService, error) {
 	ns := &NativeService{ledger: ledger, owner: owner, method: method, params: params}
 	return ns, nil
 }

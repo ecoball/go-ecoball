@@ -18,15 +18,15 @@ type Ledger interface {
 	StateDB() *state.State
 	ResetStateDB(hash common.Hash) error
 
-	AccountAdd(index uint64, addr common.Address) error
-	GetAccount(index uint64) (*state.Account, error)
-	AccountGetBalance(indexAcc, indexToken uint64) (uint64, error)
-	AccountAddBalance(indexAcc, indexToken uint64, value uint64) error
-	AccountSubBalance(indexAcc, indexToken uint64, value uint64) error
+	AccountAdd(index common.AccountName, addr common.Address) error
+	GetAccount(index common.AccountName) (*state.Account, error)
+	AccountGetBalance(indexAcc, indexToken common.AccountName) (uint64, error)
+	AccountAddBalance(indexAcc, indexToken common.AccountName, value uint64) error
+	AccountSubBalance(indexAcc, indexToken common.AccountName, value uint64) error
 	ContractGetInfo(key []byte) ([]byte, error)
 
-	TokenCreate(indexAcc, indexToken uint64, maximum uint64) error
-	TokenIsExisted(indexToken uint64) bool
+	TokenCreate(indexAcc, indexToken common.AccountName, maximum uint64) error
+	TokenIsExisted(indexToken common.AccountName) bool
 	//SignatureTransaction()
 	//GetContractInfo()
 	Start()

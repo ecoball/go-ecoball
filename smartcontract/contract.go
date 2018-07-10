@@ -42,7 +42,7 @@ func NewContractService(ledger ledger.Ledger) (*ContractService, error) {
 	return &ContractService{ledger: ledger}, nil
 }
 
-func (c *ContractService) ExecuteContract(vmType types.VmType, method string, code []byte, params []string, owner uint64) (ret []byte, err error) {
+func (c *ContractService) ExecuteContract(vmType types.VmType, method string, code []byte, params []string, owner common.AccountName) (ret []byte, err error) {
 	if c.ledger == nil {
 		return nil, errors.New("the contract service's ledger interface is nil")
 	}

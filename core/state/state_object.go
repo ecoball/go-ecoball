@@ -33,15 +33,15 @@ type Permission struct {
 }
 
 type Account struct {
-	Index   uint64
+	Index   common.AccountName
 	Nonce   uint64         //Token Random Number
 	Address common.Address //User Address
-	Tokens  map[uint64]Token
+	Tokens  map[common.AccountName]Token
 }
 
 type Token struct {
-	Index   uint64   //Token Name UUID
-	Balance *big.Int //Value
+	Index   common.AccountName //Token Name UUID
+	Balance *big.Int           //Value
 }
 
 /**
@@ -49,8 +49,8 @@ type Token struct {
  *  @param index - the unique id of account name created by common.NameToIndex()
  *  @param address - the account's public key
  */
-func NewAccount(index uint64, address common.Address) (*Account, error) {
-	state := Account{Index: index, Nonce: 0, Address: address, Tokens: make(map[uint64]Token, 1)}
+func NewAccount(index common.AccountName, address common.Address) (*Account, error) {
+	state := Account{Index: index, Nonce: 0, Address: address, Tokens: make(map[common.AccountName]Token, 1)}
 	return &state, nil
 }
 
@@ -58,7 +58,7 @@ func NewAccount(index uint64, address common.Address) (*Account, error) {
  *  @brief create a new token in account
  *  @param index - the unique id of token name created by common.NameToIndex()
  */
-func (s *Account) AddToken(index uint64) error {
+func (s *Account) AddToken(index common.AccountName) error {
 	ac := Token{Index: index, Balance: new(big.Int).SetUint64(0)}
 	s.Tokens[index] = ac
 	return nil
@@ -68,7 +68,7 @@ func (s *Account) AddToken(index uint64) error {
  *  @brief check the token for existence, return true if existed
  *  @param index - the unique id of token name created by common.NameToIndex()
  */
-func (s *Account) TokenExisted(index uint64) bool {
+func (s *Account) TokenExisted(index common.AccountName) bool {
 	_, ok := s.Tokens[index]
 	if ok {
 		return true
@@ -76,7 +76,7 @@ func (s *Account) TokenExisted(index uint64) bool {
 	return false
 }
 
-func (s *Account) AddBalance(index uint64, amount *big.Int) error {
+func (s *Account) AddBalance(index common.AccountName, amount *big.Int) error {
 	if amount.Sign() == 0 {
 		return errors.New("amount is zero")
 	}
@@ -93,7 +93,7 @@ func (s *Account) AddBalance(index uint64, amount *big.Int) error {
 	return nil
 }
 
-func (s *Account) SubBalance(index uint64, amount *big.Int) error {
+func (s *Account) SubBalance(index common.AccountName, amount *big.Int) error {
 	if amount.Sign() == 0 {
 		return errors.New("amount is zero")
 	}
@@ -107,7 +107,7 @@ func (s *Account) SubBalance(index uint64, amount *big.Int) error {
 	return nil
 }
 
-func (s *Account) Balance(index uint64) (*big.Int, error) {
+func (s *Account) Balance(index common.AccountName) (*big.Int, error) {
 	ac, ok := s.Tokens[index]
 	if !ok {
 		return nil, errors.New("can't find token account")
@@ -148,13 +148,13 @@ func (s *Account) ProtoBuf() (*pb.StateObject, error) {
 			return nil, err
 		}
 		ac := pb.Token{
-			Index:   v.Index,
+			Index:   uint64(v.Index),
 			Balance: balance,
 		}
 		tokens = append(tokens, &ac)
 	}
 	pbState := pb.StateObject{
-		Index:   s.Index,
+		Index:   uint64(s.Index),
 		Nonce:   s.Nonce,
 		Address: s.Address.Bytes(),
 		Tokens:  tokens,
@@ -171,13 +171,13 @@ func (s *Account) Deserialize(data []byte) error {
 	if err := proto.Unmarshal(data, &pbObject); err != nil {
 		return err
 	}
-	s.Index = pbObject.Index
+	s.Index = common.AccountName(pbObject.Index)
 	s.Nonce = pbObject.Nonce
 	s.Address = common.NewAddress(pbObject.Address)
-	s.Tokens = make(map[uint64]Token)
+	s.Tokens = make(map[common.AccountName]Token)
 	for _, v := range pbObject.Tokens {
 		ac := Token{
-			Index:   v.Index,
+			Index:   common.AccountName(v.Index),
 			Balance: new(big.Int),
 		}
 		if err := ac.Balance.GobDecode(v.Balance); err != nil {

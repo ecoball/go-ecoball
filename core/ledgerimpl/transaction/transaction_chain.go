@@ -294,19 +294,19 @@ func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
 	return errs.ErrNoError
 }
 
-func (c *ChainTx) AccountAdd(index uint64, addr common.Address) error {
+func (c *ChainTx) AccountAdd(index common.AccountName, addr common.Address) error {
 	return c.StateDB.AddAccount(index, addr)
 }
 
-func (c *ChainTx) AccountGetBalance(indexAcc, indexToken uint64) (*big.Int, error) {
+func (c *ChainTx) AccountGetBalance(indexAcc, indexToken common.AccountName) (*big.Int, error) {
 	return c.StateDB.GetBalance(indexAcc, indexToken)
 }
 
-func (c *ChainTx) AccountAddBalance(indexAcc, indexToken uint64, value uint64) error {
+func (c *ChainTx) AccountAddBalance(indexAcc, indexToken common.AccountName, value uint64) error {
 	return c.StateDB.AddBalance(indexAcc, indexToken, new(big.Int).SetUint64(value))
 }
 
-func (c *ChainTx) AccountSubBalance(indexAcc, indexToken uint64, value uint64) error {
+func (c *ChainTx) AccountSubBalance(indexAcc, indexToken common.AccountName, value uint64) error {
 	return c.StateDB.SubBalance(indexAcc, indexToken, new(big.Int).SetUint64(value))
 }
 
@@ -365,7 +365,7 @@ func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction)
 	return nil, nil
 }
 
-func (c *ChainTx) TokenExisted(indexToken uint64) bool {
+func (c *ChainTx) TokenExisted(indexToken common.AccountName) bool {
 	return c.StateDB.TokenExisted(indexToken)
 }
 

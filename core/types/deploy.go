@@ -29,7 +29,7 @@ type DeployInfo struct {
 	Code     []byte
 }
 
-func NewDeployContract(from, addr uint64, vm VmType, des string, code []byte, nonce uint64, time int64) (*Transaction, error) {
+func NewDeployContract(from, addr common.AccountName, vm VmType, des string, code []byte, nonce uint64, time int64) (*Transaction, error) {
 	deploy := &DeployInfo{
 		TypeVm:   vm,
 		Describe: []byte(des),

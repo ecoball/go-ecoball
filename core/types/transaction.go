@@ -52,8 +52,8 @@ type Payload interface {
 type Transaction struct {
 	Version    uint32
 	Type       TxType
-	From       uint64
-	Addr       uint64
+	From       common.AccountName
+	Addr       common.AccountName
 	Nonce      uint64
 	TimeStamp  int64
 	Payload    Payload
@@ -61,7 +61,7 @@ type Transaction struct {
 	Hash       common.Hash
 }
 
-func NewTransaction(t TxType, from, addr uint64, payload Payload, nonce uint64, time int64) (*Transaction, error) {
+func NewTransaction(t TxType, from, addr common.AccountName, payload Payload, nonce uint64, time int64) (*Transaction, error) {
 	if payload == nil {
 		return nil, errors.New("the transaction's payload is nil")
 	}
@@ -114,8 +114,8 @@ func (t *Transaction) unSignatureData() ([]byte, error) {
 	}
 	p := &pb.TransactionPayload{
 		Version:   t.Version,
-		From:      t.From,
-		Addr:      t.Addr,
+		From:      uint64(t.From),
+		Addr:      uint64(t.Addr),
 		Payload:   payload,
 		Nonce:     t.Nonce,
 		Timestamp: t.TimeStamp,
@@ -141,8 +141,8 @@ func (t *Transaction) protoBuf() (*pb.Transaction, error) {
 		Payload: &pb.TransactionPayload{
 			Version:   t.Version,
 			Type:      uint32(t.Type),
-			From:      t.From,
-			Addr:      t.Addr,
+			From:      uint64(t.From),
+			Addr:      uint64(t.Addr),
 			Payload:   payload,
 			Nonce:     t.Nonce,
 			Timestamp: t.TimeStamp,
@@ -177,8 +177,8 @@ func (t *Transaction) Deserialize(data []byte) error {
 
 	t.Version = tx.Payload.Version
 	t.Type = TxType(tx.Payload.Type)
-	t.From = tx.Payload.From
-	t.Addr = tx.Payload.Addr
+	t.From = common.AccountName(tx.Payload.From)
+	t.Addr = common.AccountName(tx.Payload.Addr)
 	t.Nonce = tx.Payload.Nonce
 	t.TimeStamp = tx.Payload.Timestamp
 	if t.Payload == nil {

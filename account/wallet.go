@@ -37,8 +37,8 @@ const (
 )
 
 type KeyData struct {
-	Checksum [64]byte           `json:"Checksum"`
-	Accounts map[uint64]Account `json:"Accounts"`
+	Checksum [64]byte                      `json:"Checksum"`
+	Accounts map[inner.AccountName]Account `json:"Accounts"`
 }
 
 type WalletImpl struct {
@@ -62,7 +62,7 @@ func Create(path string, password []byte) *WalletImpl {
 		lockflag: unlock,
 		KeyData: KeyData{
 			Checksum: sha512.Sum512(password),
-			Accounts: make(map[uint64]Account),
+			Accounts: make(map[inner.AccountName]Account),
 		},
 	}
 	cipherkeys = newWallet.lock(password)
@@ -80,7 +80,7 @@ func Open(path string, password []byte) *WalletImpl {
 		path:     path,
 		lockflag: unlock,
 		KeyData: KeyData{
-			Accounts: make(map[uint64]Account),
+			Accounts: make(map[inner.AccountName]Account),
 		},
 	}
 	cipherkeys = newWallet.loadWallet()
