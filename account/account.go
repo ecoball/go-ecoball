@@ -16,44 +16,46 @@
 package account
 
 import (
-	"github.com/ecoball/go-ecoball/crypto/secp256k1"
-	"github.com/ecoball/go-ecoball/common"
-	"errors"
 	"crypto/sha256"
+	"errors"
+
+	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/crypto/secp256k1"
 	"golang.org/x/crypto/ripemd160"
 )
 
-type Algorithm uint8     	 		//算法类型
+type Algorithm uint8 //算法类型
 
 type Account struct {
-	PublicKey  []byte			    `json:"Publickey"`
-	PrivateKey []byte               `json:"Privatekey"`
-	Alg        Algorithm            `json:"Alg"`
+	PublicKey  []byte    `json:"Publickey"`
+	PrivateKey []byte    `json:"Privatekey"`
+	Alg        Algorithm `json:"Alg"`
 }
 
 /**
 创建账号
- */
-func NewAccount(alg Algorithm) (Account, error){
+*/
+func NewAccount(alg Algorithm) (Account, error) {
 	pri, err := secp256k1.NewECDSAPrivateKey()
-	if err != nil{
-		return Account{}, errors.New("NewECDSAPrivateKey:err\n")
-	}
-	pridata,err := secp256k1.FromECDSA(pri)
-	if err != nil{
-		return Account{}, errors.New("FromECDSAPrivateKey:err\n")
-	}
-	pub,err := secp256k1.FromECDSAPub(&pri.PublicKey)
 	if err != nil {
-		return Account{}, errors.New("new account error")
+		return Account{}, errors.New("NewECDSAPrivateKey error: " + err.Error())
 	}
-	account :=  Account{
+	pridata, err := secp256k1.FromECDSA(pri)
+	if err != nil {
+		return Account{}, errors.New("FromECDSAPrivateKey error: " + err.Error())
+	}
+	pub, err := secp256k1.FromECDSAPub(&pri.PublicKey)
+	if err != nil {
+		return Account{}, errors.New("new account error: " + err.Error())
+	}
+	account := Account{
 		PrivateKey: pridata,
 		PublicKey:  pub,
-		Alg:		alg,
+		Alg:        alg,
 	}
-	return account,nil
+	return account, nil
 }
+
 /**
 ECDSA算法签名
 */
@@ -78,7 +80,7 @@ func (s *Account) Verify(data []byte, signature []byte) (bool, error) {
 
 /**
 公钥生成地址
- */
+*/
 func AddressFromPubKey(pubkey []byte) common.Address {
 	var addr common.Address
 	temp := sha256.Sum256(pubkey)

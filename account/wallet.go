@@ -18,7 +18,6 @@ package account
 import (
 	"crypto/sha512"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -26,6 +25,7 @@ import (
 	"sync"
 
 	"github.com/ecoball/go-ecoball/client/common"
+	inner "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/crypto/aes"
 )
 
@@ -38,7 +38,7 @@ const (
 
 type KeyData struct {
 	Checksum [64]byte           `json:"Checksum"`
-	Accounts map[string]Account `json:"Accounts"`
+	Accounts map[uint64]Account `json:"Accounts"`
 }
 
 type WalletImpl struct {
@@ -54,6 +54,7 @@ type WalletImpl struct {
 func Create(path string, password []byte) *WalletImpl {
 
 	if common.FileExisted(path) {
+		fmt.Println("The file already exists")
 		return nil
 	}
 	newWallet := &WalletImpl{
@@ -61,7 +62,7 @@ func Create(path string, password []byte) *WalletImpl {
 		lockflag: unlock,
 		KeyData: KeyData{
 			Checksum: sha512.Sum512(password),
-			Accounts: make(map[string]Account),
+			Accounts: make(map[uint64]Account),
 		},
 	}
 	cipherkeys = newWallet.lock(password)
@@ -79,7 +80,7 @@ func Open(path string, password []byte) *WalletImpl {
 		path:     path,
 		lockflag: unlock,
 		KeyData: KeyData{
-			Accounts: make(map[string]Account),
+			Accounts: make(map[uint64]Account),
 		},
 	}
 	cipherkeys = newWallet.loadWallet()
@@ -193,13 +194,12 @@ func (wi *WalletImpl) unlock(password []byte) error {
 /**
 创建账号
 */
-func (wi *WalletImpl) CreateAccount(password []byte) (Account, error) {
+func (wi *WalletImpl) CreateAccount(password []byte, name string) (Account, error) {
 	ac, err := NewAccount(0)
 	if err != nil {
-		return Account{}, errors.New("new account err")
+		return Account{}, err
 	}
-	address := AddressFromPubKey(ac.PublicKey)
-	addr := address.ToBase58()
+	addr := inner.NameToIndex(name)
 	wi.mu.Lock()
 	wi.Accounts[addr] = ac
 	wi.mu.Unlock()
@@ -213,6 +213,6 @@ func (wi *WalletImpl) CreateAccount(password []byte) (Account, error) {
 列出所有账号
 */
 func (wi *WalletImpl) ListAccount() {
-	data, _ := json.Marshal(wi.KeyData)
+	data, _ := json.MarshalIndent(wi.KeyData, "", "	")
 	fmt.Printf("data:%s\n", data)
 }
