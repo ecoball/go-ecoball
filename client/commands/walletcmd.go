@@ -336,12 +336,15 @@ func createAccount(c *cli.Context) error {
 	}
 
 	//create account
-	if _, err := account.Wallet.CreateAccount([]byte(passwd), accountName); err != nil {
+	ac, err := account.Wallet.CreateAccount([]byte(passwd), accountName)
+	if err != nil {
 		fmt.Println(err)
 		return err
 	}
 
 	fmt.Println("create account suuccess, account name: ", accountName)
+	fmt.Println("PrivateKey: ", common.ToHex(ac.PrivateKey[:]))
+	fmt.Println("PublicKey: ", common.ToHex(ac.PublicKey[:]))
 	return nil
 }
 

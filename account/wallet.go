@@ -273,8 +273,11 @@ func (wi *WalletImpl) CreateAccount(password []byte, name string) (Account, erro
 列出所有账号
 */
 func (wi *WalletImpl) ListAccount() {
-	data, _ := json.MarshalIndent(wi.KeyData, "", "	")
-	fmt.Printf("data:%s\n", data)
+	for k, v := range wi.KeyData.Accounts {
+		fmt.Println("account name: ", inner.IndexToName(k))
+		fmt.Println("PrivateKey: ", inner.ToHex(v.PrivateKey[:]))
+		fmt.Println("PublicKey: ", inner.ToHex(v.PublicKey[:]))
+	}
 }
 
 /**
