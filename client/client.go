@@ -46,14 +46,6 @@ func newClientApp() *cli.App {
 	app.HideHelp = true
 	app.HideVersion = true
 
-	//flags
-	app.Flags = []cli.Flag{
-		cli.BoolFlag{
-			Name:  "console",
-			Usage: "open ecoball client console",
-		},
-	}
-
 	//commands
 	app.Commands = []cli.Command{
 		commands.ContractCommands,
@@ -74,10 +66,7 @@ func main() {
 
 	//console
 	app.After = func(c *cli.Context) error {
-		//enable console
-		if c.Bool("console") {
-			newConsole()
-		}
+		newConsole()
 		return nil
 	}
 
@@ -145,7 +134,7 @@ func newConsole() {
 				} else {
 					handleLine(line)
 				}
-				scheduler <- ">"
+				scheduler <- "ecoclient: \\>"
 			}
 		}
 	}
