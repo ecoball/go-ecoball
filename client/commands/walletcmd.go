@@ -26,12 +26,14 @@ import (
 
 var (
 	WalletCommands = cli.Command{
-		Name:     "wallet",
-		Usage:    "wallet operation",
-		Category: "Wallet",
+		Name:        "wallet",
+		Usage:       "wallet operation",
+		Category:    "Wallet",
+		Description: "wallet operate",
+		ArgsUsage:   "[args]",
 		Subcommands: []cli.Command{
 			{
-				Name:   "createwallet",
+				Name:   "create",
 				Usage:  "create wallet",
 				Action: createWallet,
 				Flags: []cli.Flag{
@@ -46,14 +48,58 @@ var (
 				},
 			},
 			{
-				Name:   "createaccount",
-				Usage:  "create account",
-				Action: createAccount,
+				Name:   "open",
+				Usage:  "open wallet",
+				Action: openWallet,
 				Flags: []cli.Flag{
 					cli.StringFlag{
 						Name:  "name, n",
 						Usage: "wallet name",
 					},
+					cli.StringFlag{
+						Name:  "password, p",
+						Usage: "wallet password",
+					},
+				},
+			},
+			{
+				Name:   "lock",
+				Usage:  "lock wallet",
+				Action: lockWallet,
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "password, p",
+						Usage: "wallet password",
+					},
+				},
+			},
+			{
+				Name:   "unlock",
+				Usage:  "unlock wallet",
+				Action: unlockWallet,
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "password, p",
+						Usage: "wallet password",
+					},
+				},
+			},
+			{
+				Name:   "close",
+				Usage:  "close wallet",
+				Action: closeWallet,
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "password, p",
+						Usage: "wallet password",
+					},
+				},
+			},
+			{
+				Name:   "createaccount",
+				Usage:  "create account",
+				Action: createAccount,
+				Flags: []cli.Flag{
 					cli.StringFlag{
 						Name:  "password, p",
 						Usage: "wallet password",
@@ -65,14 +111,10 @@ var (
 				},
 			},
 			{
-				Name:   "listaccount",
+				Name:   "list",
 				Usage:  "list account",
 				Action: listAccount,
 				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "name, n",
-						Usage: "wallet name",
-					},
 					cli.StringFlag{
 						Name:  "password, p",
 						Usage: "wallet password",
@@ -82,50 +124,6 @@ var (
 		},
 	}
 )
-
-/*func walletAction(c *cli.Context) error {
-	if c.NumFlags() == 0 {
-		cli.ShowSubcommandHelp(c)
-		return nil
-	}
-	name := c.String("name")
-	create := c.Bool("create")
-	list := c.Bool("list")
-	passwd := c.String("password")
-	if name == "" {
-		fmt.Println("Invalid wallet name.")
-		os.Exit(1)
-	}
-	if passwd == "" {
-		fmt.Println("Invalid password.")
-		os.Exit(1)
-	}
-	var wallet *account.WalletImpl
-
-	if create {
-		wallet = account.Create(name, []byte(passwd))
-	} else {
-		wallet = account.Open(name, []byte(passwd))
-	}
-	if wallet == nil {
-		fmt.Println("Failed to open wallet: ", name)
-		os.Exit(1)
-	}
-
-	createac := c.Bool("createaccount")
-
-	if wallet.Accounts == nil {
-		fmt.Printf("error\n")
-	}
-	if createac {
-		wallet.CreateAccount([]byte(passwd))
-	}
-	if list {
-		wallet.ListAccount()
-	}
-
-	return nil
-}*/
 
 func createWallet(c *cli.Context) error {
 	//Check the number of flags
@@ -147,14 +145,162 @@ func createWallet(c *cli.Context) error {
 	}
 
 	//create wallet file
-	wallet := account.Create(name, []byte(passwd))
-	if nil == wallet {
-		fmt.Println("create wallet failed!")
-		return errors.New("create wallet failed!")
-	} else {
-		fmt.Println("create wallet success, wallet file path:", name)
+	if err := account.Create(name, []byte(passwd)); nil != err {
+		fmt.Println(err)
+		return err
 	}
 
+	fmt.Println("create wallet success, wallet file path:", name)
+	return nil
+}
+
+func openWallet(c *cli.Context) error {
+	//Check the number of flags
+	if c.NumFlags() == 0 {
+		cli.ShowSubcommandHelp(c)
+		return nil
+	}
+
+	name := c.String("name")
+	if "" == name {
+		fmt.Println("Invalid wallet name")
+		return errors.New("Invalid wallet name")
+	}
+
+	passwd := c.String("password")
+	if "" == passwd {
+		fmt.Println("Invalid password")
+		return errors.New("Invalid password")
+	}
+
+	//whether the wallet open
+	if nil != account.Wallet {
+		fmt.Println("The wallet has been opened!")
+	}
+
+	//open wallet
+	wallet, err := account.Open(name, []byte(passwd))
+	if nil != err {
+		fmt.Println(err)
+		return err
+	}
+
+	fmt.Println("open wallet success, wallet file path:", name)
+	account.Wallet = wallet
+	return nil
+}
+
+func lockWallet(c *cli.Context) error {
+	//Check the number of flags
+	if c.NumFlags() == 0 {
+		cli.ShowSubcommandHelp(c)
+		return nil
+	}
+
+	passwd := c.String("password")
+	if "" == passwd {
+		fmt.Println("Invalid password")
+		return errors.New("Invalid password")
+	}
+
+	//whether the wallet open
+	if nil == account.Wallet {
+		fmt.Println("The wallet has not been opened!")
+		return errors.New("The wallet has not been opened!")
+	}
+
+	if nil != account.Cipherkeys {
+		fmt.Println("the data is wrong!")
+		return errors.New("the data is wrong!")
+	}
+
+	//lock wallet
+	cipherkeysTemp, err := account.Wallet.Lock([]byte(passwd))
+	if nil != err {
+		fmt.Println(err)
+		return err
+	}
+
+	//write data
+	if err := account.Wallet.StoreWallet(cipherkeysTemp); nil != err {
+		fmt.Println(err)
+		return err
+	}
+
+	fmt.Println("lock wallet success")
+	account.Cipherkeys = cipherkeysTemp
+	return nil
+}
+
+func unlockWallet(c *cli.Context) error {
+	//Check the number of flags
+	if c.NumFlags() == 0 {
+		cli.ShowSubcommandHelp(c)
+		return nil
+	}
+
+	passwd := c.String("password")
+	if "" == passwd {
+		fmt.Println("Invalid password")
+		return errors.New("Invalid password")
+	}
+
+	//whether the wallet open
+	if nil == account.Wallet {
+		fmt.Println("The wallet has not been opened!")
+		return errors.New("The wallet has not been opened!")
+	}
+
+	//whether the wallet locked
+	if !account.Wallet.CheckLocked() {
+		fmt.Println("The wallet has not been locked!")
+		return errors.New("The wallet has not been locked!")
+	}
+
+	if nil == account.Cipherkeys {
+		fmt.Println("the data is wrong!")
+		return errors.New("the data is wrong!")
+	}
+
+	//unlock wallet
+	if err := account.Wallet.Unlock([]byte(passwd), account.Cipherkeys); nil != err {
+		fmt.Println(err)
+		return err
+	}
+
+	fmt.Println("unlock wallet success")
+	account.Cipherkeys = nil
+	return nil
+}
+
+func closeWallet(c *cli.Context) error {
+	//Check the number of flags
+	if c.NumFlags() == 0 {
+		cli.ShowSubcommandHelp(c)
+		return nil
+	}
+
+	passwd := c.String("password")
+	if "" == passwd {
+		fmt.Println("Invalid password")
+		return errors.New("Invalid password")
+	}
+
+	//whether the wallet open
+	if nil == account.Wallet {
+		fmt.Println("The wallet has not been opened!")
+		return errors.New("The wallet has not been opened!")
+	}
+
+	//close wallet
+	if err := account.Wallet.Close([]byte(passwd)); nil != err {
+		fmt.Println(err)
+		return err
+	}
+
+	fmt.Println("close wallet success")
+	account.Cipherkeys = nil
+	account.Wallet = nil
 	return nil
 }
 
@@ -165,38 +311,37 @@ func createAccount(c *cli.Context) error {
 		return nil
 	}
 
-	name := c.String("name")
-	if "" == name {
-		fmt.Println("Invalid wallet name")
-		return errors.New("Invalid wallet name")
-	}
-
 	passwd := c.String("password")
 	if "" == passwd {
 		fmt.Println("Invalid password")
 		return errors.New("Invalid password")
 	}
 
+	//check account name
 	accountName := c.String("account")
 	if err := common.AccountNameCheck(accountName); nil != err {
+		fmt.Println(err)
 		return err
+	}
+
+	//whether the wallet open
+	if nil == account.Wallet {
+		fmt.Println("The wallet has not been opened!")
+	}
+
+	//whether the wallet locked
+	if account.Wallet.CheckLocked() {
+		fmt.Println("The wallet has been locked!")
+		return errors.New("The wallet has been locked!")
 	}
 
 	//create account
-	wallet := account.Open(name, []byte(passwd))
-	if nil == wallet {
-		fmt.Println("Failed to open wallet: ", name)
-		return errors.New("Failed to open wallet: " + name)
-	}
-
-	if _, err := wallet.CreateAccount([]byte(passwd), accountName); err != nil {
+	if _, err := account.Wallet.CreateAccount([]byte(passwd), accountName); err != nil {
 		fmt.Println(err)
 		return err
-	} /*else {
-		fmt.Println("private key of ", accountName, " is "+ToHex(ac.PrivateKey[:]))
-		fmt.Println("public key of ", accountName, " is "+ToHex(ac.PublicKey[:]))
-	}*/
+	}
 
+	fmt.Println("create account suuccess, account name: ", accountName)
 	return nil
 }
 
@@ -207,26 +352,26 @@ func listAccount(c *cli.Context) error {
 		return nil
 	}
 
-	name := c.String("name")
-	if "" == name {
-		fmt.Println("Invalid wallet name")
-		return errors.New("Invalid wallet name")
-	}
-
 	passwd := c.String("password")
 	if "" == passwd {
 		fmt.Println("Invalid password")
 		return errors.New("Invalid password")
 	}
 
-	//list account
-	wallet := account.Open(name, []byte(passwd))
-	if nil == wallet {
-		fmt.Println("Failed to open wallet: ", name)
-		return errors.New("Failed to open wallet: " + name)
+	//whether the wallet open
+	if nil == account.Wallet {
+		fmt.Println("The wallet has not been opened!")
+		return errors.New("The wallet has not been opened!")
 	}
 
-	wallet.ListAccount()
+	//whether the wallet locked
+	if account.Wallet.CheckLocked() {
+		fmt.Println("The wallet has been locked!")
+		return errors.New("The wallet has been locked!")
+	}
+
+	//list account
+	account.Wallet.ListAccount()
 
 	return nil
 }

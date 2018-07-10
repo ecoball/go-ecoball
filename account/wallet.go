@@ -18,18 +18,15 @@ package account
 import (
 	"crypto/sha512"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
-	"sync"
 
 	"github.com/ecoball/go-ecoball/client/common"
 	inner "github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/crypto/aes"
 )
-
-var cipherkeys []byte //需要存储的钱包文件的密钥数据
 
 const (
 	unlock byte = 0 //钱包未锁
@@ -42,21 +39,23 @@ type KeyData struct {
 }
 
 type WalletImpl struct {
-	mu   sync.Mutex
 	path string
 	KeyData
 	lockflag byte
 }
 
+var Wallet *WalletImpl //存储当前打开的钱包
+var Cipherkeys []byte  //存储加密后的数据
+
 /**
 创建钱包
 */
-func Create(path string, password []byte) *WalletImpl {
-
+func Create(path string, password []byte) error {
+	//whether the wallet file exists
 	if common.FileExisted(path) {
-		fmt.Println("The file already exists")
-		return nil
+		return errors.New("The file already exists")
 	}
+
 	newWallet := &WalletImpl{
 		path:     path,
 		lockflag: unlock,
@@ -65,17 +64,30 @@ func Create(path string, password []byte) *WalletImpl {
 			Accounts: make(map[inner.AccountName]Account),
 		},
 	}
-	cipherkeys = newWallet.lock(password)
-	newWallet.storeWallet(cipherkeys)
 
-	newWallet.unlock(password)
-	return newWallet
+	//lock wallet
+	cipherkeysTemp, err := newWallet.Lock(password)
+	if nil != err {
+		return err
+	}
+
+	//write data
+	if err := newWallet.StoreWallet(cipherkeysTemp); nil != err {
+		return err
+	}
+
+	//unlock wallet
+	if err := newWallet.Unlock(password, cipherkeysTemp); nil != err {
+		return err
+	}
+
+	return nil
 }
 
 /**
 打开钱包
 */
-func Open(path string, password []byte) *WalletImpl {
+func Open(path string, password []byte) (*WalletImpl, error) {
 	newWallet := &WalletImpl{
 		path:     path,
 		lockflag: unlock,
@@ -83,81 +95,108 @@ func Open(path string, password []byte) *WalletImpl {
 			Accounts: make(map[inner.AccountName]Account),
 		},
 	}
-	cipherkeys = newWallet.loadWallet()
-	if err := newWallet.unlock(password); nil != err {
-		return nil
+
+	//load data
+	cipherkeysTemp, err := newWallet.loadWallet()
+	if nil != err {
+		return nil, err
 	}
-	return newWallet
+
+	//unlock wallet
+	if err := newWallet.Unlock(password, cipherkeysTemp); nil != err {
+		return nil, err
+	}
+
+	return newWallet, nil
 }
 
 /**
 关闭钱包
 */
-func Close(path string, password []byte) error {
-	newWallet := &WalletImpl{
-		path:     path,
-		lockflag: unlock,
+func (wi *WalletImpl) Close(password []byte) error {
+	//lock wallet
+	cipherkeysTemp, err := wi.Lock(password)
+	if nil != err {
+		return err
 	}
-	newWallet.lock(password)
-	newWallet.storeWallet(cipherkeys)
+
+	//write data
+	if err := wi.StoreWallet(cipherkeysTemp); nil != err {
+		return err
+	}
+
 	return nil
 }
 
 /**
 方法：内存数据存储到钱包文件中
 */
-func (wi *WalletImpl) storeWallet(data []byte) error {
-	var err error
-	var file *os.File
-	file, err = os.OpenFile(wi.path, os.O_CREATE|os.O_WRONLY, 0666)
+func (wi *WalletImpl) StoreWallet(data []byte) error {
+	//open file
+	file, err := os.OpenFile(wi.path, os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		return err
-		log.Printf("write file err")
 	}
 	defer file.Close()
+
+	//write data
 	n, err := file.Write(data)
 	if n != len(data) || err != nil {
-		log.Printf("write err")
 		return err
 	}
+
 	return nil
 }
 
 /**
 方法：将钱包文件的数据导入到内存中
 */
-func (wi *WalletImpl) loadWallet() []byte {
-	var err error
-	var file *os.File
-
-	file, err = os.OpenFile(wi.path, os.O_RDONLY, 0666)
+func (wi *WalletImpl) loadWallet() ([]byte, error) {
+	//open file
+	file, err := os.OpenFile(wi.path, os.O_RDONLY, 0666)
 	if err != nil {
-		log.Println("open file fail")
+		return nil, err
 	}
 	defer file.Close()
+
+	//read data
 	data, err := ioutil.ReadAll(file)
 	if err != nil {
-		log.Printf("read err:%s\n", err.Error())
+		return nil, err
 	}
-	return data
+
+	return data, nil
 }
 
 /**
 方法：将密钥数据加密
 */
-func (wi *WalletImpl) lock(password []byte) []byte {
-	var err error
-
+func (wi *WalletImpl) Lock(password []byte) ([]byte, error) {
+	//whether the wallet is locked
 	if wi.lockflag != unlock {
-		return nil
+		return nil, errors.New("the wallet has been locked!!")
 	}
+
+	//whether the password is correct
+	if (sha512.Sum512(password)) != wi.Checksum {
+		return nil, errors.New("wrong password!!")
+	}
+
+	//marshal keyData
+	data, err := json.Marshal(wi.KeyData)
+	if nil != err {
+		return nil, err
+	}
+
+	//encrypt data
 	aesKey := wi.Checksum[0:32]
 	iv := wi.Checksum[32:48]
-	data, _ := json.Marshal(wi.KeyData)
-	cipherkey, err := aes.AesEncrypt(data, aesKey, iv)
+	cipherkeyTemp, err := aes.AesEncrypt(data, aesKey, iv)
 	if err != nil {
-		return nil
+		return nil, err
 	}
+
+	//erase data
 	for i := 0; i < len(wi.Checksum); i++ {
 		wi.Checksum[i] = 0
 	}
@@ -165,29 +204,37 @@ func (wi *WalletImpl) lock(password []byte) []byte {
 		delete(wi.Accounts, k)
 	}
 	wi.lockflag = locked
-	return cipherkey
+
+	return cipherkeyTemp, nil
 }
 
 /**
 方法：将密钥数据解密
 */
-func (wi *WalletImpl) unlock(password []byte) error {
-	var err error
-
+func (wi *WalletImpl) Unlock(password []byte, cipherkeysTemp []byte) error {
+	//Decrypt data
 	checksum := sha512.Sum512(password)
 	aesKey := checksum[0:32]
 	iv := checksum[32:48]
-	aeskeys, err := aes.AesDecrypt(cipherkeys, aesKey, iv)
-	err = json.Unmarshal(aeskeys, &wi.KeyData)
-	if err != nil {
-		log.Println("unmarshal error")
+	aeskeys, err := aes.AesDecrypt(cipherkeysTemp, aesKey, iv)
+	if nil != err {
 		return err
 	}
-	if wi.Checksum != checksum {
-		log.Println("password error")
+
+	//unmarshal data
+	wallet := *wi
+	if err := json.Unmarshal(aeskeys, &wi.KeyData); nil != err {
+		*wi = wallet
 		return err
+	}
+
+	//check password
+	if wi.Checksum != checksum {
+		*wi = wallet
+		return errors.New("password error")
 	}
 	wi.lockflag = unlock
+
 	return nil
 }
 
@@ -195,17 +242,30 @@ func (wi *WalletImpl) unlock(password []byte) error {
 创建账号
 */
 func (wi *WalletImpl) CreateAccount(password []byte, name string) (Account, error) {
+	//create account
 	ac, err := NewAccount(0)
 	if err != nil {
 		return Account{}, err
 	}
 	addr := inner.NameToIndex(name)
-	wi.mu.Lock()
 	wi.Accounts[addr] = ac
-	wi.mu.Unlock()
-	cipherkeys = wi.lock(password)
-	wi.storeWallet(cipherkeys)
-	wi.unlock(password)
+
+	//lock wallet
+	cipherkeysTemp, err := wi.Lock(password)
+	if nil != err {
+		return Account{}, err
+	}
+
+	//write data
+	if err := wi.StoreWallet(cipherkeysTemp); nil != err {
+		return Account{}, err
+	}
+
+	//unlock wallet
+	if err := wi.Unlock(password, cipherkeysTemp); nil != err {
+		return Account{}, err
+	}
+
 	return ac, nil
 }
 
@@ -215,4 +275,11 @@ func (wi *WalletImpl) CreateAccount(password []byte, name string) (Account, erro
 func (wi *WalletImpl) ListAccount() {
 	data, _ := json.MarshalIndent(wi.KeyData, "", "	")
 	fmt.Printf("data:%s\n", data)
+}
+
+/**
+判断是否为锁定状态
+**/
+func (wi *WalletImpl) CheckLocked() bool {
+	return wi.lockflag == locked
 }
