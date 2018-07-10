@@ -23,25 +23,39 @@ import (
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/gogo/protobuf/proto"
 	"math/big"
+	"encoding/json"
 )
 
+type account struct {
+	Actor      common.AccountName `json:"actor"`
+	Weight     uint16             `json:"weight"`
+	Permission string             `json:"permission"`
+}
+
+type address struct {
+	Actor  common.Address `json:"actor"`
+	Weight uint16         `json:"weight"`
+}
+
 type Permission struct {
-	parent    uint64
-	threshold int
-	addr      uint64
-	weight    int
+	PermName  string    `json:"perm_name"`
+	Parent    string    `json:"parent"`
+	Threshold uint32    `json:"threshold"`
+	Keys      []address `json:"keys"`
+	Accounts  []account `json:"accounts"`
 }
 
 type Account struct {
-	Index   common.AccountName
-	Nonce   uint64         //Token Random Number
-	Address common.Address //User Address
-	Tokens  map[common.AccountName]Token
+	Index       common.AccountName           `json:"index"`
+	Nonce       uint64                       `json:"nonce"`
+	Address     common.Address               `json:"address"`
+	Tokens      map[common.AccountName]Token `json:"token"`
+	Permissions map[string]Permission        `json:"permissions"`
 }
 
 type Token struct {
-	Index   common.AccountName //Token Name UUID
-	Balance *big.Int           //Value
+	Index   common.AccountName `json:"index"`
+	Balance *big.Int           `json:"balance"`
 }
 
 /**
@@ -50,8 +64,8 @@ type Token struct {
  *  @param address - the account's public key
  */
 func NewAccount(index common.AccountName, address common.Address) (*Account, error) {
-	state := Account{Index: index, Nonce: 0, Address: address, Tokens: make(map[common.AccountName]Token, 1)}
-	return &state, nil
+	acc := Account{Index: index, Nonce: 0, Address: address, Tokens: make(map[common.AccountName]Token, 1)}
+	return &acc, nil
 }
 
 /**
@@ -76,6 +90,11 @@ func (s *Account) TokenExisted(index common.AccountName) bool {
 	return false
 }
 
+/**
+ *  @brief add balance into account
+ *  @param index - the unique id of token name created by common.NameToIndex()
+ *  @param amount - value of token
+ */
 func (s *Account) AddBalance(index common.AccountName, amount *big.Int) error {
 	if amount.Sign() == 0 {
 		return errors.New("amount is zero")
@@ -93,6 +112,11 @@ func (s *Account) AddBalance(index common.AccountName, amount *big.Int) error {
 	return nil
 }
 
+/**
+ *  @brief sub balance into account
+ *  @param index - the unique id of token name created by common.NameToIndex()
+ *  @param amount - value of token
+ */
 func (s *Account) SubBalance(index common.AccountName, amount *big.Int) error {
 	if amount.Sign() == 0 {
 		return errors.New("amount is zero")
@@ -107,6 +131,11 @@ func (s *Account) SubBalance(index common.AccountName, amount *big.Int) error {
 	return nil
 }
 
+/**
+ *  @brief get the balance of account
+ *  @param index - the unique id of token name created by common.NameToIndex()
+ *  @return big.int - value of token
+ */
 func (s *Account) Balance(index common.AccountName) (*big.Int, error) {
 	ac, ok := s.Tokens[index]
 	if !ok {
@@ -115,6 +144,10 @@ func (s *Account) Balance(index common.AccountName) (*big.Int, error) {
 	return ac.GetBalance(), nil
 }
 
+/**
+ *  @brief set balance of account
+ *  @param amount - value of token
+ */
 func (a *Token) SetBalance(amount *big.Int) {
 	//TODO:将变动记录存到日志文件
 	a.setBalance(amount)
@@ -128,6 +161,10 @@ func (a *Token) GetBalance() *big.Int {
 	return a.Balance
 }
 
+/**
+ *  @brief converts a structure into a sequence of characters
+ *  @return []byte - a sequence of characters
+ */
 func (s *Account) Serialize() ([]byte, error) {
 	p, err := s.ProtoBuf()
 	if err != nil {
@@ -163,6 +200,10 @@ func (s *Account) ProtoBuf() (*pb.StateObject, error) {
 	return &pbState, nil
 }
 
+/**
+ *  @brief converts a sequence of characters into a structure
+ *  @param data - a sequence of characters
+ */
 func (s *Account) Deserialize(data []byte) error {
 	if len(data) == 0 {
 		return errors.New("input Token's length is zero")
@@ -200,4 +241,9 @@ func (s *Account) Show() {
 		fmt.Println("\tName           :", common.IndexToName(v.Index))
 		fmt.Println("\tBalance        :", v.Balance)
 	}
+}
+
+func (s *Account) JsonString() string {
+	data, _ := json.Marshal(s)
+	return string(data)
 }

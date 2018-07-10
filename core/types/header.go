@@ -175,7 +175,8 @@ func (h *Header) protoBuf() (*pb.HeaderTx, error) {
 }
 
 /**
-** Serialize to bytes
+ *  @brief converts a structure into a sequence of characters
+ *  @return []byte - a sequence of characters
  */
 func (h *Header) Serialize() ([]byte, error) {
 	p, err := h.protoBuf()
@@ -190,7 +191,8 @@ func (h *Header) Serialize() ([]byte, error) {
 }
 
 /**
-** Deserialize to Header
+ *  @brief converts a sequence of characters into a structure
+ *  @param data - a sequence of characters
  */
 func (h *Header) Deserialize(data []byte) error {
 	if len(data) == 0 {

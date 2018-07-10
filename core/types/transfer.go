@@ -19,12 +19,12 @@ package types
 import (
 	"errors"
 	"fmt"
-	"math/big"
 	"github.com/ecoball/go-ecoball/common"
+	"math/big"
 )
 
 type TransferInfo struct {
-	Value *big.Int
+	Value *big.Int `json:"value"`
 }
 
 func NewTransferInfo(v *big.Int) *TransferInfo {
@@ -38,6 +38,10 @@ func NewTransfer(from, to common.AccountName, value *big.Int, nonce uint64, time
 	return NewTransaction(TxTransfer, from, to, payload, nonce, time)
 }
 
+/**
+ *  @brief converts a structure into a sequence of characters
+ *  @return []byte - a sequence of characters
+ */
 func (t *TransferInfo) Serialize() ([]byte, error) {
 	data, err := t.Value.GobEncode()
 	if err != nil {
@@ -46,6 +50,10 @@ func (t *TransferInfo) Serialize() ([]byte, error) {
 	return data, nil
 }
 
+/**
+ *  @brief converts a sequence of characters into a structure
+ *  @param data - a sequence of characters
+ */
 func (t *TransferInfo) Deserialize(data []byte) error {
 	if len(data) == 0 {
 		return errors.New("data len is 0")

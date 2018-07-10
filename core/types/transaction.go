@@ -50,15 +50,15 @@ type Payload interface {
 }
 
 type Transaction struct {
-	Version    uint32
-	Type       TxType
-	From       common.AccountName
-	Addr       common.AccountName
-	Nonce      uint64
-	TimeStamp  int64
-	Payload    Payload
-	Signatures []common.Signature
-	Hash       common.Hash
+	Version    uint32             `json:"version"`
+	Type       TxType             `json:"type"`
+	From       common.AccountName `json:"from"`
+	Addr       common.AccountName `json:"addr"`
+	Nonce      uint64             `json:"nonce"`
+	TimeStamp  int64              `json:"timeStamp"`
+	Payload    Payload            `json:"payload"`
+	Signatures []common.Signature `json:"signatures"`
+	Hash       common.Hash        `json:"hash"`
 }
 
 func NewTransaction(t TxType, from, addr common.AccountName, payload Payload, nonce uint64, time int64) (*Transaction, error) {
@@ -153,6 +153,10 @@ func (t *Transaction) protoBuf() (*pb.Transaction, error) {
 	return p, nil
 }
 
+/**
+ *  @brief converts a structure into a sequence of characters
+ *  @return []byte - a sequence of characters
+ */
 func (t *Transaction) Serialize() ([]byte, error) {
 	p, err := t.protoBuf()
 	if err != nil {
@@ -165,6 +169,10 @@ func (t *Transaction) Serialize() ([]byte, error) {
 	return b, nil
 }
 
+/**
+ *  @brief converts a sequence of characters into a structure
+ *  @param data - a sequence of characters
+ */
 func (t *Transaction) Deserialize(data []byte) error {
 	if len(data) == 0 {
 		return errors.New("input data's length is zero")

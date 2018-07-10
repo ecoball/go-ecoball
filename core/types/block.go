@@ -114,7 +114,10 @@ func (b *Block) protoBuf() (*pb.BlockTx, error) {
 	block.Transactions = append(block.Transactions, pbTxs...)
 	return &block, nil
 }
-
+/**
+ *  @brief converts a structure into a sequence of characters
+ *  @return []byte - a sequence of characters
+ */
 func (b *Block) Serialize() (data []byte, err error) {
 	p, err := b.protoBuf()
 	if err != nil {
@@ -126,7 +129,10 @@ func (b *Block) Serialize() (data []byte, err error) {
 	}
 	return data, nil
 }
-
+/**
+ *  @brief converts a sequence of characters into a structure
+ *  @param data - a sequence of characters
+ */
 func (b *Block) Deserialize(data []byte) error {
 	if len(data) == 0 {
 		return errors.New("input data's length is zero")

@@ -24,9 +24,9 @@ import (
 )
 
 type DeployInfo struct {
-	TypeVm   VmType
-	Describe []byte
-	Code     []byte
+	TypeVm   VmType `json:"typeVm"`
+	Describe []byte `json:"describe"`
+	Code     []byte `json:"code"`
 }
 
 func NewDeployContract(from, addr common.AccountName, vm VmType, des string, code []byte, nonce uint64, time int64) (*Transaction, error) {
@@ -42,6 +42,10 @@ func NewDeployContract(from, addr common.AccountName, vm VmType, des string, cod
 	return trans, nil
 }
 
+/**
+ *  @brief converts a structure into a sequence of characters
+ *  @return []byte - a sequence of characters
+ */
 func (d *DeployInfo) Serialize() ([]byte, error) {
 	p := &pb.DeployInfo{
 		TypeVm:   uint32(d.TypeVm),
@@ -55,6 +59,10 @@ func (d *DeployInfo) Serialize() ([]byte, error) {
 	return b, nil
 }
 
+/**
+ *  @brief converts a sequence of characters into a structure
+ *  @param data - a sequence of characters
+ */
 func (d *DeployInfo) Deserialize(data []byte) error {
 	if len(data) == 0 {
 		return errors.New("input data's length is zero")

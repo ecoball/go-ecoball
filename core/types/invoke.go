@@ -24,9 +24,9 @@ import (
 )
 
 type InvokeInfo struct {
-	TypeVm VmType
-	Method []byte
-	Param  []string
+	TypeVm VmType   `json:"typeVm"`
+	Method []byte   `json:"method"`
+	Param  []string `json:"param"`
 }
 
 func NewInvokeContract(from, addr common.AccountName, vm VmType, method string, param []string, nonce uint64, time int64) (*Transaction, error) {
@@ -53,6 +53,10 @@ func (i *InvokeInfo) Show() {
 	fmt.Println("\t---------------------------")
 }
 
+/**
+ *  @brief converts a structure into a sequence of characters
+ *  @return []byte - a sequence of characters
+ */
 func (i *InvokeInfo) Serialize() ([]byte, error) {
 	var param []*pb.ParamData
 	for _, v := range i.Param {
@@ -72,6 +76,10 @@ func (i *InvokeInfo) Serialize() ([]byte, error) {
 	return b, nil
 }
 
+/**
+ *  @brief converts a sequence of characters into a structure
+ *  @param data - a sequence of characters
+ */
 func (i *InvokeInfo) Deserialize(data []byte) error {
 	if len(data) == 0 {
 		return errors.New("input data's length is zero")

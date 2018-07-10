@@ -13,6 +13,7 @@ func TestStateObject(t *testing.T) {
 	indexAcc := common.NameToIndex("pct")
 	indexToken := common.NameToIndex("aba")
 	acc1, _ := state.NewAccount(indexAcc, addr)
+
 	acc1.AddBalance(indexToken, new(big.Int).SetUint64(100))
 	value, err := acc1.Balance(indexToken)
 	if err != nil {
@@ -23,7 +24,7 @@ func TestStateObject(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	acc1.Show()
+	fmt.Println(acc1.JsonString())
 
 	acc2 := new(state.Account)
 	if err := acc2.Deserialize(data); err != nil {
@@ -43,5 +44,5 @@ func TestStateObject(t *testing.T) {
 		t.Fatal("addr mismatch")
 	}
 	fmt.Println("Value:", value)
-	acc2.Show()
+	fmt.Println(acc2.JsonString())
 }
