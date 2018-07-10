@@ -36,7 +36,7 @@ func TestStateNew(t *testing.T) {
 	}
 	fmt.Println("Trie Root:", s.GetHashRoot().HexString())
 
-	balance, err := s.GetBalance( indexAcc, indexToken)
+	balance, err := s.GetBalance(indexAcc, indexToken)
 	if err != nil {
 		fmt.Println("get balance error:", err)
 		if err := s.AddAccount(indexAcc, addr); err != nil {

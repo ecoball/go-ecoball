@@ -25,6 +25,13 @@ import (
 	"math/big"
 )
 
+type Permission struct {
+	parent    uint64
+	threshold int
+	addr      uint64
+	weight    int
+}
+
 type Account struct {
 	Index   uint64
 	Nonce   uint64         //Token Random Number
@@ -37,17 +44,30 @@ type Token struct {
 	Balance *big.Int //Value
 }
 
+/**
+ *  @brief create a new account, binding a char name with a address
+ *  @param index - the unique id of account name created by common.NameToIndex()
+ *  @param address - the account's public key
+ */
 func NewAccount(index uint64, address common.Address) (*Account, error) {
 	state := Account{Index: index, Nonce: 0, Address: address, Tokens: make(map[uint64]Token, 1)}
 	return &state, nil
 }
 
+/**
+ *  @brief create a new token in account
+ *  @param index - the unique id of token name created by common.NameToIndex()
+ */
 func (s *Account) AddToken(index uint64) error {
 	ac := Token{Index: index, Balance: new(big.Int).SetUint64(0)}
 	s.Tokens[index] = ac
 	return nil
 }
 
+/**
+ *  @brief check the token for existence, return true if existed
+ *  @param index - the unique id of token name created by common.NameToIndex()
+ */
 func (s *Account) TokenExisted(index uint64) bool {
 	_, ok := s.Tokens[index]
 	if ok {

@@ -17,9 +17,9 @@ package common
 
 import (
 	"encoding/binary"
-	"regexp"
-	"fmt"
 	"errors"
+	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -41,7 +41,9 @@ func NameToIndex(name string) (index uint64) {
 	}
 	return
 }
+
 var base32Alphabet = []byte(".12345abcdefghijklmnopqrstuvwxyz")
+
 func IndexToName(index uint64) string {
 	a := []byte{'.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'}
 	tmp := index
@@ -63,7 +65,6 @@ func IndexToName(index uint64) string {
 
 	return strings.TrimRight(string(a), ".")
 }
-
 
 func IndexToBytes(index uint64) []byte {
 	b := make([]byte, 8)

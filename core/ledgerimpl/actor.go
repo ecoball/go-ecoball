@@ -20,9 +20,9 @@ import (
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
+	"github.com/ecoball/go-ecoball/consensus/dpos"
 	"github.com/ecoball/go-ecoball/core/types"
 	"reflect"
-	"github.com/ecoball/go-ecoball/consensus/dpos"
 )
 
 type LedActor struct {
@@ -63,9 +63,9 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		log.Info("Response Transaction Check")
 		ctx.Sender().Tell(errCode)
 	/*case *types.TxsList:
-		if err := l.AddBlock(msg); err != nil {
-			log.Error(err)
-		}*/
+	if err := l.AddBlock(msg); err != nil {
+		log.Error(err)
+	}*/
 	case message.GetTransaction:
 		tx, err := l.ledger.ChainTx.GetTransaction(msg.Key)
 		if err != nil {
@@ -93,6 +93,7 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		log.Warn("unknown type message:", msg, "type", reflect.TypeOf(msg))
 	}
 }
+
 /*
 func (l *LedActor) AddBlock(txList *types.TxsList) error {
 

@@ -56,7 +56,7 @@ func (i *InvokeInfo) Show() {
 func (i *InvokeInfo) Serialize() ([]byte, error) {
 	var param []*pb.ParamData
 	for _, v := range i.Param {
-		p := pb.ParamData{Param:[]byte(v)}
+		p := pb.ParamData{Param: []byte(v)}
 		param = append(param, &p)
 	}
 
@@ -89,4 +89,3 @@ func (i *InvokeInfo) Deserialize(data []byte) error {
 
 	return nil
 }
-

@@ -27,7 +27,7 @@ import (
 )
 
 func TestHeader(t *testing.T) {
-	conData := types.ConsensusData{Type:types.ConSolo, Payload:&types.SoloData{}}
+	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
 	h, err := types.NewHeader(types.VersionHeader, 10, common.Hash{}, common.Hash{}, common.Hash{}, conData, bloom.Bloom{}, time.Now().Unix())
 	if err != nil {
 		t.Fatal(err)

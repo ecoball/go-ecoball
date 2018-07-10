@@ -4,6 +4,6 @@ type GetTxs struct{}
 
 type GetCurrentHeader struct{}
 
-type GetTransaction struct{
+type GetTransaction struct {
 	Key []byte
 }

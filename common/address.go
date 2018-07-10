@@ -23,8 +23,8 @@ import (
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/gogo/protobuf/proto"
 
-	"github.com/btcsuite/btcutil/base58"
 	"crypto/sha256"
+	"github.com/btcsuite/btcutil/base58"
 	"golang.org/x/crypto/ripemd160"
 )
 
@@ -66,7 +66,7 @@ func (a Address) HexString() string {
 	return ToHex(a[:])
 }
 
-func FormHexString(data string) Address{
+func FormHexString(data string) Address {
 	return NewAddress(FromHex(data))
 }
 

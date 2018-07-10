@@ -18,10 +18,10 @@ package state
 
 import (
 	"fmt"
-	"github.com/hashicorp/golang-lru"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/store"
 	"github.com/ecoball/go-ecoball/core/trie"
+	"github.com/hashicorp/golang-lru"
 	"sync"
 )
 

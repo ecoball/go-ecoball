@@ -24,8 +24,8 @@ import (
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
-	"testing"
 	"github.com/ecoball/go-ecoball/test/example"
+	"testing"
 )
 
 func TestNewTransactionChain(t *testing.T) {
@@ -121,6 +121,7 @@ func TestLedgerDeployAdd(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
 /*
 func TestLedgerInterface(t *testing.T) {
 	l, err := ledgerimpl.NewLedger("/tmp/quaker")

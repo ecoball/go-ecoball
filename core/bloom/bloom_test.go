@@ -44,11 +44,11 @@ func TestNewBloom(t *testing.T) {
 
 func TestBloomCycle(t *testing.T) {
 	b := bloom.NewBloom(nil)
-	for i := 0; i < 100000; i ++ {
+	for i := 0; i < 100000; i++ {
 		key := new(big.Int).SetInt64(int64(i))
 		b.Add(key.Bytes())
 	}
-	for i := 0; i < 100000; i ++ {
+	for i := 0; i < 100000; i++ {
 		key := new(big.Int).SetInt64(int64(i))
 		if true != b.Test(key.Bytes()) {
 			t.Fatal("test error", i)

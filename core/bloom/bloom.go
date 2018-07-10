@@ -24,9 +24,10 @@ import (
 
 const (
 	BloomByteLength = 1024
-	BloomHashCycle = 2
-	BloomBitLength = 8 * BloomByteLength
+	BloomHashCycle  = 2
+	BloomBitLength  = 8 * BloomByteLength
 )
+
 type Bloom [BloomByteLength]byte
 
 func NewBloom(b []byte) Bloom {

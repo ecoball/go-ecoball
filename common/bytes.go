@@ -18,9 +18,9 @@ package common
 
 import (
 	"encoding/hex"
-	"unsafe"
-	"strconv"
 	"fmt"
+	"strconv"
+	"unsafe"
 )
 
 func ToHex(b []byte) string {

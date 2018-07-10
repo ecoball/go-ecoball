@@ -17,11 +17,11 @@
 package types_test
 
 import (
+	"errors"
 	"fmt"
 	"github.com/ecoball/go-ecoball/core/types"
-	"testing"
 	"github.com/ecoball/go-ecoball/test/example"
-	"errors"
+	"testing"
 )
 
 func TestTransfer(t *testing.T) {

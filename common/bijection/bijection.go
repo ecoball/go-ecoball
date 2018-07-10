@@ -17,20 +17,19 @@ package bijection
 
 import (
 	"errors"
-	"sync"
 	"fmt"
+	"sync"
 )
 
 type Bijection struct {
-	data map[uint64] uint64
-	backend map[uint64] uint64
-	mutex sync.RWMutex
+	data    map[uint64]uint64
+	backend map[uint64]uint64
+	mutex   sync.RWMutex
 }
 
-
-func New() Bijection{
+func New() Bijection {
 	b := Bijection{
-		data: make(map[uint64]uint64),
+		data:    make(map[uint64]uint64),
 		backend: make(map[uint64]uint64)}
 	return b
 }

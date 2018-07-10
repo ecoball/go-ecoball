@@ -17,12 +17,12 @@
 package types
 
 import (
-"errors"
-"github.com/ecoball/go-ecoball/common"
-"github.com/ecoball/go-ecoball/core/pb"
-"github.com/ecoball/go-ecoball/common/config"
 	"encoding/binary"
+	"errors"
 	"fmt"
+	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/config"
+	"github.com/ecoball/go-ecoball/core/pb"
 )
 
 type ConType uint32
@@ -117,7 +117,6 @@ func (c *ConsensusData) Deserialize(data []byte) error {
 
 ///////////////////////////////////////dPos/////////////////////////////////////////
 
-
 const (
 	Second             = int64(1000)
 	BlockInterval      = int64(15000)
@@ -132,6 +131,7 @@ var (
 	ErrNotBlockForgTime = errors.New("current is not time to forge block")
 	ErrFoundNilLeader   = errors.New("found a nil leader")
 )
+
 /*
 type ConsensusState interface {
 
@@ -143,34 +143,32 @@ type ConsensusState interface {
 
 }*/
 
-
 type DPosData struct {
 	timestamp int64
-	leader common.Hash
+	leader    common.Hash
 
 	//TODO
 	bookkeepers []common.Hash
 }
 
-
 func (ds *DPosData) Timestamp() int64 {
 	return ds.timestamp
 }
 
-func (ds *DPosData) Leader() common.Hash  {
+func (ds *DPosData) Leader() common.Hash {
 	return ds.leader
 }
 
-func (ds *DPosData) NextConsensusState(passedSecond int64) (*DPosData, error){
+func (ds *DPosData) NextConsensusState(passedSecond int64) (*DPosData, error) {
 	elapsedSecondInMs := passedSecond * Second
-	if elapsedSecondInMs <= 0 || elapsedSecondInMs % BlockInterval != 0 {
+	if elapsedSecondInMs <= 0 || elapsedSecondInMs%BlockInterval != 0 {
 		return nil, ErrNotBlockForgTime
 	}
 	//TODO
 	bookkeepers := ds.bookkeepers
 
 	consensusState := &DPosData{
-		timestamp: ds.timestamp + passedSecond,
+		timestamp:   ds.timestamp + passedSecond,
 		bookkeepers: bookkeepers,
 	}
 
@@ -188,7 +186,6 @@ func (ds *DPosData) NextConsensusState(passedSecond int64) (*DPosData, error){
 	return consensusState, nil
 }
 
-
 func (dposData *DPosData) Bookkeepers() ([]common.Hash, error) {
 	return dposData.bookkeepers, nil
 }
@@ -197,7 +194,7 @@ func FindLeader(current int64, bookkeepers []common.Hash) (leader common.Hash, e
 	currentInMs := current * Second
 	offsetInMs := currentInMs % GenerationInterval
 	log.Debug("offsetMs = ", offsetInMs)
-	if offsetInMs % BlockInterval != 0 {
+	if offsetInMs%BlockInterval != 0 {
 		log.Debug("In FindLeader, mod not 0")
 		return common.NewHash(nil), ErrNotBlockForgTime
 	}
@@ -214,24 +211,22 @@ func FindLeader(current int64, bookkeepers []common.Hash) (leader common.Hash, e
 	return leader, nil
 }
 
-
 func GenesisStateInit(timestamp int64) *DPosData {
 
 	//TODO, bookkeepers
 	bookkeepers := []common.Hash{}
 
-	addr1 := common.Address{1,2,3,4,5,6,7,8,9,10,11,12,13,1,2,3,4,5,6,7}
+	addr1 := common.Address{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 1, 2, 3, 4, 5, 6, 7}
 	s1 := addr1.ToBase58()
 
-	addr2 := common.Address{1,2,3,4,5,6,7,8,9,10,11,12,13,1,2,3,4,5,6,8}
+	addr2 := common.Address{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 1, 2, 3, 4, 5, 6, 8}
 	s2 := addr2.ToBase58()
 
-	addr3 := common.Address{1,2,3,4,5,6,7,8,9,10,11,12,13,1,2,3,4,5,6,9}
+	addr3 := common.Address{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 1, 2, 3, 4, 5, 6, 9}
 	s3 := addr3.ToBase58()
 
-	addr4 := common.Address{1,2,3,4,5,6,7,8,9,10,11,12,13,1,2,3,4,5,6,6}
+	addr4 := common.Address{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 1, 2, 3, 4, 5, 6, 6}
 	s4 := addr4.ToBase58()
-
 
 	addresses := []string{}
 	addresses = append(addresses, s1)
@@ -246,13 +241,12 @@ func GenesisStateInit(timestamp int64) *DPosData {
 
 	//TODO
 	data := &DPosData{
-		leader: bookkeepers[0],
-		timestamp: timestamp,
+		leader:      bookkeepers[0],
+		timestamp:   timestamp,
 		bookkeepers: bookkeepers,
 	}
 	return data
 }
-
 
 func (data *DPosData) protoBuf() (*pb.ConsensusState, error) {
 	var bookkeepers []*pb.Miner

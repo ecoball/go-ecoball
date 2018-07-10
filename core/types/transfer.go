@@ -60,9 +60,3 @@ func (t TransferInfo) GetObject() interface{} {
 func (t *TransferInfo) Show() {
 	fmt.Println("\tValue          :", t.Value)
 }
-
-
-
-
-
-

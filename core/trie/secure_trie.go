@@ -68,7 +68,6 @@ func (t *SecureTrie) TryUpdate(key, value []byte) error {
 	return nil
 }
 
-
 func (t *SecureTrie) getSecKeyCache() map[string][]byte {
 	if t != t.secKeyCacheOwner {
 		t.secKeyCacheOwner = t

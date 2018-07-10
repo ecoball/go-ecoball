@@ -24,9 +24,9 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/ecoball/go-ecoball/common/utils"
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/utils"
 )
 
 const (
@@ -38,9 +38,7 @@ const (
 	StringConsensus = "/Consensus"
 )
 
-
-var configDefault =
-`#toml configuration for EcoBall system
+var configDefault = `#toml configuration for EcoBall system
 http_port = "20678"          # client http port
 version = "1.0"              # system version
 log_dir = "/tmp/Log/"        # log file location
@@ -52,15 +50,15 @@ root_pubkey = "0x0463613734b23e5dd247b7147b63369bf8f5332f894e600f7357f3cfd56886f
 `
 
 var (
-	HttpLocalPort    string
-	EcoVersion       string
-	LogDir           string
-	OutputToTerminal bool
-	LogLevel         int
+	HttpLocalPort      string
+	EcoVersion         string
+	LogDir             string
+	OutputToTerminal   bool
+	LogLevel           int
 	ConsensusAlgorithm string
-	RootPrivkey	string
-	RootPubkey string
-	Root account.Account
+	RootPrivkey        string
+	RootPubkey         string
+	Root               account.Account
 )
 
 type Config struct {

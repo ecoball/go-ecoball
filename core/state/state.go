@@ -18,12 +18,12 @@ package state
 
 import (
 	"errors"
+	"fmt"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/bijection"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/store"
 	"math/big"
-	"fmt"
-	"github.com/ecoball/go-ecoball/common/bijection"
 )
 
 var log = elog.NewLogger("state", elog.DebugLog)
@@ -31,16 +31,16 @@ var IndexAbaRoot = common.NameToIndex("root")
 var IndexAbaToken = common.NameToIndex("aba")
 
 type State struct {
-	path string
-	trie     Trie
-	db       Database
-	diskDb   *store.LevelDBStore
+	path   string
+	trie   Trie
+	db     Database
+	diskDb *store.LevelDBStore
 
 	accounts bijection.Bijection
 }
 
 func NewState(path string, root common.Hash) (st *State, err error) {
-	st = &State{path:path}
+	st = &State{path: path}
 	st.diskDb, err = store.NewLevelDBStore(path, 0, 0)
 	if err != nil {
 		return nil, err

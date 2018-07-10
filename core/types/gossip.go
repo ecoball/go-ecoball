@@ -20,7 +20,6 @@ import (
 	"errors"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"gx/ipfs/QmcJukH2sAFjY3HdBKq35WDzWoL3UUu2gt9wdfqZTUyM74/go-libp2p-peer"
-
 )
 
 type BlkReqMsg struct {
@@ -43,11 +42,11 @@ type BlkAck2Msg struct {
 	Data     []*Block
 }
 
-func (blkReq *BlkReqMsg)Serialize() ([]byte, error) {
+func (blkReq *BlkReqMsg) Serialize() ([]byte, error) {
 	p := &pb.PullBlocksRequest{
-		PeerHash:   []byte(blkReq.Peer),
-		ChainId:    blkReq.ChainID,
-		Height:     blkReq.BlkHeight,
+		PeerHash: []byte(blkReq.Peer),
+		ChainId:  blkReq.ChainID,
+		Height:   blkReq.BlkHeight,
 	}
 	b, err := p.Marshal()
 	if err != nil {
@@ -56,7 +55,7 @@ func (blkReq *BlkReqMsg)Serialize() ([]byte, error) {
 	return b, nil
 }
 
-func (blkReq *BlkReqMsg)Deserialize(data []byte) error {
+func (blkReq *BlkReqMsg) Deserialize(data []byte) error {
 	if len(data) == 0 {
 		return errors.New("input data's length is zero")
 	}
@@ -71,7 +70,7 @@ func (blkReq *BlkReqMsg)Deserialize(data []byte) error {
 	return nil
 }
 
-func (blkAck *BlkAckMsg)Serialize() ([]byte, error) {
+func (blkAck *BlkAckMsg) Serialize() ([]byte, error) {
 	p := &pb.PullBlocksResponse{
 		PeerHash:   []byte(blkAck.Peer),
 		ChainId:    blkAck.ChainID,
@@ -95,7 +94,7 @@ func (blkAck *BlkAckMsg)Serialize() ([]byte, error) {
 	return b, nil
 }
 
-func (blkAck *BlkAckMsg)Deserialize(data []byte) error {
+func (blkAck *BlkAckMsg) Deserialize(data []byte) error {
 	if len(data) == 0 {
 		return errors.New("input data's length is zero")
 	}
@@ -125,7 +124,7 @@ func (blkAck *BlkAckMsg)Deserialize(data []byte) error {
 	return nil
 }
 
-func (blkAck2 *BlkAck2Msg)Serialize() ([]byte, error) {
+func (blkAck2 *BlkAck2Msg) Serialize() ([]byte, error) {
 	p := &pb.PushBlocks{
 		ChainId:    blkAck2.ChainID,
 		BlockCount: blkAck2.BlkCount,
@@ -147,7 +146,7 @@ func (blkAck2 *BlkAck2Msg)Serialize() ([]byte, error) {
 	return b, nil
 }
 
-func (blkAck2 *BlkAck2Msg)Deserialize(data []byte) error {
+func (blkAck2 *BlkAck2Msg) Deserialize(data []byte) error {
 	if len(data) == 0 {
 		return errors.New("input data's length is zero")
 	}

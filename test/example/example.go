@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
 	"math/big"
 	"time"
-	"github.com/ecoball/go-ecoball/common/config"
 )
 
 func ExampleAddAccount(state *state.State) error {

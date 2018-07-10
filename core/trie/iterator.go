@@ -35,7 +35,6 @@ func (it *Iterator) Next() bool {
 	return false
 }
 
-
 type NodeIterator interface {
 	// Next moves the iterator to the next node. If the parameter is false, any child
 	// nodes will be skipped.
@@ -85,7 +84,6 @@ type seekError struct {
 	key []byte
 	err error
 }
-
 
 func (e seekError) Error() string {
 	return "seek error: " + e.err.Error()

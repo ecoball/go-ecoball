@@ -26,7 +26,7 @@ import (
 
 func TestDBft(t *testing.T) {
 	dposData := &types.DPosData{}
-	consensusData := types.ConsensusData{Type:types.CondPos, Payload:dposData}
+	consensusData := types.ConsensusData{Type: types.CondPos, Payload: dposData}
 
 	data, err := consensusData.Serialize()
 	if err != nil {
@@ -44,12 +44,12 @@ func TestDBft(t *testing.T) {
 }
 
 func TestAbaBft(t *testing.T) {
-	sig1 := common.Signature{PubKey:[]byte("1234"), SigData:[]byte("5678")}
-	sig2 := common.Signature{PubKey:[]byte("4321"), SigData:[]byte("8765")}
+	sig1 := common.Signature{PubKey: []byte("1234"), SigData: []byte("5678")}
+	sig2 := common.Signature{PubKey: []byte("4321"), SigData: []byte("8765")}
 	var sigPer []common.Signature
 	sigPer = append(sigPer, sig1)
 	sigPer = append(sigPer, sig2)
-	abaData := types.AbaBftData{NumberRound:5, PerBlockSignatures:sigPer}
+	abaData := types.AbaBftData{NumberRound: 5, PerBlockSignatures: sigPer}
 
 	conData := types.NewConsensusPayload(types.ConABFT, &abaData)
 	conData.Payload.Show()

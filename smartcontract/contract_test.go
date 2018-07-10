@@ -17,14 +17,14 @@
 package smartcontract_test
 
 import (
+	"bytes"
 	"fmt"
+	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/smartcontract"
 	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
 	"testing"
-	"github.com/ecoball/go-ecoball/common"
-	"bytes"
 )
 
 func xTestNewInvokeContract(t *testing.T) {
