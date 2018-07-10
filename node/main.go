@@ -18,6 +18,7 @@ package main
 
 import (
 	"os"
+	"runtime"
 
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
@@ -43,6 +44,7 @@ func main() {
 
 	//befor function
 	app.Before = func(*cli.Context) error {
+		runtime.GOMAXPROCS(runtime.NumCPU())
 		log.Info("Start aba process...")
 		return nil
 	}

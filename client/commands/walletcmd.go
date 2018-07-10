@@ -16,11 +16,12 @@
 package commands
 
 import (
+	"errors"
 	"fmt"
-	"os"
 
-	"github.com/urfave/cli"
 	"github.com/ecoball/go-ecoball/account"
+	"github.com/ecoball/go-ecoball/common"
+	"github.com/urfave/cli"
 )
 
 var (
@@ -28,41 +29,61 @@ var (
 		Name:     "wallet",
 		Usage:    "wallet operation",
 		Category: "Wallet",
-		Flags: []cli.Flag{
-			cli.StringFlag{
-				Name:  "name",
-				Usage: "wallet name",
+		Subcommands: []cli.Command{
+			{
+				Name:   "createwallet",
+				Usage:  "create wallet",
+				Action: createWallet,
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "name, n",
+						Usage: "wallet name",
+					},
+					cli.StringFlag{
+						Name:  "password, p",
+						Usage: "wallet password",
+					},
+				},
 			},
-			cli.StringFlag{
-				Name:  "password, p",
-				Usage: "wallet password",
+			{
+				Name:   "createaccount",
+				Usage:  "create account",
+				Action: createAccount,
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "name, n",
+						Usage: "wallet name",
+					},
+					cli.StringFlag{
+						Name:  "password, p",
+						Usage: "wallet password",
+					},
+					cli.StringFlag{
+						Name:  "account, a",
+						Usage: "account name",
+					},
+				},
 			},
-			cli.BoolFlag{
-				Name:  "create",
-				Usage: "create wallet",
-			},
-			cli.BoolFlag{
-				Name:  "list",
-				Usage: "list wallet information",
-			},
-			cli.BoolFlag{
-				Name:  "changepassword",
-				Usage: "change wallet password",
-			},
-			cli.BoolFlag{
-				Name:  "balance",
-				Usage: "get balance",
-			},
-			cli.BoolFlag{
-				Name:  "createaccount",
-				Usage: "create account",
+			{
+				Name:   "listaccount",
+				Usage:  "list account",
+				Action: listAccount,
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "name, n",
+						Usage: "wallet name",
+					},
+					cli.StringFlag{
+						Name:  "password, p",
+						Usage: "wallet password",
+					},
+				},
 			},
 		},
-		Action: walletAction,
 	}
 )
 
-func walletAction(c *cli.Context) error {
+/*func walletAction(c *cli.Context) error {
 	if c.NumFlags() == 0 {
 		cli.ShowSubcommandHelp(c)
 		return nil
@@ -102,6 +123,110 @@ func walletAction(c *cli.Context) error {
 	if list {
 		wallet.ListAccount()
 	}
+
+	return nil
+}*/
+
+func createWallet(c *cli.Context) error {
+	//Check the number of flags
+	if c.NumFlags() == 0 {
+		cli.ShowSubcommandHelp(c)
+		return nil
+	}
+
+	name := c.String("name")
+	if "" == name {
+		fmt.Println("Invalid wallet name")
+		return errors.New("Invalid wallet name")
+	}
+
+	passwd := c.String("password")
+	if "" == passwd {
+		fmt.Println("Invalid password")
+		return errors.New("Invalid password")
+	}
+
+	//create wallet file
+	wallet := account.Create(name, []byte(passwd))
+	if nil == wallet {
+		fmt.Println("create wallet failed!")
+		return errors.New("create wallet failed!")
+	} else {
+		fmt.Println("create wallet success, wallet file path:", name)
+	}
+
+	return nil
+}
+
+func createAccount(c *cli.Context) error {
+	//Check the number of flags
+	if c.NumFlags() == 0 {
+		cli.ShowSubcommandHelp(c)
+		return nil
+	}
+
+	name := c.String("name")
+	if "" == name {
+		fmt.Println("Invalid wallet name")
+		return errors.New("Invalid wallet name")
+	}
+
+	passwd := c.String("password")
+	if "" == passwd {
+		fmt.Println("Invalid password")
+		return errors.New("Invalid password")
+	}
+
+	accountName := c.String("account")
+	if err := common.AccountNameCheck(accountName); nil != err {
+		return err
+	}
+
+	//create account
+	wallet := account.Open(name, []byte(passwd))
+	if nil == wallet {
+		fmt.Println("Failed to open wallet: ", name)
+		return errors.New("Failed to open wallet: " + name)
+	}
+
+	if _, err := wallet.CreateAccount([]byte(passwd), accountName); err != nil {
+		fmt.Println(err)
+		return err
+	} /*else {
+		fmt.Println("private key of ", accountName, " is "+ToHex(ac.PrivateKey[:]))
+		fmt.Println("public key of ", accountName, " is "+ToHex(ac.PublicKey[:]))
+	}*/
+
+	return nil
+}
+
+func listAccount(c *cli.Context) error {
+	//Check the number of flags
+	if c.NumFlags() == 0 {
+		cli.ShowSubcommandHelp(c)
+		return nil
+	}
+
+	name := c.String("name")
+	if "" == name {
+		fmt.Println("Invalid wallet name")
+		return errors.New("Invalid wallet name")
+	}
+
+	passwd := c.String("password")
+	if "" == passwd {
+		fmt.Println("Invalid password")
+		return errors.New("Invalid password")
+	}
+
+	//list account
+	wallet := account.Open(name, []byte(passwd))
+	if nil == wallet {
+		fmt.Println("Failed to open wallet: ", name)
+		return errors.New("Failed to open wallet: " + name)
+	}
+
+	wallet.ListAccount()
 
 	return nil
 }
