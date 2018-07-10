@@ -98,7 +98,13 @@ func (t *Transaction) SetSignature(account *account.Account) error {
 }
 
 func (t *Transaction) VerifySignature() (bool, error) {
-	return secp256k1.Verify(t.Hash.Bytes(), t.Signatures[0].SigData, t.Signatures[0].PubKey)
+	for _, v := range t.Signatures {
+		result, err := secp256k1.Verify(t.Hash.Bytes(), v.SigData, v.PubKey)
+		if err != nil || result != true {
+			return false, err
+		}
+	}
+	return true, nil
 }
 
 func (t *Transaction) unSignatureData() ([]byte, error) {

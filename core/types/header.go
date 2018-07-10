@@ -118,7 +118,13 @@ func (h *Header) SetSignature(account *account.Account) error {
 
 func (h *Header) VerifySignature() (bool, error) {
 	h.Show()
-	return secp256k1.Verify(h.Hash.Bytes(), h.Signatures[0].SigData, h.Signatures[0].PubKey)
+	for _, v := range h.Signatures {
+		b, err := secp256k1.Verify(h.Hash.Bytes(), v.SigData, v.PubKey)
+		if err != nil || b != true {
+			return false, err
+		}
+	}
+	return true, nil
 }
 
 /**
