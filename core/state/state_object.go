@@ -17,24 +17,23 @@
 package state
 
 import (
+	"encoding/json"
 	"errors"
-	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/gogo/protobuf/proto"
 	"math/big"
-	"encoding/json"
 )
 
 type account struct {
 	Actor      common.AccountName `json:"actor"`
-	Weight     uint16             `json:"weight"`
+	Weight     uint32             `json:"weight"`
 	Permission string             `json:"permission"`
 }
 
 type address struct {
 	Actor  common.Address `json:"actor"`
-	Weight uint16         `json:"weight"`
+	Weight uint32         `json:"weight"`
 }
 
 type Permission struct {
@@ -45,17 +44,16 @@ type Permission struct {
 	Accounts  []account `json:"accounts"`
 }
 
-type Account struct {
-	Index       common.AccountName           `json:"index"`
-	Nonce       uint64                       `json:"nonce"`
-	Address     common.Address               `json:"address"`
-	Tokens      map[common.AccountName]Token `json:"token"`
-	Permissions map[string]Permission        `json:"permissions"`
-}
-
 type Token struct {
 	Index   common.AccountName `json:"index"`
 	Balance *big.Int           `json:"balance"`
+}
+
+type Account struct {
+	Index       common.AccountName           `json:"index"`
+	Nonce       uint64                       `json:"nonce"`
+	Tokens      map[common.AccountName]Token `json:"token"`
+	Permissions map[string]Permission        `json:"permissions"`
 }
 
 /**
@@ -63,8 +61,25 @@ type Token struct {
  *  @param index - the unique id of account name created by common.NameToIndex()
  *  @param address - the account's public key
  */
-func NewAccount(index common.AccountName, address common.Address) (*Account, error) {
-	acc := Account{Index: index, Nonce: 0, Address: address, Tokens: make(map[common.AccountName]Token, 1)}
+func NewAccount(index common.AccountName, addr common.Address) (*Account, error) {
+	acc := Account{
+		Index:       index,
+		Nonce:       0,
+		Tokens:      make(map[common.AccountName]Token, 1),
+		Permissions: make(map[string]Permission, 1),
+	}
+	acc.Permissions["owner"] = Permission{
+		PermName:  "owner",
+		Parent:    "",
+		Threshold: 1,
+		Keys:      []address{{Actor: addr, Weight: 1}},
+	}
+	acc.Permissions["active"] = Permission{
+		PermName:  "active",
+		Parent:    "owner",
+		Threshold: 1,
+		Accounts:  []account{{Actor: index, Weight: 1, Permission: "owner"}},
+	}
 	return &acc, nil
 }
 
@@ -177,7 +192,7 @@ func (s *Account) Serialize() ([]byte, error) {
 	return data, nil
 }
 
-func (s *Account) ProtoBuf() (*pb.StateObject, error) {
+func (s *Account) ProtoBuf() (*pb.Account, error) {
 	var tokens []*pb.Token
 	for _, v := range s.Tokens {
 		balance, err := v.Balance.GobEncode()
@@ -190,14 +205,35 @@ func (s *Account) ProtoBuf() (*pb.StateObject, error) {
 		}
 		tokens = append(tokens, &ac)
 	}
-	pbState := pb.StateObject{
-		Index:   uint64(s.Index),
-		Nonce:   s.Nonce,
-		Address: s.Address.Bytes(),
-		Tokens:  tokens,
+	var perms []*pb.Permission
+	for _, perm := range s.Permissions {
+		var pbKeys []*pb.KeyWeight
+		var pbAccounts []*pb.AccountWeight
+		for _, key := range perm.Keys {
+			pbKey := &pb.KeyWeight{Actor: key.Actor.Bytes(), Weight: key.Weight}
+			pbKeys = append(pbKeys, pbKey)
+		}
+		for _, acc := range perm.Accounts {
+			pbAccount := &pb.AccountWeight{Actor: uint64(acc.Actor), Weight: acc.Weight, Permission: []byte(acc.Permission)}
+			pbAccounts = append(pbAccounts, pbAccount)
+		}
+		pbPerm := &pb.Permission{
+			PermName:  []byte(perm.PermName),
+			Parent:    []byte(perm.Parent),
+			Threshold: perm.Threshold,
+			Keys:      pbKeys,
+			Accounts:  pbAccounts,
+		}
+		perms = append(perms, pbPerm)
+	}
+	pbAcc := pb.Account{
+		Index:       uint64(s.Index),
+		Nonce:       s.Nonce,
+		Tokens:      tokens,
+		Permissions: perms,
 	}
 
-	return &pbState, nil
+	return &pbAcc, nil
 }
 
 /**
@@ -208,15 +244,15 @@ func (s *Account) Deserialize(data []byte) error {
 	if len(data) == 0 {
 		return errors.New("input Token's length is zero")
 	}
-	var pbObject pb.StateObject
-	if err := proto.Unmarshal(data, &pbObject); err != nil {
+	var pbAcc pb.Account
+	if err := proto.Unmarshal(data, &pbAcc); err != nil {
 		return err
 	}
-	s.Index = common.AccountName(pbObject.Index)
-	s.Nonce = pbObject.Nonce
-	s.Address = common.NewAddress(pbObject.Address)
+	s.Index = common.AccountName(pbAcc.Index)
+	s.Nonce = pbAcc.Nonce
 	s.Tokens = make(map[common.AccountName]Token)
-	for _, v := range pbObject.Tokens {
+	s.Permissions = make(map[string]Permission, 1)
+	for _, v := range pbAcc.Tokens {
 		ac := Token{
 			Index:   common.AccountName(v.Index),
 			Balance: new(big.Int),
@@ -226,21 +262,27 @@ func (s *Account) Deserialize(data []byte) error {
 		}
 		s.Tokens[ac.Index] = ac
 	}
+	for _, pbPerm := range pbAcc.Permissions {
+		var keys []address
+		for _, pbKey := range pbPerm.Keys {
+			key := address{Actor: common.NewAddress(pbKey.Actor), Weight: pbKey.Weight}
+			keys = append(keys, key)
+		}
+		var accounts []account
+		for _, pbAcc := range pbPerm.Accounts {
+			acc := account{Actor: common.AccountName(pbAcc.Actor), Weight: pbAcc.Weight, Permission: string(pbAcc.Permission)}
+			accounts = append(accounts, acc)
+		}
+		s.Permissions[string(pbPerm.PermName)] = Permission{
+			PermName:  string(pbPerm.PermName),
+			Parent:    string(pbPerm.Parent),
+			Threshold: pbPerm.Threshold,
+			Keys:      keys,
+			Accounts:  accounts,
+		}
+	}
 
 	return nil
-}
-
-func (s *Account) Show() {
-	fmt.Println("\t-----------Tokens------------")
-	fmt.Println("\tIndex          :", s.Index)
-	fmt.Println("\tName           :", common.IndexToName(s.Index))
-	fmt.Println("\tNonce          :", s.Nonce)
-	fmt.Println("\tAddress        :", s.Address.HexString())
-	fmt.Println("\tTokens Len     :", len(s.Tokens))
-	for _, v := range s.Tokens {
-		fmt.Println("\tName           :", common.IndexToName(v.Index))
-		fmt.Println("\tBalance        :", v.Balance)
-	}
 }
 
 func (s *Account) JsonString() string {

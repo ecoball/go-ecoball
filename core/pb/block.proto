@@ -126,13 +126,32 @@ message Signature {
 }
 
 /**
+** Account Permission
+*/
+message account_weight {
+    uint64      actor       = 1;
+    uint32      weight      = 2;
+    bytes       permission  = 3;
+}
+message key_weight {
+    bytes       actor       = 1;
+    uint32      weight      = 2;
+}
+message Permission {
+    bytes       PermName        = 4;
+    bytes       Parent          = 5;
+    uint32      threshold       = 1;
+    repeated    key_weight keys = 2;
+    repeated    account_weight accounts = 3;
+}
+/**
 ** Account Object
 */
-message stateObject {
-    uint64      Index        = 4;
-    uint64      nonce       = 5;
-    bytes       address     = 1;
-    repeated    Token     Tokens = 3;
+message Account {
+    uint64      Index               = 4;
+    uint64      nonce               = 5;
+    repeated    Token      Tokens   = 3;
+    repeated    Permission Permissions = 1;
 }
 /**
 ** Account Info

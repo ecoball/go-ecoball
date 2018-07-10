@@ -30,9 +30,7 @@ func TestStateObject(t *testing.T) {
 	if err := acc2.Deserialize(data); err != nil {
 		t.Fatal(err)
 	}
-	if !acc1.Address.Equals(&acc2.Address) {
-		t.Fatal("mismatch")
-	}
+
 	value, err = acc1.Balance(indexToken)
 	if err != nil {
 		t.Fatal(err)
@@ -40,9 +38,11 @@ func TestStateObject(t *testing.T) {
 	if value.Uint64() != 100 {
 		t.Fatal("balance error")
 	}
-	if !acc2.Address.Equals(&acc1.Address) {
-		t.Fatal("addr mismatch")
-	}
+
 	fmt.Println("Value:", value)
 	fmt.Println(acc2.JsonString())
+
+	if acc1.JsonString() != acc2.JsonString() {
+		t.Fatal("mis match")
+	}
 }
