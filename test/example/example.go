@@ -28,7 +28,7 @@ func ExampleAddAccount(state *state.State) error {
 func ExampleTestInvoke(method string) *types.Transaction {
 	indexFrom := common.NameToIndex("from")
 	indexAddr := common.NameToIndex("addr")
-	invoke, err := types.NewInvokeContract(indexFrom, indexAddr, types.VmWasm, method, []string{"01b1a6569a557eafcccc71e0d02461fd4b601aea", "Token.Test", "20000"}, 0, time.Now().Unix())
+	invoke, err := types.NewInvokeContract(indexFrom, indexAddr, "", types.VmWasm, method, []string{"01b1a6569a557eafcccc71e0d02461fd4b601aea", "Token.Test", "20000"}, 0, time.Now().Unix())
 	if err != nil {
 		panic(err)
 		return nil
@@ -43,7 +43,7 @@ func ExampleTestInvoke(method string) *types.Transaction {
 func ExampleTestDeploy(code []byte) *types.Transaction {
 	indexFrom := common.NameToIndex("from")
 	indexAddr := common.NameToIndex("addr")
-	deploy, err := types.NewDeployContract(indexFrom, indexAddr, types.VmWasm, "test deploy", code, 0, time.Now().Unix())
+	deploy, err := types.NewDeployContract(indexFrom, indexAddr, "", types.VmWasm, "test deploy", code, 0, time.Now().Unix())
 	if err != nil {
 		panic(err)
 		return nil
@@ -59,7 +59,7 @@ func ExampleTestTx() *types.Transaction {
 	indexFrom := common.NameToIndex("from")
 	indexAddr := common.NameToIndex("addr")
 	value := big.NewInt(100)
-	tx, err := types.NewTransfer(indexFrom, indexAddr, value, 0, time.Now().Unix())
+	tx, err := types.NewTransfer(indexFrom, indexAddr, "", value, 0, time.Now().Unix())
 	if err != nil {
 		fmt.Println(err)
 		return nil

@@ -25,6 +25,10 @@ import (
 
 type AccountName uint64
 
+func (a AccountName) String() string {
+	return IndexToName(a)
+}
+
 func NameToIndex(name string) AccountName {
 	var index uint64
 	var i uint32

@@ -17,13 +17,13 @@
 package types
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
-	"encoding/json"
 )
 
 const VersionTx = 1
@@ -54,6 +54,7 @@ type Transaction struct {
 	Version    uint32             `json:"version"`
 	Type       TxType             `json:"type"`
 	From       common.AccountName `json:"from"`
+	Permission string             `json:"permission"`
 	Addr       common.AccountName `json:"addr"`
 	Nonce      uint64             `json:"nonce"`
 	TimeStamp  int64              `json:"timeStamp"`
@@ -62,18 +63,22 @@ type Transaction struct {
 	Hash       common.Hash        `json:"hash"`
 }
 
-func NewTransaction(t TxType, from, addr common.AccountName, payload Payload, nonce uint64, time int64) (*Transaction, error) {
+func NewTransaction(t TxType, from, addr common.AccountName, perm string, payload Payload, nonce uint64, time int64) (*Transaction, error) {
 	if payload == nil {
 		return nil, errors.New("the transaction's payload is nil")
 	}
 	tx := Transaction{
-		Version:   VersionTx,
-		Type:      t,
-		From:      from,
-		Addr:      addr,
-		Nonce:     nonce,
-		TimeStamp: time,
-		Payload:   payload,
+		Version:    VersionTx,
+		Type:       t,
+		From:       from,
+		Permission: perm,
+		Addr:       addr,
+		Nonce:      nonce,
+		TimeStamp:  time,
+		Payload:    payload,
+	}
+	if tx.Permission == "" {
+		tx.Permission = "active"
 	}
 	data, err := tx.unSignatureData()
 	if err != nil {
@@ -113,13 +118,14 @@ func (t *Transaction) unSignatureData() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	p := &pb.TransactionPayload{
-		Version:   t.Version,
-		From:      uint64(t.From),
-		Addr:      uint64(t.Addr),
-		Payload:   payload,
-		Nonce:     t.Nonce,
-		Timestamp: t.TimeStamp,
+	p := &pb.TxPayload{
+		Version:    t.Version,
+		From:       uint64(t.From),
+		Permission: []byte(t.Permission),
+		Addr:       uint64(t.Addr),
+		Payload:    payload,
+		Nonce:      t.Nonce,
+		Timestamp:  t.TimeStamp,
 	}
 	b, err := p.Marshal()
 	if err != nil {
@@ -139,14 +145,15 @@ func (t *Transaction) protoBuf() (*pb.Transaction, error) {
 		sig = append(sig, s)
 	}
 	p := &pb.Transaction{
-		Payload: &pb.TransactionPayload{
-			Version:   t.Version,
-			Type:      uint32(t.Type),
-			From:      uint64(t.From),
-			Addr:      uint64(t.Addr),
-			Payload:   payload,
-			Nonce:     t.Nonce,
-			Timestamp: t.TimeStamp,
+		Payload: &pb.TxPayload{
+			Version:    t.Version,
+			Type:       uint32(t.Type),
+			From:       uint64(t.From),
+			Permission: []byte(t.Permission),
+			Addr:       uint64(t.Addr),
+			Payload:    payload,
+			Nonce:      t.Nonce,
+			Timestamp:  t.TimeStamp,
 		},
 		Sign: sig,
 		Hash: t.Hash.Bytes(),
@@ -187,6 +194,7 @@ func (t *Transaction) Deserialize(data []byte) error {
 	t.Version = tx.Payload.Version
 	t.Type = TxType(tx.Payload.Type)
 	t.From = common.AccountName(tx.Payload.From)
+	t.Permission = string(tx.Payload.Permission)
 	t.Addr = common.AccountName(tx.Payload.Addr)
 	t.Nonce = tx.Payload.Nonce
 	t.TimeStamp = tx.Payload.Timestamp

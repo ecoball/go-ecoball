@@ -70,10 +70,11 @@ message AbaBftData {
 /**
 ** Transaction info for compute hash
 */
-message TransactionPayload {
+message TxPayload {
     uint32      version     = 1;
     uint32      type        = 7;
     uint64      from        = 2;
+    bytes       Permission  = 8;
     uint64      addr        = 3;
     bytes       payload     = 4; //store DeployInfo and InvokeInfo
     uint64      nonce       = 5;
@@ -100,7 +101,7 @@ message InvokeInfo {
 ** Transaction Info for Sync with nodes
 */
 message Transaction {
-    TransactionPayload      payload     = 1;
+    TxPayload               payload     = 1;
     repeated    Signature   sign        = 2;
     bytes                   hash        = 3;
 }

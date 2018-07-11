@@ -114,7 +114,7 @@ func (l *LedgerImpl) ContractGetInfo(key []byte) ([]byte, error) {
 }
 
 func (l *LedgerImpl) GetAccount(index common.AccountName) (*state.Account, error) {
-	return l.ChainTx.StateDB.GetAccount(index)
+	return l.ChainTx.StateDB.GetAccountByName(index)
 }
 
 func (l *LedgerImpl) AccountAdd(index common.AccountName, addr common.Address) error {

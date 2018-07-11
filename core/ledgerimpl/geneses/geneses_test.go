@@ -23,7 +23,7 @@ func TestGenesesBlockInit(t *testing.T) {
 	timeStamp := time.Now().Unix()
 	addr := common.NameToIndex("root")
 	invoke, err := types.NewInvokeContract(
-		addr, addr, types.VmNative, "new_account",
+		addr, addr, "", types.VmNative, "new_account",
 		[]string{"pct", "01b1a6569a557eafcccc71e0d02461fd4b601aea"},
 		0, timeStamp)
 	invoke.SetSignature(&config.Root)
@@ -49,4 +49,8 @@ func TestGenesesBlockInit(t *testing.T) {
 		t.Fatal(err)
 	}
 	acc.Show()
+
+	fmt.Println(common.ToHex(config.Root.PublicKey))
+	fmt.Println(common.AddressFromPubKey(config.Root.PublicKey).HexString())
+	fmt.Println(common.NewAddress(config.Root.PublicKey).HexString())
 }

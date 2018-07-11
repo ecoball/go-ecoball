@@ -70,7 +70,7 @@ func PresetContract(ledger ledger.Ledger, t int64) ([]*types.Transaction, error)
 	if err := ledger.AccountAdd(index, common.NewAddress(common.FromHex(config.RootPubkey))); err != nil {
 		return nil, err
 	}
-	tokenContract, err := types.NewDeployContract(index, index, types.VmNative, "system control", nil, 0, t)
+	tokenContract, err := types.NewDeployContract(index, index, "", types.VmNative, "system control", nil, 0, t)
 	if err != nil {
 		return nil, err
 	}

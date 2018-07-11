@@ -24,7 +24,7 @@ func TestStateObject(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(acc1.JsonString())
+	acc1.Show()
 
 	acc2 := new(state.Account)
 	if err := acc2.Deserialize(data); err != nil {
@@ -40,9 +40,9 @@ func TestStateObject(t *testing.T) {
 	}
 
 	fmt.Println("Value:", value)
-	fmt.Println(acc2.JsonString())
+	acc2.Show()
 
 	if acc1.JsonString() != acc2.JsonString() {
-		t.Fatal("mis match")
+		t.Fatal("mismatch")
 	}
 }

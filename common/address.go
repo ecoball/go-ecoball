@@ -82,8 +82,8 @@ func (a *Address) Equals(b *Address) bool {
 }
 
 type Signature struct {
-	PubKey  []byte `json:"pubKey"`
-	SigData []byte `json:"sigData"`
+	PubKey  []byte `json:"pub_key"`
+	SigData []byte `json:"sig_data"`
 }
 
 func (s *Signature) Serialize() ([]byte, error) {

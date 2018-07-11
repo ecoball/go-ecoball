@@ -19,30 +19,12 @@ package state
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/gogo/protobuf/proto"
 	"math/big"
 )
-
-type account struct {
-	Actor      common.AccountName `json:"actor"`
-	Weight     uint32             `json:"weight"`
-	Permission string             `json:"permission"`
-}
-
-type address struct {
-	Actor  common.Address `json:"actor"`
-	Weight uint32         `json:"weight"`
-}
-
-type Permission struct {
-	PermName  string    `json:"perm_name"`
-	Parent    string    `json:"parent"`
-	Threshold uint32    `json:"threshold"`
-	Keys      []address `json:"keys"`
-	Accounts  []account `json:"accounts"`
-}
 
 type Token struct {
 	Index   common.AccountName `json:"index"`
@@ -50,10 +32,10 @@ type Token struct {
 }
 
 type Account struct {
-	Index       common.AccountName           `json:"index"`
-	Nonce       uint64                       `json:"nonce"`
-	Tokens      map[common.AccountName]Token `json:"token"`
-	Permissions map[string]Permission        `json:"permissions"`
+	Index       common.AccountName    `json:"index"`
+	Nonce       uint64                `json:"nonce"`
+	Tokens      map[string]Token      `json:"token"`
+	Permissions map[string]Permission `json:"permissions"`
 }
 
 /**
@@ -65,20 +47,26 @@ func NewAccount(index common.AccountName, addr common.Address) (*Account, error)
 	acc := Account{
 		Index:       index,
 		Nonce:       0,
-		Tokens:      make(map[common.AccountName]Token, 1),
+		Tokens:      make(map[string]Token, 1),
 		Permissions: make(map[string]Permission, 1),
 	}
+	Keys := make(map[string]address, 1)
+	Keys[addr.HexString()] = address{Actor: addr, Weight: 1}
+	Accounts := make(map[string]account, 1)
+	Accounts[index.String()] = account{Actor: index, Weight: 1, Permission: "owner"}
 	acc.Permissions["owner"] = Permission{
 		PermName:  "owner",
 		Parent:    "",
 		Threshold: 1,
-		Keys:      []address{{Actor: addr, Weight: 1}},
+		Keys:      Keys,
+		Accounts:  make(map[string]account, 0),
 	}
 	acc.Permissions["active"] = Permission{
 		PermName:  "active",
 		Parent:    "owner",
 		Threshold: 1,
-		Accounts:  []account{{Actor: index, Weight: 1, Permission: "owner"}},
+		Keys:      make(map[string]address),
+		Accounts:  Accounts,
 	}
 	return &acc, nil
 }
@@ -87,9 +75,9 @@ func NewAccount(index common.AccountName, addr common.Address) (*Account, error)
  *  @brief create a new token in account
  *  @param index - the unique id of token name created by common.NameToIndex()
  */
-func (s *Account) AddToken(index common.AccountName) error {
+func (a *Account) AddToken(index common.AccountName) error {
 	ac := Token{Index: index, Balance: new(big.Int).SetUint64(0)}
-	s.Tokens[index] = ac
+	a.Tokens[index.String()] = ac
 	return nil
 }
 
@@ -97,8 +85,8 @@ func (s *Account) AddToken(index common.AccountName) error {
  *  @brief check the token for existence, return true if existed
  *  @param index - the unique id of token name created by common.NameToIndex()
  */
-func (s *Account) TokenExisted(index common.AccountName) bool {
-	_, ok := s.Tokens[index]
+func (a *Account) TokenExisted(index common.AccountName) bool {
+	_, ok := a.Tokens[common.IndexToName(index)]
 	if ok {
 		return true
 	}
@@ -110,20 +98,20 @@ func (s *Account) TokenExisted(index common.AccountName) bool {
  *  @param index - the unique id of token name created by common.NameToIndex()
  *  @param amount - value of token
  */
-func (s *Account) AddBalance(index common.AccountName, amount *big.Int) error {
+func (a *Account) AddBalance(index common.AccountName, amount *big.Int) error {
 	if amount.Sign() == 0 {
 		return errors.New("amount is zero")
 	}
-	ac, ok := s.Tokens[index]
+	ac, ok := a.Tokens[common.IndexToName(index)]
 	if !ok {
-		if err := s.AddToken(index); err != nil {
+		if err := a.AddToken(index); err != nil {
 			return err
 		}
-		ac, _ = s.Tokens[index]
+		ac, _ = a.Tokens[common.IndexToName(index)]
 	}
 	ac.SetBalance(new(big.Int).Add(ac.GetBalance(), amount))
-	s.Nonce++
-	s.Tokens[index] = ac
+	a.Nonce++
+	a.Tokens[common.IndexToName(index)] = ac
 	return nil
 }
 
@@ -132,17 +120,17 @@ func (s *Account) AddBalance(index common.AccountName, amount *big.Int) error {
  *  @param index - the unique id of token name created by common.NameToIndex()
  *  @param amount - value of token
  */
-func (s *Account) SubBalance(index common.AccountName, amount *big.Int) error {
+func (a *Account) SubBalance(index common.AccountName, amount *big.Int) error {
 	if amount.Sign() == 0 {
 		return errors.New("amount is zero")
 	}
-	ac, ok := s.Tokens[index]
+	ac, ok := a.Tokens[common.IndexToName(index)]
 	if !ok {
 		return errors.New("not sufficient funds")
 	}
 	ac.SetBalance(new(big.Int).Sub(ac.GetBalance(), amount))
-	s.Nonce++
-	s.Tokens[index] = ac
+	a.Nonce++
+	a.Tokens[common.IndexToName(index)] = ac
 	return nil
 }
 
@@ -151,8 +139,8 @@ func (s *Account) SubBalance(index common.AccountName, amount *big.Int) error {
  *  @param index - the unique id of token name created by common.NameToIndex()
  *  @return big.int - value of token
  */
-func (s *Account) Balance(index common.AccountName) (*big.Int, error) {
-	ac, ok := s.Tokens[index]
+func (a *Account) Balance(index common.AccountName) (*big.Int, error) {
+	ac, ok := a.Tokens[common.IndexToName(index)]
 	if !ok {
 		return nil, errors.New("can't find token account")
 	}
@@ -163,25 +151,25 @@ func (s *Account) Balance(index common.AccountName) (*big.Int, error) {
  *  @brief set balance of account
  *  @param amount - value of token
  */
-func (a *Token) SetBalance(amount *big.Int) {
+func (t *Token) SetBalance(amount *big.Int) {
 	//TODO:将变动记录存到日志文件
-	a.setBalance(amount)
+	t.setBalance(amount)
 }
 
-func (a *Token) setBalance(amount *big.Int) {
-	a.Balance = amount
+func (t *Token) setBalance(amount *big.Int) {
+	t.Balance = amount
 }
 
-func (a *Token) GetBalance() *big.Int {
-	return a.Balance
+func (t *Token) GetBalance() *big.Int {
+	return t.Balance
 }
 
 /**
  *  @brief converts a structure into a sequence of characters
  *  @return []byte - a sequence of characters
  */
-func (s *Account) Serialize() ([]byte, error) {
-	p, err := s.ProtoBuf()
+func (a *Account) Serialize() ([]byte, error) {
+	p, err := a.ProtoBuf()
 	if err != nil {
 		return nil, err
 	}
@@ -192,9 +180,9 @@ func (s *Account) Serialize() ([]byte, error) {
 	return data, nil
 }
 
-func (s *Account) ProtoBuf() (*pb.Account, error) {
+func (a *Account) ProtoBuf() (*pb.Account, error) {
 	var tokens []*pb.Token
-	for _, v := range s.Tokens {
+	for _, v := range a.Tokens {
 		balance, err := v.Balance.GobEncode()
 		if err != nil {
 			return nil, err
@@ -206,7 +194,7 @@ func (s *Account) ProtoBuf() (*pb.Account, error) {
 		tokens = append(tokens, &ac)
 	}
 	var perms []*pb.Permission
-	for _, perm := range s.Permissions {
+	for _, perm := range a.Permissions {
 		var pbKeys []*pb.KeyWeight
 		var pbAccounts []*pb.AccountWeight
 		for _, key := range perm.Keys {
@@ -227,8 +215,8 @@ func (s *Account) ProtoBuf() (*pb.Account, error) {
 		perms = append(perms, pbPerm)
 	}
 	pbAcc := pb.Account{
-		Index:       uint64(s.Index),
-		Nonce:       s.Nonce,
+		Index:       uint64(a.Index),
+		Nonce:       a.Nonce,
 		Tokens:      tokens,
 		Permissions: perms,
 	}
@@ -240,7 +228,7 @@ func (s *Account) ProtoBuf() (*pb.Account, error) {
  *  @brief converts a sequence of characters into a structure
  *  @param data - a sequence of characters
  */
-func (s *Account) Deserialize(data []byte) error {
+func (a *Account) Deserialize(data []byte) error {
 	if len(data) == 0 {
 		return errors.New("input Token's length is zero")
 	}
@@ -248,10 +236,10 @@ func (s *Account) Deserialize(data []byte) error {
 	if err := proto.Unmarshal(data, &pbAcc); err != nil {
 		return err
 	}
-	s.Index = common.AccountName(pbAcc.Index)
-	s.Nonce = pbAcc.Nonce
-	s.Tokens = make(map[common.AccountName]Token)
-	s.Permissions = make(map[string]Permission, 1)
+	a.Index = common.AccountName(pbAcc.Index)
+	a.Nonce = pbAcc.Nonce
+	a.Tokens = make(map[string]Token)
+	a.Permissions = make(map[string]Permission, 1)
 	for _, v := range pbAcc.Tokens {
 		ac := Token{
 			Index:   common.AccountName(v.Index),
@@ -260,20 +248,20 @@ func (s *Account) Deserialize(data []byte) error {
 		if err := ac.Balance.GobDecode(v.Balance); err != nil {
 			return err
 		}
-		s.Tokens[ac.Index] = ac
+		a.Tokens[common.IndexToName(ac.Index)] = ac
 	}
 	for _, pbPerm := range pbAcc.Permissions {
-		var keys []address
+		keys := make(map[string]address, 1)
 		for _, pbKey := range pbPerm.Keys {
 			key := address{Actor: common.NewAddress(pbKey.Actor), Weight: pbKey.Weight}
-			keys = append(keys, key)
+			keys[common.NewAddress(pbKey.Actor).HexString()] = key
 		}
-		var accounts []account
+		accounts := make(map[string]account, 1)
 		for _, pbAcc := range pbPerm.Accounts {
 			acc := account{Actor: common.AccountName(pbAcc.Actor), Weight: pbAcc.Weight, Permission: string(pbAcc.Permission)}
-			accounts = append(accounts, acc)
+			accounts[common.AccountName(pbAcc.Actor).String()] = acc
 		}
-		s.Permissions[string(pbPerm.PermName)] = Permission{
+		a.Permissions[string(pbPerm.PermName)] = Permission{
 			PermName:  string(pbPerm.PermName),
 			Parent:    string(pbPerm.Parent),
 			Threshold: pbPerm.Threshold,
@@ -285,7 +273,14 @@ func (s *Account) Deserialize(data []byte) error {
 	return nil
 }
 
-func (s *Account) JsonString() string {
-	data, _ := json.Marshal(s)
+func (a *Account) JsonString() string {
+	data, err := json.Marshal(a)
+	if err != nil {
+		fmt.Println(err)
+	}
 	return string(data)
+}
+
+func (a *Account) Show() {
+	fmt.Println(a.JsonString())
 }

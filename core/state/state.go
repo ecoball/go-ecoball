@@ -35,7 +35,7 @@ type State struct {
 	db     Database
 	diskDb *store.LevelDBStore
 
-	//accounts bijection.Bijection
+	accounts map[common.AccountName]common.Address
 }
 
 func NewState(path string, root common.Hash) (st *State, err error) {
@@ -44,7 +44,7 @@ func NewState(path string, root common.Hash) (st *State, err error) {
 	if err != nil {
 		return nil, err
 	}
-	//st.accounts = bijection.New()
+	st.accounts = make(map[common.AccountName]common.Address, 1)
 	st.db = NewDatabase(st.diskDb)
 	log.Notice("Open Trie Hash:", root.HexString())
 	st.trie, err = st.db.OpenTrie(root)
@@ -78,10 +78,11 @@ func (s *State) AddAccount(index common.AccountName, addr common.Address) error 
 	if err := s.trie.TryUpdate(common.IndexToBytes(obj.Index), d); err != nil {
 		return err
 	}
+	s.accounts[index] = addr
 	return nil
 }
 
-func (s *State) GetAccount(index common.AccountName) (*Account, error) {
+func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
 	key := common.IndexToBytes(index)
 	fData, err := s.trie.TryGet(key)
 	if err != nil {
@@ -99,8 +100,21 @@ func (s *State) GetAccount(index common.AccountName) (*Account, error) {
 	return acc, nil
 }
 
+func (s *State) GetAccountByAddr(addr common.Address) (*Account, error) {
+	for k, v := range s.accounts {
+		if v.Equals(&addr) {
+			acc, err := s.GetAccountByName(k)
+			if err != nil {
+				return nil, err
+			}
+			return acc, nil
+		}
+	}
+	return nil, errors.New(fmt.Sprintf("can't find this account by address:%s", addr.HexString()))
+}
+
 func (s *State) SubBalance(indexAcc, indexToken common.AccountName, value *big.Int) error {
-	acc, err := s.GetAccount(indexAcc)
+	acc, err := s.GetAccountByName(indexAcc)
 	if err != nil {
 		return err
 	}
@@ -124,7 +138,7 @@ func (s *State) SubBalance(indexAcc, indexToken common.AccountName, value *big.I
 }
 
 func (s *State) AddBalance(indexAcc, indexToken common.AccountName, value *big.Int) error {
-	acc, err := s.GetAccount(indexAcc)
+	acc, err := s.GetAccountByName(indexAcc)
 	if err != nil {
 		return err
 	}
@@ -173,7 +187,7 @@ func (s *State) CommitToDB() error {
 }
 
 func (s *State) GetBalance(indexAcc, indexToken common.AccountName) (*big.Int, error) {
-	acc, err := s.GetAccount(indexAcc)
+	acc, err := s.GetAccountByName(indexAcc)
 	if err != nil {
 		return nil, err
 	}

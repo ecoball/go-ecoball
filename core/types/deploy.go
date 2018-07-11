@@ -30,13 +30,13 @@ type DeployInfo struct {
 	Code     []byte `json:"code"`
 }
 
-func NewDeployContract(from, addr common.AccountName, vm VmType, des string, code []byte, nonce uint64, time int64) (*Transaction, error) {
+func NewDeployContract(from, addr common.AccountName, perm string, vm VmType, des string, code []byte, nonce uint64, time int64) (*Transaction, error) {
 	deploy := &DeployInfo{
 		TypeVm:   vm,
 		Describe: []byte(des),
 		Code:     code,
 	}
-	trans, err := NewTransaction(TxDeploy, from, addr, deploy, nonce, time)
+	trans, err := NewTransaction(TxDeploy, from, addr, perm, deploy, nonce, time)
 	if err != nil {
 		return nil, err
 	}

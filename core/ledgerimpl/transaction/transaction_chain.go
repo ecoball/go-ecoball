@@ -61,7 +61,7 @@ func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err err
 		return nil, err
 	}
 
-	existed, err := c.RestoreBlock()
+	existed, err := c.RestoreCurrentHeader()
 	if err != nil {
 		return nil, err
 	}
@@ -96,14 +96,17 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 	}
 	return types.NewBlock(c.CurrentHeader, c.StateDB.GetHashRoot(), consensusData, txs)
 }
-
 /**
-** If create a new block failed, then need to reset state DB
- */
+*  @brief  if create a new block failed, then need to reset state DB
+*  @param  hash - the root hash of mpt trie which need to reset
+*/
 func (c *ChainTx) ResetStateDB(hash common.Hash) error {
 	return c.StateDB.Reset(hash)
 }
-
+/**
+*  @brief  check block's signature and all transactions
+*  @param  block - the block need to verify
+*/
 func (c *ChainTx) VerifyTxBlock(block *types.Block) error {
 	result, err := block.VerifySignature()
 	if err != nil {
@@ -121,7 +124,10 @@ func (c *ChainTx) VerifyTxBlock(block *types.Block) error {
 	}
 	return nil
 }
-
+/**
+*  @brief  save a block into levelDB, then push this block to p2p and tx pool module, and commit mpt trie into levelDB
+*  @param  block - the block need to save
+*/
 func (c *ChainTx) SaveBlock(block *types.Block) error {
 	if block == nil {
 		return errors.New("block is nil")
@@ -158,11 +164,16 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	c.CurrentHeader = block.Header
 	return nil
 }
-
+/**
+*  @brief  return the highest block's hash
+*/
 func (c *ChainTx) GetTailBlockHash() common.Hash {
 	return c.CurrentHeader.Hash
 }
-
+/**
+*  @brief  get a block by a hash value
+*  @param  hash - the block's hash need to return
+*/
 func (c *ChainTx) GetBlock(hash common.Hash) (*types.Block, error) {
 	dataBlock, err := c.BlockStore.Get(hash.Bytes())
 	if err != nil {
@@ -175,7 +186,10 @@ func (c *ChainTx) GetBlock(hash common.Hash) (*types.Block, error) {
 	}
 	return block, nil
 }
-
+/**
+*  @brief  get a block by a height value
+*  @param  height - the block's height need to return
+*/
 func (c *ChainTx) GetBlockByHeight(height uint64) (*types.Block, error) {
 	headers, err := c.HeaderStore.SearchAll()
 	if err != nil {
@@ -201,7 +215,9 @@ func (c *ChainTx) GetBlockByHeight(height uint64) (*types.Block, error) {
 	}
 	return c.GetBlock(hash)
 }
-
+/**
+*  @brief  create a genesis block with built-in account and contract, then save this block into block chain
+*/
 func (c *ChainTx) GenesesBlockInit() error {
 	if c.CurrentHeader != nil {
 		c.CurrentHeader.Show()
@@ -220,8 +236,11 @@ func (c *ChainTx) GenesesBlockInit() error {
 	c.CurrentHeader = block.Header
 	return nil
 }
-
-func (c *ChainTx) RestoreBlock() (bool, error) {
+/**
+*  @brief  restore the highest block's header from levelDB
+*  @return bool - if can't find block in levelDB, return false, otherwise return true
+*/
+func (c *ChainTx) RestoreCurrentHeader() (bool, error) {
 	headers, err := c.HeaderStore.SearchAll()
 	if err != nil {
 		return false, err
@@ -244,7 +263,10 @@ func (c *ChainTx) RestoreBlock() (bool, error) {
 	log.Info("the block height is:", h, "hash:", c.CurrentHeader.Hash.HexString())
 	return true, nil
 }
-
+/**
+*  @brief  get a transaction from levelDB by a hash
+*  @param  key - the hash of transaction
+*/
 func (c *ChainTx) GetTransaction(key []byte) (*types.Transaction, error) {
 	data, err := c.TxsStore.Get(key)
 	if err != nil {
@@ -256,19 +278,31 @@ func (c *ChainTx) GetTransaction(key []byte) (*types.Transaction, error) {
 	}
 	return tx, nil
 }
-
+/**
+*  @brief  validity check of transaction, include signature verify, duplicate check and balance check
+*  @param  tx - a transaction
+*/
 func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
 	result, err := tx.VerifySignature()
 	if err != nil {
 		return err
-	}
-	if result == false {
+	} else if result == false {
 		return errors.New("tx verify signature failed")
 	}
-	var data []byte
+	if account, err := c.StateDB.GetAccountByName(tx.From); err != nil {
+		return err
+	} else {
+		if perm, ok := account.Permissions[tx.Permission]; !ok {
+			return errors.New(fmt.Sprintf("can't find this permission in account:%s", tx.Permission))
+		} else {
+			if err := perm.CheckPermission(c.StateDB, tx.Signatures); err != nil {
+				return err
+			}
+		}
+	}
 	switch tx.Type {
 	case types.TxTransfer:
-		if data, _ = c.TxsStore.Get(tx.Hash.Bytes()); data != nil {
+		if data, _ := c.TxsStore.Get(tx.Hash.Bytes()); data != nil {
 			return errs.ErrDuplicatedTx
 		}
 		if value, err := c.AccountGetBalance(tx.From, state.IndexAbaToken); err != nil {
@@ -278,13 +312,13 @@ func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
 			return errs.ErrDoubleSpend
 		}
 	case types.TxDeploy:
-		if data, _ = c.TxsStore.Get(common.IndexToBytes(tx.Addr)); data != nil {
+		if data, _ := c.TxsStore.Get(common.IndexToBytes(tx.Addr)); data != nil {
 			return errs.ErrDuplicatedTx
 		}
 		//hash := c.StateDB.GetHashRoot()
 		//c.HandleTransaction(c, tx)
 	case types.TxInvoke:
-		if data, _ = c.TxsStore.Get(tx.Hash.Bytes()); data != nil {
+		if data, _ := c.TxsStore.Get(tx.Hash.Bytes()); data != nil {
 			return errs.ErrDuplicatedTx
 		}
 	default:
@@ -293,23 +327,43 @@ func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
 
 	return errs.ErrNoError
 }
-
+/**
+*  @brief  create a new account in mpt tree
+*  @param  index - the uuid of account
+*  @param  addr - the public key of account
+*/
 func (c *ChainTx) AccountAdd(index common.AccountName, addr common.Address) error {
 	return c.StateDB.AddAccount(index, addr)
 }
-
+/**
+*  @brief  get a account's balance
+*  @param  indexAcc - the uuid of account
+*  @param  indexToken - the uuid of token
+*/
 func (c *ChainTx) AccountGetBalance(indexAcc, indexToken common.AccountName) (*big.Int, error) {
 	return c.StateDB.GetBalance(indexAcc, indexToken)
 }
-
+/**
+*  @brief  add a account's balance
+*  @param  indexAcc - the uuid of account
+*  @param  indexToken - the uuid of token
+*/
 func (c *ChainTx) AccountAddBalance(indexAcc, indexToken common.AccountName, value uint64) error {
 	return c.StateDB.AddBalance(indexAcc, indexToken, new(big.Int).SetUint64(value))
 }
-
+/**
+*  @brief  sub a account's balance
+*  @param  indexAcc - the uuid of account
+*  @param  indexToken - the uuid of token
+*/
 func (c *ChainTx) AccountSubBalance(indexAcc, indexToken common.AccountName, value uint64) error {
 	return c.StateDB.SubBalance(indexAcc, indexToken, new(big.Int).SetUint64(value))
 }
-
+/**
+*  @brief  handle transaction with transaction's type
+*  @param  ledger - the interface of ledger impl
+*  @param  tx - a transaction
+*/
 func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction) ([]byte, error) {
 	tx.Show()
 	switch tx.Type {

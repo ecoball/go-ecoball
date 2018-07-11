@@ -26,7 +26,7 @@ import (
 )
 
 func TestStateNew(t *testing.T) {
-	root := common.HexToHash("0xc43fd283b5e0cb9f841d69345cb9b04214ee739aa45ec5b3fdba154cc596eb25")
+	root := common.HexToHash("0x797ddb4c4b8cfcb353989acf8e41b5d425003fb0ae3d89e754658fe264e8dab5")
 	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
 	indexAcc := common.NameToIndex("pct")
 	indexToken := common.NameToIndex("aba")
