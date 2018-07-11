@@ -34,8 +34,6 @@ type State struct {
 	trie   Trie
 	db     Database
 	diskDb *store.LevelDBStore
-
-	accounts map[common.AccountName]common.Address
 }
 
 func NewState(path string, root common.Hash) (st *State, err error) {
@@ -44,7 +42,6 @@ func NewState(path string, root common.Hash) (st *State, err error) {
 	if err != nil {
 		return nil, err
 	}
-	st.accounts = make(map[common.AccountName]common.Address, 1)
 	st.db = NewDatabase(st.diskDb)
 	log.Notice("Open Trie Hash:", root.HexString())
 	st.trie, err = st.db.OpenTrie(root)
