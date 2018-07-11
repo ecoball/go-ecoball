@@ -78,7 +78,9 @@ func (s *State) AddAccount(index common.AccountName, addr common.Address) error 
 	if err := s.trie.TryUpdate(common.IndexToBytes(obj.Index), d); err != nil {
 		return err
 	}
-	s.accounts[index] = addr
+	if err := s.trie.TryUpdate(addr.Bytes(), common.IndexToBytes(obj.Index)); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -91,26 +93,27 @@ func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
 	if fData == nil {
 		return nil, errors.New(fmt.Sprintf("no this account named:%s", common.IndexToName(index)))
 	}
-
 	acc := new(Account)
 	if err := acc.Deserialize(fData); err != nil {
 		return nil, err
 	}
-
 	return acc, nil
 }
 
 func (s *State) GetAccountByAddr(addr common.Address) (*Account, error) {
-	for k, v := range s.accounts {
-		if v.Equals(&addr) {
-			acc, err := s.GetAccountByName(k)
+	if fData, err := s.trie.TryGet(addr.Bytes()); err != nil {
+		return nil, err
+	} else {
+		if fData == nil {
+			return nil, errors.New(fmt.Sprintf("can't find this account by address:%s", addr.HexString()))
+		} else {
+			acc, err := s.GetAccountByName(common.IndexSetBytes(fData))
 			if err != nil {
 				return nil, err
 			}
 			return acc, nil
 		}
 	}
-	return nil, errors.New(fmt.Sprintf("can't find this account by address:%s", addr.HexString()))
 }
 
 func (s *State) SubBalance(indexAcc, indexToken common.AccountName, value *big.Int) error {

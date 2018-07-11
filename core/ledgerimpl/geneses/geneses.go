@@ -67,10 +67,12 @@ func PresetContract(ledger ledger.Ledger, t int64) ([]*types.Transaction, error)
 		return nil, errors.New("ledger is nil")
 	}
 	index := common.NameToIndex("root")
-	if err := ledger.AccountAdd(index, common.NewAddress(common.FromHex(config.RootPubkey))); err != nil {
+	data := common.FromHex(config.RootPubkey)
+	addr := common.AddressFromPubKey(data)
+	if err := ledger.AccountAdd(index, addr); err != nil {
 		return nil, err
 	}
-	tokenContract, err := types.NewDeployContract(index, index, "", types.VmNative, "system control", nil, 0, t)
+	tokenContract, err := types.NewDeployContract(index, index, "active", types.VmNative, "system control", nil, 0, t)
 	if err != nil {
 		return nil, err
 	}

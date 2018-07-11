@@ -231,13 +231,14 @@ func (h *Header) Deserialize(data []byte) error {
 	return nil
 }
 
-func (h *Header) Show() {
+func (h *Header) show() {
 	fmt.Println("\t-----------Header------------")
 	fmt.Println("\tHeight         :", h.Height)
 	fmt.Println("\tTime           :", h.TimeStamp)
 	fmt.Println("\tVersion        :", h.Version)
 	fmt.Println("\tPrevHash       :", h.PrevHash.HexString())
 	fmt.Println("\tMerkleHash     :", h.MerkleHash.HexString())
+	fmt.Println("\tStateHash      :", h.StateHash.HexString())
 	fmt.Println("\tHash           :", h.Hash.HexString())
 	fmt.Println("\tSig Len        :", len(h.Signatures))
 	for i := 0; i < len(h.Signatures); i++ {
@@ -247,6 +248,13 @@ func (h *Header) Show() {
 }
 
 func (h *Header) JsonString() string {
-	data, _ := json.Marshal(h)
+	data, err := json.Marshal(h)
+	if err != nil {
+		fmt.Println(err)
+	}
 	return string(data)
+}
+
+func (h *Header) Show() {
+	log.Debug(h.JsonString())
 }

@@ -74,14 +74,6 @@ func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err err
 			return nil, err
 		}
 	}
-	/*
-
-
-		if f == false {
-			if err := c.GenesesBlockInit(); err != nil {
-				return nil, err
-			}
-		}*/
 
 	return c, nil
 }
@@ -132,7 +124,7 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	if block == nil {
 		return errors.New("block is nil")
 	}
-	block.Show()
+	//block.Show()
 	if err := event.Publish(event.ActorLedger, block, event.ActorTxPool, event.ActorP2P); err != nil {
 		log.Warn(err)
 	}
@@ -325,7 +317,7 @@ func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
 		return errors.New("check transaction unknown tx type")
 	}
 
-	return errs.ErrNoError
+	return nil
 }
 /**
 *  @brief  create a new account in mpt tree

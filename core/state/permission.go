@@ -26,13 +26,15 @@ type Permission struct {
 }
 
 func (p *Permission) CheckPermission(state *State, signatures []common.Signature) error {
-	Keys := make(map[common.Address][]byte)
-	Accounts := make(map[string][]byte)
+	Keys := make(map[common.Address][]byte, 1)
+	Accounts := make(map[string][]byte, 1)
 	for _, s := range signatures {
 		addr := common.AddressFromPubKey(s.PubKey)
 		acc, err := state.GetAccountByAddr(addr)
-		if err != nil {
+		if err == nil {
 			Accounts[acc.Index.String()] = s.SigData
+		} else {
+			log.Warn("permission", p.PermName, "error:", err)
 		}
 		Keys[addr] = s.SigData
 	}

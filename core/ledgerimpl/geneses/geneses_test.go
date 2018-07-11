@@ -1,7 +1,6 @@
 package geneses_test
 
 import (
-	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl"
@@ -11,10 +10,6 @@ import (
 )
 
 func TestGenesesBlockInit(t *testing.T) {
-	privKey := config.RootPrivkey
-	pubKey := config.RootPubkey
-	fmt.Println(privKey)
-	fmt.Println(pubKey)
 	l, err := ledgerimpl.NewLedger("/tmp/geneses")
 	if err != nil {
 		t.Fatal(err)
@@ -22,11 +17,11 @@ func TestGenesesBlockInit(t *testing.T) {
 
 	timeStamp := time.Now().Unix()
 	addr := common.NameToIndex("root")
-	invoke, err := types.NewInvokeContract(
-		addr, addr, "", types.VmNative, "new_account",
-		[]string{"pct", "01b1a6569a557eafcccc71e0d02461fd4b601aea"},
-		0, timeStamp)
+	invoke, err := types.NewInvokeContract(addr, addr, "owner", types.VmNative, "new_account", []string{"pct", "01b1a6569a557eafcccc71e0d02461fd4b601aea"}, 0, timeStamp)
 	invoke.SetSignature(&config.Root)
+	if err := l.CheckTransaction(invoke); err != nil {
+		t.Fatal(err)
+	}/*
 	txs := []*types.Transaction{invoke}
 	con, err := types.InitConsensusData(timeStamp)
 	if err != nil {
@@ -53,4 +48,5 @@ func TestGenesesBlockInit(t *testing.T) {
 	fmt.Println(common.ToHex(config.Root.PublicKey))
 	fmt.Println(common.AddressFromPubKey(config.Root.PublicKey).HexString())
 	fmt.Println(common.NewAddress(config.Root.PublicKey).HexString())
+	*/
 }
