@@ -25,6 +25,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/core/trie"
 	"time"
+	"encoding/json"
 )
 
 type Block struct {
@@ -175,4 +176,9 @@ func (b *Block) Show() {
 	fmt.Println("\t-----------Block-------------")
 	b.Header.Show()
 	fmt.Println("\tTxs Number     :", b.CountTxs)
+}
+
+func (b *Block) JsonString() string {
+	data, _ := json.Marshal(b)
+	return string(data)
 }

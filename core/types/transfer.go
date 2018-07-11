@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"math/big"
+	"encoding/json"
 )
 
 type TransferInfo struct {
@@ -68,4 +69,9 @@ func (t TransferInfo) GetObject() interface{} {
 
 func (t *TransferInfo) Show() {
 	fmt.Println("\tValue          :", t.Value)
+}
+
+func (t *TransferInfo) JsonString() string {
+	data, _ := json.Marshal(t)
+	return string(data)
 }

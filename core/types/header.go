@@ -25,6 +25,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
+	"encoding/json"
 )
 
 const VersionHeader = 1
@@ -243,4 +244,9 @@ func (h *Header) Show() {
 		fmt.Println("\tPublicKey      :", common.ToHex(h.Signatures[i].PubKey))
 		fmt.Println("\tSigData        :", common.ToHex(h.Signatures[i].SigData))
 	}
+}
+
+func (h *Header) JsonString() string {
+	data, _ := json.Marshal(h)
+	return string(data)
 }

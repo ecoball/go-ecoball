@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/pb"
+	"encoding/json"
 )
 
 type InvokeInfo struct {
@@ -40,17 +41,6 @@ func NewInvokeContract(from, addr common.AccountName, vm VmType, method string, 
 
 func (i InvokeInfo) GetObject() interface{} {
 	return i
-}
-
-func (i *InvokeInfo) Show() {
-	fmt.Println("\t---------Show Invoke Info ----------")
-	fmt.Println("\tTypeVm        :", i.TypeVm)
-	fmt.Println("\tMethod        :", string(i.Method))
-	fmt.Println("\tParam Num     :", len(i.Param))
-	for _, v := range i.Param {
-		fmt.Println("\tParam         :", v)
-	}
-	fmt.Println("\t---------------------------")
 }
 
 /**
@@ -96,4 +86,20 @@ func (i *InvokeInfo) Deserialize(data []byte) error {
 	}
 
 	return nil
+}
+
+func (i *InvokeInfo) Show() {
+	fmt.Println("\t---------Show Invoke Info ----------")
+	fmt.Println("\tTypeVm        :", i.TypeVm)
+	fmt.Println("\tMethod        :", string(i.Method))
+	fmt.Println("\tParam Num     :", len(i.Param))
+	for _, v := range i.Param {
+		fmt.Println("\tParam         :", v)
+	}
+	fmt.Println("\t---------------------------")
+}
+
+func (i *InvokeInfo) JsonString() string {
+	data, _ := json.Marshal(i)
+	return string(data)
 }

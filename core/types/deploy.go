@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/pb"
+	"encoding/json"
 )
 
 type DeployInfo struct {
@@ -86,4 +87,9 @@ func (d *DeployInfo) Show() {
 	fmt.Println("\t---------Show Deploy Info ----------")
 	fmt.Println("\tTypeVm        :", d.TypeVm)
 	fmt.Println("\tDescribe      :", string(d.Describe))
+}
+
+func (d *DeployInfo) JsonString() string {
+	data, _ := json.Marshal(d)
+	return string(data)
 }

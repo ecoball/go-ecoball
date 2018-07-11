@@ -23,6 +23,7 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
+	"encoding/json"
 )
 
 const VersionTx = 1
@@ -229,4 +230,9 @@ func (t *Transaction) Show() {
 		fmt.Println("\tSigData        :", common.ToHex(t.Signatures[i].SigData))
 	}
 	t.Payload.Show()
+}
+
+func (t *Transaction) JsonString() string {
+	data, _ := json.Marshal(t)
+	return string(data)
 }
