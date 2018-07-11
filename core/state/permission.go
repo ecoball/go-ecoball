@@ -39,6 +39,7 @@ func (p *Permission) CheckPermission(state *State, signatures []common.Signature
 			Accounts[acc.Index.String()] = s.SigData
 		} else {
 			log.Warn("permission", p.PermName, "error:", err)
+			return err
 		}
 		Keys[addr] = s.SigData
 	}
