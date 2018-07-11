@@ -109,7 +109,7 @@ func (c *ChainTx) VerifyTxBlock(block *types.Block) error {
 		return errors.New("block verify signature failed")
 	}
 	for _, v := range block.Transactions {
-		if err := c.CheckTransaction(v); err != errs.ErrNoError {
+		if err := c.CheckTransaction(v); err != nil {
 			log.Error("Transactions VerifySignature Failed")
 			return err
 		}
@@ -297,7 +297,7 @@ func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
 		if data, _ := c.TxsStore.Get(tx.Hash.Bytes()); data != nil {
 			return errs.ErrDuplicatedTx
 		}
-		if value, err := c.AccountGetBalance(tx.From, state.IndexAbaToken); err != nil {
+		if value, err := c.AccountGetBalance(tx.From, state.AbaToken); err != nil {
 			return err
 		} else if value.Sign() <= 0 {
 			log.Error(err)
@@ -324,7 +324,7 @@ func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
 *  @param  index - the uuid of account
 *  @param  addr - the public key of account
 */
-func (c *ChainTx) AccountAdd(index common.AccountName, addr common.Address) error {
+func (c *ChainTx) AccountAdd(index common.AccountName, addr common.Address) (*state.Account, error) {
 	return c.StateDB.AddAccount(index, addr)
 }
 /**
@@ -332,24 +332,24 @@ func (c *ChainTx) AccountAdd(index common.AccountName, addr common.Address) erro
 *  @param  indexAcc - the uuid of account
 *  @param  indexToken - the uuid of token
 */
-func (c *ChainTx) AccountGetBalance(indexAcc, indexToken common.AccountName) (*big.Int, error) {
-	return c.StateDB.GetBalance(indexAcc, indexToken)
+func (c *ChainTx) AccountGetBalance(index common.AccountName, token string) (*big.Int, error) {
+	return c.StateDB.GetBalance(index, token)
 }
 /**
 *  @brief  add a account's balance
 *  @param  indexAcc - the uuid of account
 *  @param  indexToken - the uuid of token
 */
-func (c *ChainTx) AccountAddBalance(indexAcc, indexToken common.AccountName, value uint64) error {
-	return c.StateDB.AddBalance(indexAcc, indexToken, new(big.Int).SetUint64(value))
+func (c *ChainTx) AccountAddBalance(index common.AccountName, token string, value uint64) error {
+	return c.StateDB.AddBalance(index, token, new(big.Int).SetUint64(value))
 }
 /**
 *  @brief  sub a account's balance
 *  @param  indexAcc - the uuid of account
 *  @param  indexToken - the uuid of token
 */
-func (c *ChainTx) AccountSubBalance(indexAcc, indexToken common.AccountName, value uint64) error {
-	return c.StateDB.SubBalance(indexAcc, indexToken, new(big.Int).SetUint64(value))
+func (c *ChainTx) AccountSubBalance(index common.AccountName, token string, value uint64) error {
+	return c.StateDB.SubBalance(index, token, new(big.Int).SetUint64(value))
 }
 /**
 *  @brief  handle transaction with transaction's type
@@ -357,7 +357,7 @@ func (c *ChainTx) AccountSubBalance(indexAcc, indexToken common.AccountName, val
 *  @param  tx - a transaction
 */
 func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction) ([]byte, error) {
-	tx.Show()
+	//tx.Show()
 	switch tx.Type {
 	case types.TxTransfer:
 		log.Info("Execute Transfer")
@@ -365,10 +365,10 @@ func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction)
 		if !ok {
 			return nil, errors.New("transaction type error[transfer]")
 		}
-		if err := c.AccountSubBalance(tx.From, state.IndexAbaToken, payload.Value.Uint64()); err != nil {
+		if err := c.AccountSubBalance(tx.From, state.AbaToken, payload.Value.Uint64()); err != nil {
 			return nil, err
 		}
-		if err := c.AccountAddBalance(tx.Addr, state.IndexAbaToken, payload.Value.Uint64()); err != nil {
+		if err := c.AccountAddBalance(tx.Addr, state.AbaToken, payload.Value.Uint64()); err != nil {
 			return nil, err
 		}
 	case types.TxDeploy:
@@ -391,7 +391,7 @@ func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction)
 		if err := txDeploy.Deserialize(data); err != nil {
 			return nil, err
 		}
-		txDeploy.Show()
+		//txDeploy.Show()
 		deployInfo, ok := txDeploy.Payload.GetObject().(types.DeployInfo)
 		if !ok {
 			return nil, errors.New(fmt.Sprintf("can't find the deploy contract:%s", common.IndexToName(tx.Addr)))
@@ -411,15 +411,12 @@ func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction)
 	return nil, nil
 }
 
-func (c *ChainTx) TokenExisted(indexToken common.AccountName) bool {
-	return c.StateDB.TokenExisted(indexToken)
+func (c *ChainTx) TokenExisted(token string) bool {
+	return c.StateDB.TokenExisted(token)
 }
 
 func (c *ChainTx) TokenAllocation() error {
-	if err := c.StateDB.AddAccount(state.IndexAbaRoot, common.NewAddress([]byte("aba_token"))); err != nil {
-		return err
-	}
-	if err := c.StateDB.AddBalance(state.IndexAbaRoot, state.IndexAbaToken, new(big.Int).SetUint64(2100000)); err != nil {
+	if err := c.StateDB.AddBalance(state.IndexAbaRoot, state.AbaToken, new(big.Int).SetUint64(2100000)); err != nil {
 		return err
 	}
 	return nil

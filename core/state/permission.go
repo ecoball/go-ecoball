@@ -24,7 +24,11 @@ type Permission struct {
 	Keys      map[string]address `json:"keys, omitempty"`
 	Accounts  map[string]account `json:"accounts, omitempty"`
 }
-
+/**
+ *  @brief check that the signatures meets the permission requirement
+ *  @param state - the mpt trie, used to search account
+ *  @param signatures - the transaction's signatures list
+ */
 func (p *Permission) CheckPermission(state *State, signatures []common.Signature) error {
 	Keys := make(map[common.Address][]byte, 1)
 	Accounts := make(map[string][]byte, 1)
@@ -51,6 +55,14 @@ func (p *Permission) CheckPermission(state *State, signatures []common.Signature
 	for acc := range Accounts {
 		if a, ok := p.Accounts[acc]; ok {
 			weightAcc += a.Weight
+			if next, err := state.GetAccountByName(a.Actor); err != nil {
+				return err
+			} else {
+				perm := next.Permissions[a.Permission]
+				if err := perm.CheckPermission(state, signatures); err != nil {
+					return err
+				}
+			}
 		}
 		if weightAcc >= p.Threshold {
 			return nil

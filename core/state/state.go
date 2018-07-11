@@ -27,7 +27,7 @@ import (
 
 var log = elog.NewLogger("state", elog.DebugLog)
 var IndexAbaRoot = common.NameToIndex("root")
-var IndexAbaToken = common.NameToIndex("aba")
+var AbaToken = "ABA"
 
 type State struct {
 	path   string
@@ -55,30 +55,30 @@ func (s *State) Close() {
 	s.diskDb.Close()
 }
 
-func (s *State) AddAccount(index common.AccountName, addr common.Address) error {
+func (s *State) AddAccount(index common.AccountName, addr common.Address) (*Account, error) {
 	key := common.IndexToBytes(index)
 	acc, err := s.trie.TryGet(key)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if acc != nil {
-		return errors.New("reduplicate name")
+		return nil, errors.New("reduplicate name")
 	}
 	obj, err := NewAccount(index, addr)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	d, err := obj.Serialize()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if err := s.trie.TryUpdate(common.IndexToBytes(obj.Index), d); err != nil {
-		return err
+		return nil, err
 	}
 	if err := s.trie.TryUpdate(addr.Bytes(), common.IndexToBytes(obj.Index)); err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return obj, nil
 }
 
 func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
@@ -113,57 +113,66 @@ func (s *State) GetAccountByAddr(addr common.Address) (*Account, error) {
 	}
 }
 
-func (s *State) SubBalance(indexAcc, indexToken common.AccountName, value *big.Int) error {
-	acc, err := s.GetAccountByName(indexAcc)
+func (s *State) GetBalance(index common.AccountName, token string) (*big.Int, error) {
+	acc, err := s.GetAccountByName(index)
+	if err != nil {
+		return nil, err
+	}
+
+	return acc.Balance(token)
+}
+
+func (s *State) SubBalance(index common.AccountName, token string, value *big.Int) error {
+	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return err
 	}
 
-	balance, err := acc.Balance(indexToken)
+	balance, err := acc.Balance(token)
 	if err != nil {
 		return err
 	}
 	if balance.Cmp(value) == -1 {
 		return errors.New("no enough balance")
 	}
-	acc.SubBalance(indexToken, value)
+	acc.SubBalance(token, value)
 	d, err := acc.Serialize()
 	if err != nil {
 		return err
 	}
-	if err := s.trie.TryUpdate(common.IndexToBytes(indexAcc), d); err != nil {
+	if err := s.trie.TryUpdate(common.IndexToBytes(index), d); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *State) AddBalance(indexAcc, indexToken common.AccountName, value *big.Int) error {
-	acc, err := s.GetAccountByName(indexAcc)
+func (s *State) AddBalance(index common.AccountName, token string, value *big.Int) error {
+	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return err
 	}
-	acc.AddBalance(indexToken, value)
+	acc.AddBalance(token, value)
 	d, err := acc.Serialize()
 	if err != nil {
 		return err
 	}
-	if err := s.trie.TryUpdate(common.IndexToBytes(indexAcc), d); err != nil {
+	if err := s.trie.TryUpdate(common.IndexToBytes(index), d); err != nil {
 		return err
 	}
 	//add token into trie
-	if err := s.trie.TryUpdate(common.IndexToBytes(indexToken), common.IndexToBytes(indexToken)); err != nil {
+	if err := s.trie.TryUpdate([]byte(token), []byte(token)); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *State) TokenExisted(indexToken common.AccountName) bool {
-	data, err := s.trie.TryGet(common.IndexToBytes(indexToken))
+func (s *State) TokenExisted(name string) bool {
+	data, err := s.trie.TryGet([]byte(name))
 	if err != nil {
 		log.Error(err)
 		return false
 	}
-	return common.IndexSetBytes(data) == indexToken
+	return string(data) == name
 }
 
 func (s *State) GetHashRoot() common.Hash {
@@ -184,15 +193,6 @@ func (s *State) CommitToDB() error {
 		return err
 	}
 	return s.db.TrieDB().Commit(s.trie.Hash(), false)
-}
-
-func (s *State) GetBalance(indexAcc, indexToken common.AccountName) (*big.Int, error) {
-	acc, err := s.GetAccountByName(indexAcc)
-	if err != nil {
-		return nil, err
-	}
-
-	return acc.Balance(indexToken)
 }
 
 func (s *State) Reset(hash common.Hash) error {

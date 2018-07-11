@@ -68,7 +68,7 @@ func TestLedgerTxAdd(t *testing.T) {
 	fmt.Println("Start LedgerImpl Module, hash:", l.GetCurrentHeader().Hash.HexString())
 	example.ExampleAddAccount(l.StateDB())
 	tx := example.ExampleTestTx()
-	l.AccountAddBalance(tx.From, state.IndexAbaToken, 150)
+	l.AccountAddBalance(tx.From, state.AbaToken, 150)
 	var txs []*types.Transaction
 	txs = append(txs, tx)
 	conData := types.ConsensusData{Type: types.ConSolo, Payload: &types.SoloData{}}
@@ -79,12 +79,12 @@ func TestLedgerTxAdd(t *testing.T) {
 	if err := l.SaveTxBlock(block); err != nil {
 		t.Fatal(err)
 	}
-	value, err := l.AccountGetBalance(tx.From, state.IndexAbaToken)
+	value, err := l.AccountGetBalance(tx.From, state.AbaToken)
 	if err != nil {
 		t.Fatal(err)
 	}
 	fmt.Println("value:", value)
-	value, err = l.AccountGetBalance(tx.Addr, state.IndexAbaToken)
+	value, err = l.AccountGetBalance(tx.Addr, state.AbaToken)
 	if err != nil {
 		t.Fatal(err)
 	}

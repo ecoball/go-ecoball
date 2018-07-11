@@ -100,66 +100,55 @@ func (l *LedgerImpl) Start() {
 func (l *LedgerImpl) StateDB() *state.State {
 	return l.ChainTx.StateDB
 }
+func (l *LedgerImpl) ResetStateDB(hash common.Hash) error {
+	return l.ChainTx.ResetStateDB(hash)
+}
 
-func (l *LedgerImpl) AccountGetBalance(indexAcc, indexToken common.AccountName) (uint64, error) {
-	value, err := l.ChainTx.AccountGetBalance(indexAcc, indexToken)
+func (l *LedgerImpl) AccountGet(index common.AccountName) (*state.Account, error) {
+	return l.ChainTx.StateDB.GetAccountByName(index)
+}
+func (l *LedgerImpl) AccountAdd(index common.AccountName, addr common.Address) (*state.Account, error) {
+	return l.ChainTx.AccountAdd(index, addr)
+}
+func (l *LedgerImpl) AccountGetBalance(index common.AccountName, token string) (uint64, error) {
+	value, err := l.ChainTx.AccountGetBalance(index, token)
 	if err != nil {
 		return 0, err
 	}
 	return value.Uint64(), nil
 }
-
-func (l *LedgerImpl) ContractGetInfo(key []byte) ([]byte, error) {
-	return l.ChainTx.TxsStore.Get(key)
+func (l *LedgerImpl) AccountAddBalance(index common.AccountName, token string, value uint64) error {
+	return l.ChainTx.AccountAddBalance(index, token, value)
 }
-
-func (l *LedgerImpl) GetAccount(index common.AccountName) (*state.Account, error) {
-	return l.ChainTx.StateDB.GetAccountByName(index)
+func (l *LedgerImpl) AccountSubBalance(index common.AccountName, token string, value uint64) error {
+	return l.ChainTx.AccountSubBalance(index, token, value)
 }
-
-func (l *LedgerImpl) AccountAdd(index common.AccountName, addr common.Address) error {
-	return l.ChainTx.AccountAdd(index, addr)
+func (l *LedgerImpl) TokenCreate(index common.AccountName, token string, maximum uint64) error {
+	return l.ChainTx.AccountAddBalance(index, token, maximum)
 }
-
-func (l *LedgerImpl) AccountAddBalance(indexAcc, indexToken common.AccountName, value uint64) error {
-	return l.ChainTx.AccountAddBalance(indexAcc, indexToken, value)
-}
-
-func (l *LedgerImpl) AccountSubBalance(indexAcc, indexToken common.AccountName, value uint64) error {
-	return l.ChainTx.AccountSubBalance(indexAcc, indexToken, value)
-}
-
-func (l *LedgerImpl) NewTxBlock(txs []*types.Transaction, consensusData types.ConsensusData) (*types.Block, error) {
-	return l.ChainTx.NewBlock(l, txs, consensusData)
-}
-
-func (l *LedgerImpl) GetCurrentHeader() *types.Header {
-	return l.ChainTx.CurrentHeader
-}
-
-func (l *LedgerImpl) GetCurrentHeight() uint64 {
-	return l.ChainTx.CurrentHeader.Height
-}
-
-func (l *LedgerImpl) VerifyTxBlock(block *types.Block) error {
-	return l.ChainTx.VerifyTxBlock(block)
-}
-
-func (l *LedgerImpl) SaveTxBlock(block *types.Block) error {
-	if err := l.ChainTx.SaveBlock(block); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (l *LedgerImpl) GetTxBlock(hash common.Hash) (*types.Block, error) {
-	return l.ChainTx.GetBlock(hash)
+func (l *LedgerImpl) TokenIsExisted(token string) bool {
+	return l.ChainTx.TokenExisted(token)
 }
 
 func (l *LedgerImpl) GetTxBlockByHeight(height uint64) (*types.Block, error) {
 	return l.ChainTx.GetBlockByHeight(height)
 }
+func (l *LedgerImpl) GetCurrentHeader() *types.Header {
+	return l.ChainTx.CurrentHeader
+}
+func (l *LedgerImpl) GetCurrentHeight() uint64 {
+	return l.ChainTx.CurrentHeader.Height
+}
 
+func (l *LedgerImpl) GetTxBlock(hash common.Hash) (*types.Block, error) {
+	return l.ChainTx.GetBlock(hash)
+}
+func (l *LedgerImpl) NewTxBlock(txs []*types.Transaction, consensusData types.ConsensusData) (*types.Block, error) {
+	return l.ChainTx.NewBlock(l, txs, consensusData)
+}
+func (l *LedgerImpl) VerifyTxBlock(block *types.Block) error {
+	return l.ChainTx.VerifyTxBlock(block)
+}
 func (l *LedgerImpl) CheckTransaction(tx *types.Transaction) error {
 	if err := l.ChainTx.CheckTransaction(tx); err != nil {
 		return err
@@ -169,15 +158,10 @@ func (l *LedgerImpl) CheckTransaction(tx *types.Transaction) error {
 	//}
 	return nil
 }
-
-func (l *LedgerImpl) TokenCreate(indexAcc, indexToken common.AccountName, maximum uint64) error {
-	return l.ChainTx.AccountAddBalance(indexAcc, indexToken, maximum)
+func (l *LedgerImpl) SaveTxBlock(block *types.Block) error {
+	if err := l.ChainTx.SaveBlock(block); err != nil {
+		return err
+	}
+	return nil
 }
 
-func (l *LedgerImpl) TokenIsExisted(indexToken common.AccountName) bool {
-	return l.ChainTx.TokenExisted(indexToken)
-}
-
-func (l *LedgerImpl) ResetStateDB(hash common.Hash) error {
-	return l.ChainTx.ResetStateDB(hash)
-}

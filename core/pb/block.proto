@@ -158,7 +158,7 @@ message Account {
 ** Account Info
 */
 message Token {
-    uint64      Index        = 4;
+    bytes       Name        = 4;
     bytes       Balance     = 2;
 }
 

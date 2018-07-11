@@ -27,8 +27,8 @@ import (
 )
 
 type Token struct {
-	Index   common.AccountName `json:"index"`
-	Balance *big.Int           `json:"balance"`
+	Name    string   `json:"index"`
+	Balance *big.Int `json:"balance"`
 }
 
 type Account struct {
@@ -44,6 +44,8 @@ type Account struct {
  *  @param address - the account's public key
  */
 func NewAccount(index common.AccountName, addr common.Address) (*Account, error) {
+	log.Info("add a new account:", index)
+	fmt.Printf("index:%d\n", index)
 	acc := Account{
 		Index:       index,
 		Nonce:       0,
@@ -75,9 +77,10 @@ func NewAccount(index common.AccountName, addr common.Address) (*Account, error)
  *  @brief create a new token in account
  *  @param index - the unique id of token name created by common.NameToIndex()
  */
-func (a *Account) AddToken(index common.AccountName) error {
-	ac := Token{Index: index, Balance: new(big.Int).SetUint64(0)}
-	a.Tokens[index.String()] = ac
+func (a *Account) AddToken(name string) error {
+	log.Info("add token:", name)
+	ac := Token{Name: name, Balance: new(big.Int).SetUint64(0)}
+	a.Tokens[name] = ac
 	return nil
 }
 
@@ -85,8 +88,8 @@ func (a *Account) AddToken(index common.AccountName) error {
  *  @brief check the token for existence, return true if existed
  *  @param index - the unique id of token name created by common.NameToIndex()
  */
-func (a *Account) TokenExisted(index common.AccountName) bool {
-	_, ok := a.Tokens[common.IndexToName(index)]
+func (a *Account) TokenExisted(token string) bool {
+	_, ok := a.Tokens[token]
 	if ok {
 		return true
 	}
@@ -98,20 +101,21 @@ func (a *Account) TokenExisted(index common.AccountName) bool {
  *  @param index - the unique id of token name created by common.NameToIndex()
  *  @param amount - value of token
  */
-func (a *Account) AddBalance(index common.AccountName, amount *big.Int) error {
+func (a *Account) AddBalance(name string, amount *big.Int) error {
+	log.Info("add token", name, "balance:", amount, a.Index)
 	if amount.Sign() == 0 {
 		return errors.New("amount is zero")
 	}
-	ac, ok := a.Tokens[common.IndexToName(index)]
+	ac, ok := a.Tokens[name]
 	if !ok {
-		if err := a.AddToken(index); err != nil {
+		if err := a.AddToken(name); err != nil {
 			return err
 		}
-		ac, _ = a.Tokens[common.IndexToName(index)]
+		ac, _ = a.Tokens[name]
 	}
 	ac.SetBalance(new(big.Int).Add(ac.GetBalance(), amount))
 	a.Nonce++
-	a.Tokens[common.IndexToName(index)] = ac
+	a.Tokens[name] = ac
 	return nil
 }
 
@@ -120,17 +124,17 @@ func (a *Account) AddBalance(index common.AccountName, amount *big.Int) error {
  *  @param index - the unique id of token name created by common.NameToIndex()
  *  @param amount - value of token
  */
-func (a *Account) SubBalance(index common.AccountName, amount *big.Int) error {
+func (a *Account) SubBalance(token string, amount *big.Int) error {
 	if amount.Sign() == 0 {
 		return errors.New("amount is zero")
 	}
-	ac, ok := a.Tokens[common.IndexToName(index)]
+	ac, ok := a.Tokens[token]
 	if !ok {
 		return errors.New("not sufficient funds")
 	}
 	ac.SetBalance(new(big.Int).Sub(ac.GetBalance(), amount))
 	a.Nonce++
-	a.Tokens[common.IndexToName(index)] = ac
+	a.Tokens[token] = ac
 	return nil
 }
 
@@ -139,29 +143,12 @@ func (a *Account) SubBalance(index common.AccountName, amount *big.Int) error {
  *  @param index - the unique id of token name created by common.NameToIndex()
  *  @return big.int - value of token
  */
-func (a *Account) Balance(index common.AccountName) (*big.Int, error) {
-	ac, ok := a.Tokens[common.IndexToName(index)]
+func (a *Account) Balance(token string) (*big.Int, error) {
+	t, ok := a.Tokens[token]
 	if !ok {
-		return nil, errors.New("can't find token account")
+		return nil, errors.New(fmt.Sprintf("can't find token account:%s, in account:%s", token, common.IndexToName(a.Index)))
 	}
-	return ac.GetBalance(), nil
-}
-
-/**
- *  @brief set balance of account
- *  @param amount - value of token
- */
-func (t *Token) SetBalance(amount *big.Int) {
-	//TODO:将变动记录存到日志文件
-	t.setBalance(amount)
-}
-
-func (t *Token) setBalance(amount *big.Int) {
-	t.Balance = amount
-}
-
-func (t *Token) GetBalance() *big.Int {
-	return t.Balance
+	return t.GetBalance(), nil
 }
 
 /**
@@ -188,7 +175,7 @@ func (a *Account) ProtoBuf() (*pb.Account, error) {
 			return nil, err
 		}
 		ac := pb.Token{
-			Index:   uint64(v.Index),
+			Name:    []byte(v.Name),
 			Balance: balance,
 		}
 		tokens = append(tokens, &ac)
@@ -242,13 +229,13 @@ func (a *Account) Deserialize(data []byte) error {
 	a.Permissions = make(map[string]Permission, 1)
 	for _, v := range pbAcc.Tokens {
 		ac := Token{
-			Index:   common.AccountName(v.Index),
+			Name:    string(v.Name),
 			Balance: new(big.Int),
 		}
 		if err := ac.Balance.GobDecode(v.Balance); err != nil {
 			return err
 		}
-		a.Tokens[common.IndexToName(ac.Index)] = ac
+		a.Tokens[ac.Name] = ac
 	}
 	for _, pbPerm := range pbAcc.Permissions {
 		keys := make(map[string]address, 1)
@@ -283,4 +270,21 @@ func (a *Account) JsonString() string {
 
 func (a *Account) Show() {
 	fmt.Println(a.JsonString())
+}
+
+/**
+ *  @brief set balance of account
+ *  @param amount - value of token
+ */
+func (t *Token) SetBalance(amount *big.Int) {
+	//TODO:将变动记录存到日志文件
+	t.setBalance(amount)
+}
+
+func (t *Token) setBalance(amount *big.Int) {
+	t.Balance = amount
+}
+
+func (t *Token) GetBalance() *big.Int {
+	return t.Balance
 }

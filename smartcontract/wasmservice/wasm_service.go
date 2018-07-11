@@ -173,7 +173,7 @@ func (ws *WasmService) AbaGetCurrentHeight() uint64 {
 }
 
 func (ws *WasmService) AbaAccountGetBalance(indexAcc, indexToken common.AccountName) uint64 {
-	value, err := ws.ledger.AccountGetBalance(indexAcc, indexToken)
+	value, err := ws.ledger.AccountGetBalance(indexAcc, common.IndexToName(indexToken))
 	if err != nil {
 		return 0
 	}
@@ -181,7 +181,7 @@ func (ws *WasmService) AbaAccountGetBalance(indexAcc, indexToken common.AccountN
 }
 
 func (ws *WasmService) AbaAccountAddBalance(indexAcc, indexToken common.AccountName, value uint64) int32 {
-	if err := ws.ledger.AccountAddBalance(indexAcc, indexToken, value); err != nil {
+	if err := ws.ledger.AccountAddBalance(indexAcc, common.IndexToName(indexToken), value); err != nil {
 		log.Error(err)
 		return -1
 	}
@@ -189,7 +189,7 @@ func (ws *WasmService) AbaAccountAddBalance(indexAcc, indexToken common.AccountN
 }
 
 func (ws *WasmService) AbaAccountSubBalance(indexAcc, indexToken common.AccountName, value uint64) int32 {
-	if err := ws.ledger.AccountSubBalance(indexAcc, indexToken, value); err != nil {
+	if err := ws.ledger.AccountSubBalance(indexAcc, common.IndexToName(indexToken), value); err != nil {
 		log.Error(err)
 		return -1
 	}
@@ -197,7 +197,7 @@ func (ws *WasmService) AbaAccountSubBalance(indexAcc, indexToken common.AccountN
 }
 
 func (ws *WasmService) TokenCreate(indexAcc, indexToken common.AccountName, maximum uint64) int32 {
-	if err := ws.ledger.TokenCreate(indexAcc, indexToken, maximum); err != nil {
+	if err := ws.ledger.TokenCreate(indexAcc, common.IndexToName(indexToken), maximum); err != nil {
 		log.Error(err)
 		return -1
 	}
@@ -205,7 +205,7 @@ func (ws *WasmService) TokenCreate(indexAcc, indexToken common.AccountName, maxi
 }
 
 func (ws *WasmService) TokenIsExisted(indexToken common.AccountName) int32 {
-	ret := ws.ledger.TokenIsExisted(indexToken)
+	ret := ws.ledger.TokenIsExisted(common.IndexToName(indexToken))
 	if ret {
 		return 1
 	} else {

@@ -38,7 +38,7 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 	case "new_account":
 		index := common.NameToIndex(ns.params[0])
 		addr := common.FormHexString(ns.params[1])
-		if err := ns.ledger.AccountAdd(index, addr); err != nil {
+		if _, err := ns.ledger.AccountAdd(index, addr); err != nil {
 			return nil, err
 		}
 	default:

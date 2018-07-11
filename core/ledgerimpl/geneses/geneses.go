@@ -24,6 +24,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/types"
 	"time"
+	"github.com/ecoball/go-ecoball/core/state"
 )
 
 func GenesisBlockInit(ledger ledger.Ledger) (*types.Block, error) {
@@ -69,9 +70,13 @@ func PresetContract(ledger ledger.Ledger, t int64) ([]*types.Transaction, error)
 	index := common.NameToIndex("root")
 	data := common.FromHex(config.RootPubkey)
 	addr := common.AddressFromPubKey(data)
-	if err := ledger.AccountAdd(index, addr); err != nil {
+	if _, err := ledger.AccountAdd(index, addr); err != nil {
 		return nil, err
 	}
+	if err := ledger.AccountAddBalance(index, state.AbaToken, 10000); err != nil {
+		return nil, err
+	}
+
 	tokenContract, err := types.NewDeployContract(index, index, "active", types.VmNative, "system control", nil, 0, t)
 	if err != nil {
 		return nil, err
