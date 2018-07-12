@@ -327,6 +327,9 @@ func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
 func (c *ChainTx) AccountAdd(index common.AccountName, addr common.Address) (*state.Account, error) {
 	return c.StateDB.AddAccount(index, addr)
 }
+func (c *ChainTx) AddPermission(index common.AccountName, perm state.Permission) error {
+	return c.StateDB.AddPermission(index, perm)
+}
 /**
 *  @brief  get a account's balance
 *  @param  indexAcc - the uuid of account

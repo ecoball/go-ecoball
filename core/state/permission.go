@@ -6,31 +6,31 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 )
 
-type account struct {
+type AccFactor struct {
 	Actor      common.AccountName `json:"actor"`
 	Weight     uint32             `json:"weight"`
 	Permission string             `json:"permission"`
 }
 
-type address struct {
+type KeyFactor struct {
 	Actor  common.Address `json:"actor"`
 	Weight uint32         `json:"weight"`
 }
 
 type Permission struct {
-	PermName  string             `json:"perm_name"`
-	Parent    string             `json:"parent"`
-	Threshold uint32             `json:"threshold"`
-	Keys      map[string]address `json:"keys, omitempty"`
-	Accounts  map[string]account `json:"accounts, omitempty"`
+	PermName  string               `json:"perm_name"`
+	Parent    string               `json:"parent"`
+	Threshold uint32               `json:"threshold"`
+	Keys      map[string]KeyFactor `json:"keys, omitempty"`
+	Accounts  map[string]AccFactor `json:"accounts, omitempty"`
 }
 
-func NewPermission(name, parent string, threshold uint32, addr []address, acc []account) Permission {
-	Keys := make(map[string]address, 1)
+func NewPermission(name, parent string, threshold uint32, addr []KeyFactor, acc []AccFactor) Permission {
+	Keys := make(map[string]KeyFactor, 1)
 	for _, a := range addr {
 		Keys[a.Actor.HexString()] = a
 	}
-	Accounts := make(map[string]account, 1)
+	Accounts := make(map[string]AccFactor, 1)
 	for _, a := range acc {
 		Accounts[a.Actor.String()] = a
 	}

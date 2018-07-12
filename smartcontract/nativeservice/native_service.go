@@ -7,6 +7,8 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
+	"encoding/json"
+	"github.com/ecoball/go-ecoball/core/state"
 )
 
 var log = elog.NewLogger("native", config.LogLevel)
@@ -26,7 +28,7 @@ func NewNativeService(ledger ledger.Ledger, owner common.AccountName, method str
 func (ns *NativeService) Execute() ([]byte, error) {
 	switch ns.owner {
 	case common.NameToIndex("root"):
-		ns.RootExecute()
+		return ns.RootExecute()
 	default:
 		return nil, errors.New("unknown native contract's owner")
 	}
@@ -41,6 +43,12 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		if _, err := ns.ledger.AccountAdd(index, addr); err != nil {
 			return nil, err
 		}
+	case "set_account":
+		perm := state.Permission{Keys:make(map[string]state.KeyFactor, 1), Accounts:make(map[string]state.AccFactor, 1)}
+		if err := json.Unmarshal([]byte(ns.params[0]), perm); err != nil {
+			return nil, err
+		}
+
 	default:
 		return nil, errors.New(fmt.Sprintf("unknown method:%s", ns.method))
 	}

@@ -29,7 +29,7 @@ func TestStateNew(t *testing.T) {
 	root := common.HexToHash("0x797ddb4c4b8cfcb353989acf8e41b5d425003fb0ae3d89e754658fe264e8dab5")
 	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
 	indexAcc := common.NameToIndex("pct")
-	indexToken := common.NameToIndex("aba")
+	indexToken := state.AbaToken
 	s, err := state.NewState("/tmp/state", root)
 	if err != nil {
 		t.Fatal(err)
@@ -39,7 +39,7 @@ func TestStateNew(t *testing.T) {
 	balance, err := s.GetBalance(indexAcc, indexToken)
 	if err != nil {
 		fmt.Println("get balance error:", err)
-		if err := s.AddAccount(indexAcc, addr); err != nil {
+		if _, err := s.AddAccount(indexAcc, addr); err != nil {
 			t.Fatal(err)
 		}
 	} else {
@@ -62,12 +62,12 @@ func TestStateNew(t *testing.T) {
 func TestStateRoot(t *testing.T) {
 	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
 	indexAcc := common.NameToIndex("pct")
-	indexToken := common.NameToIndex("aba")
+	indexToken := state.AbaToken
 	s, err := state.NewState("/tmp/state_root", common.HexToHash("cf4bfc19264aa4bbd6898c0ef43ce5465c794fd587e622fccc19980e634cd9f2"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := s.AddAccount(indexAcc, addr); err != nil {
+	if _, err := s.AddAccount(indexAcc, addr); err != nil {
 		t.Fatal(err)
 	}
 	if err := s.AddBalance(indexAcc, indexToken, new(big.Int).SetInt64(100)); err != nil {

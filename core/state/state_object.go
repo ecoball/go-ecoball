@@ -52,15 +52,16 @@ func NewAccount(index common.AccountName, addr common.Address) (*Account, error)
 		Tokens:      make(map[string]Token, 1),
 		Permissions: make(map[string]Permission, 1),
 	}
-	acc.AddPermission("owner", "", 1, []address{{Actor: addr, Weight: 1}}, []account{})
-	acc.AddPermission("active", "owner", 1, []address{}, []account{{Actor: index, Weight: 1, Permission: "owner"}})
+	perm := NewPermission("owner", "", 1, []KeyFactor{{Actor: addr, Weight: 1}}, []AccFactor{})
+	acc.AddPermission(perm)
+	perm = NewPermission("active", "owner", 1, []KeyFactor{}, []AccFactor{{Actor: index, Weight: 1, Permission: "owner"}})
+	acc.AddPermission(perm)
 
 	return &acc, nil
 }
 
-func (a *Account) AddPermission(name, parent string, threshold uint32, addr []address, acc []account) {
-	perm := NewPermission(name, parent, threshold, addr, acc)
-	a.Permissions[name] = perm
+func (a *Account) AddPermission(perm Permission) {
+	a.Permissions[perm.PermName] = perm
 }
 
 /**
@@ -221,14 +222,14 @@ func (a *Account) Deserialize(data []byte) error {
 		a.Tokens[ac.Name] = ac
 	}
 	for _, pbPerm := range pbAcc.Permissions {
-		keys := make(map[string]address, 1)
+		keys := make(map[string]KeyFactor, 1)
 		for _, pbKey := range pbPerm.Keys {
-			key := address{Actor: common.NewAddress(pbKey.Actor), Weight: pbKey.Weight}
+			key := KeyFactor{Actor: common.NewAddress(pbKey.Actor), Weight: pbKey.Weight}
 			keys[common.NewAddress(pbKey.Actor).HexString()] = key
 		}
-		accounts := make(map[string]account, 1)
+		accounts := make(map[string]AccFactor, 1)
 		for _, pbAcc := range pbPerm.Accounts {
-			acc := account{Actor: common.AccountName(pbAcc.Actor), Weight: pbAcc.Weight, Permission: string(pbAcc.Permission)}
+			acc := AccFactor{Actor: common.AccountName(pbAcc.Actor), Weight: pbAcc.Weight, Permission: string(pbAcc.Permission)}
 			accounts[common.AccountName(pbAcc.Actor).String()] = acc
 		}
 		a.Permissions[string(pbPerm.PermName)] = Permission{

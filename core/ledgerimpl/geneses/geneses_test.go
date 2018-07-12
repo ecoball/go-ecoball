@@ -8,6 +8,9 @@ import (
 	"testing"
 	"time"
 	"github.com/ecoball/go-ecoball/account"
+	"github.com/ecoball/go-ecoball/core/state"
+	"github.com/hyperledger/fabric-sdk-go/pkg/client/channel/invoke"
+	"encoding/json"
 )
 var root = common.NameToIndex("root")
 var pct = common.NameToIndex("pct")
@@ -70,18 +73,22 @@ func TestGenesesBlockInit(t *testing.T) {
 	}
 	acc_token.Show()
 
-	param := `{"threshold" : 1, "keys" : [], "accounts" : [{"permission":{"actor":"pct","permission":"active"},"weight":1}, {"permission":{"actor":"test","permission":"active"},"weight":1}]}`
-	invoke, err := types.NewInvokeContract(token, token, "owner", types.VmNative, "set_account",
-		[]string{param}, 0, timeStamp)
+	perm := state.NewPermission("active", "owner", 1, []state.KeyFactor{}, []state.AccFactor{{Actor:pct, Weight:1}, {Actor:test, Weight:1}})
+	param, err := json.Marshal(perm)
+	if err != nil {
+		t.Fatal(err)
+	}
+	invoke, err := types.NewInvokeContract(token, root, "owner", types.VmNative, "set_account",
+		[]string{string(param)}, 0, timeStamp)
 	invoke.SetSignature(&tokenAccount)
 	/*
 	transfer, err := types.NewTransfer(addr, common.NameToIndex("pct"), "owner", new(big.Int).SetUint64(1000), 100, timeStamp)
 	transfer.SetSignature(&config.Root)
 	if err := l.CheckTransaction(transfer); err != nil {
 		t.Fatal(err)
-	}
+	}*/
 
-	txs2 := []*types.Transaction{transfer}
+	txs2 := []*types.Transaction{invoke}
 	block2, err := l.NewTxBlock(txs2, *con)
 	if err != nil {
 		t.Fatal(err)
@@ -94,7 +101,7 @@ func TestGenesesBlockInit(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	acc, err = l.AccountGet(common.NameToIndex("root"))
+	acc, err := l.AccountGet(common.NameToIndex("root"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -104,9 +111,4 @@ func TestGenesesBlockInit(t *testing.T) {
 		t.Fatal(err)
 	}
 	acc.Show()
-
-	fmt.Println(common.ToHex(config.Root.PublicKey))
-	fmt.Println(common.AddressFromPubKey(config.Root.PublicKey).HexString())
-	fmt.Println(common.NewAddress(config.Root.PublicKey).HexString())
-    */
 }

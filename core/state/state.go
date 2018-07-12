@@ -68,19 +68,23 @@ func (s *State) AddAccount(index common.AccountName, addr common.Address) (*Acco
 	if err != nil {
 		return nil, err
 	}
-	d, err := obj.Serialize()
-	if err != nil {
+	if err := s.CommitAccount(obj); err != nil {
 		return nil, err
 	}
-	if err := s.trie.TryUpdate(common.IndexToBytes(obj.Index), d); err != nil {
-		return nil, err
-	}
+	//save the mapping of addr and index
 	if err := s.trie.TryUpdate(addr.Bytes(), common.IndexToBytes(obj.Index)); err != nil {
 		return nil, err
 	}
 	return obj, nil
 }
-
+func (s *State) AddPermission(index common.AccountName, perm Permission) error {
+	acc, err := s.GetAccountByName(index)
+	if err != nil {
+		return err
+	}
+	acc.AddPermission(perm)
+	return s.CommitAccount(acc)
+}
 func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
 	key := common.IndexToBytes(index)
 	fData, err := s.trie.TryGet(key)
@@ -96,7 +100,6 @@ func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
 	}
 	return acc, nil
 }
-
 func (s *State) GetAccountByAddr(addr common.Address) (*Account, error) {
 	if fData, err := s.trie.TryGet(addr.Bytes()); err != nil {
 		return nil, err
@@ -112,6 +115,16 @@ func (s *State) GetAccountByAddr(addr common.Address) (*Account, error) {
 		}
 	}
 }
+func (s *State) CommitAccount(acc *Account) error {
+	d, err := acc.Serialize()
+	if err != nil {
+		return err
+	}
+	if err := s.trie.TryUpdate(common.IndexToBytes(acc.Index), d); err != nil {
+		return err
+	}
+	return nil
+}
 
 func (s *State) GetBalance(index common.AccountName, token string) (*big.Int, error) {
 	acc, err := s.GetAccountByName(index)
@@ -121,7 +134,6 @@ func (s *State) GetBalance(index common.AccountName, token string) (*big.Int, er
 
 	return acc.Balance(token)
 }
-
 func (s *State) SubBalance(index common.AccountName, token string, value *big.Int) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
@@ -136,27 +148,18 @@ func (s *State) SubBalance(index common.AccountName, token string, value *big.In
 		return errors.New("no enough balance")
 	}
 	acc.SubBalance(token, value)
-	d, err := acc.Serialize()
-	if err != nil {
-		return err
-	}
-	if err := s.trie.TryUpdate(common.IndexToBytes(index), d); err != nil {
+	if err := s.CommitAccount(acc); err != nil {
 		return err
 	}
 	return nil
 }
-
 func (s *State) AddBalance(index common.AccountName, token string, value *big.Int) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return err
 	}
 	acc.AddBalance(token, value)
-	d, err := acc.Serialize()
-	if err != nil {
-		return err
-	}
-	if err := s.trie.TryUpdate(common.IndexToBytes(index), d); err != nil {
+	if err := s.CommitAccount(acc); err != nil {
 		return err
 	}
 	//add token into trie
