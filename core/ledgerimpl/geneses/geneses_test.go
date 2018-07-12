@@ -40,9 +40,14 @@ func TestGenesesBlockInit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	acc, err := l.AccountGet(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	acc.Show()
 
 	CreateAccountBlock(l, con, t)
-	acc, err := l.AccountGet(pct)
+	acc, err = l.AccountGet(pct)
 	if err != nil {
 		t.Fatal(err)
 	}
