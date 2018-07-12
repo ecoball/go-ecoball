@@ -54,7 +54,7 @@ func NewAccount(index common.AccountName, addr common.Address) (*Account, error)
 	}
 	perm := NewPermission("owner", "", 1, []KeyFactor{{Actor: addr, Weight: 1}}, []AccFactor{})
 	acc.AddPermission(perm)
-	perm = NewPermission("active", "owner", 1, []KeyFactor{}, []AccFactor{{Actor: index, Weight: 1, Permission: "owner"}})
+	perm = NewPermission("active", "owner", 1, []KeyFactor{{Actor: addr, Weight: 1}}, []AccFactor{})
 	acc.AddPermission(perm)
 
 	return &acc, nil
