@@ -13,6 +13,7 @@ import (
 	"math/big"
 	"testing"
 	"time"
+	"fmt"
 )
 
 var log = elog.NewLogger("test", elog.InfoLog)
@@ -75,6 +76,11 @@ func TestGenesesBlockInit(t *testing.T) {
 		t.Fatal(err)
 	}
 	acc.Show()
+	permStr, err := l.FindPermission(token, "active")
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println(permStr)
 }
 
 func CreateAccountBlock(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T) {

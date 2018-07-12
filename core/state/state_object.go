@@ -64,6 +64,18 @@ func (a *Account) AddPermission(perm Permission) {
 	a.Permissions[perm.PermName] = perm
 }
 
+func (a *Account) FindPermission(name string) (string, error) {
+	perm, ok := a.Permissions[name]
+	if !ok {
+		return "", errors.New(fmt.Sprintf("can't find this permission:%s", name))
+	}
+	str, err := json.Marshal(perm)
+	if err != nil {
+		return "", err
+	}
+	return string(str), nil
+}
+
 /**
  *  @brief create a new token in account
  *  @param index - the unique id of token name created by common.NameToIndex()

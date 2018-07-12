@@ -81,6 +81,13 @@ func (s *State) AddPermission(index common.AccountName, perm Permission) error {
 	acc.AddPermission(perm)
 	return s.CommitAccount(acc)
 }
+func (s *State) FindPermission(index common.AccountName, name string) (string, error) {
+	acc, err := s.GetAccountByName(index)
+	if err != nil {
+		return "", err
+	}
+	return acc.FindPermission(name)
+}
 func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
 	key := common.IndexToBytes(index)
 	fData, err := s.trie.TryGet(key)

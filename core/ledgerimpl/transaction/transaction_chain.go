@@ -330,6 +330,9 @@ func (c *ChainTx) AccountAdd(index common.AccountName, addr common.Address) (*st
 func (c *ChainTx) AddPermission(index common.AccountName, perm state.Permission) error {
 	return c.StateDB.AddPermission(index, perm)
 }
+func (c *ChainTx) FindPermission(index common.AccountName, name string) (string, error) {
+	return c.StateDB.FindPermission(index, name)
+}
 /**
 *  @brief  get a account's balance
 *  @param  indexAcc - the uuid of account

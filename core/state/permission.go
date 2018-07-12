@@ -25,6 +25,14 @@ type Permission struct {
 	Accounts  map[string]AccFactor `json:"accounts, omitempty"`
 }
 
+/**
+ *  @brief create a new permission object
+ *  @param name - the permission's name
+ *  @param parent - the parent name of this permission, if the permission's name is 'owner', then the parent is null
+ *  @param threshold - the threshold of this permission, when the weight greater than or equal to threshold, permission will only take effect
+ *  @param addr - the public keys list
+ *  @param acc - the accounts list
+ */
 func NewPermission(name, parent string, threshold uint32, addr []KeyFactor, acc []AccFactor) Permission {
 	Keys := make(map[string]KeyFactor, 1)
 	for _, a := range addr {
@@ -90,3 +98,4 @@ func (p *Permission) CheckPermission(state *State, signatures []common.Signature
 
 	return errors.New(fmt.Sprintf("weight is not enough, keys weight:%d, accounts weight:%d", weightKey, weightAcc))
 }
+

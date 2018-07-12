@@ -113,6 +113,9 @@ func (l *LedgerImpl) AccountAdd(index common.AccountName, addr common.Address) (
 func (l *LedgerImpl) AddPermission(index common.AccountName, perm state.Permission) error {
 	return l.ChainTx.AddPermission(index, perm)
 }
+func (l *LedgerImpl) FindPermission(index common.AccountName, name string) (string, error) {
+	return l.ChainTx.FindPermission(index, name)
+}
 func (l *LedgerImpl) AccountGetBalance(index common.AccountName, token string) (uint64, error) {
 	value, err := l.ChainTx.AccountGetBalance(index, token)
 	if err != nil {
