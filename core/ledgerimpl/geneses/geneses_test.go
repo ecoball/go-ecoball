@@ -116,7 +116,7 @@ func CreateAccountBlock(ledger ledger.Ledger, con *types.ConsensusData, t *testi
 }
 
 func SetTokenAccountBlock(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T) {
-	perm := state.NewPermission("active", "owner", 1, []state.KeyFactor{}, []state.AccFactor{{Actor: pct, Weight: 1, Permission: "active"}, {Actor: test, Weight: 1, Permission: "active"}})
+	perm := state.NewPermission("active", "owner", 2, []state.KeyFactor{}, []state.AccFactor{{Actor: pct, Weight: 1, Permission: "active"}, {Actor: test, Weight: 1, Permission: "active"}})
 	param, err := json.Marshal(perm)
 	if err != nil {
 		t.Fatal(err)

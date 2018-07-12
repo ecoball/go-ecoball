@@ -281,17 +281,10 @@ func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
 	} else if result == false {
 		return errors.New("tx verify signature failed")
 	}
-	if account, err := c.StateDB.GetAccountByName(tx.From); err != nil {
+	if err := c.StateDB.CheckPermission(tx.From, c.StateDB, tx.Permission, tx.Signatures); err != nil {
 		return err
-	} else {
-		if perm, ok := account.Permissions[tx.Permission]; !ok {
-			return errors.New(fmt.Sprintf("can't find this permission in account:%s", tx.Permission))
-		} else {
-			if err := perm.CheckPermission(c.StateDB, tx.Signatures); err != nil {
-				return err
-			}
-		}
 	}
+
 	switch tx.Type {
 	case types.TxTransfer:
 		if data, _ := c.TxsStore.Get(tx.Hash.Bytes()); data != nil {

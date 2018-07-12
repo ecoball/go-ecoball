@@ -64,14 +64,36 @@ func (a *Account) AddPermission(perm Permission) {
 	a.Permissions[perm.PermName] = perm
 }
 
-func (a *Account) FindPermission(name string) (string, error) {
+func (a *Account) CheckPermission(state *State, name string, signatures []common.Signature) error {
+	if perm, ok := a.Permissions[name]; !ok {
+		return errors.New(fmt.Sprintf("can't find this permission in account:%s", name))
+	} else {
+		if "" != perm.Parent {
+			if err := a.CheckPermission(state, perm.Parent, signatures); err == nil {
+				return nil
+			}
+		}
+		if err := perm.CheckPermission(state, signatures); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (a *Account) FindPermission(name string) (str string, err error) {
 	perm, ok := a.Permissions[name]
 	if !ok {
 		return "", errors.New(fmt.Sprintf("can't find this permission:%s", name))
 	}
-	str, err := json.Marshal(perm)
+	b, err := json.Marshal(perm)
 	if err != nil {
 		return "", err
+	}
+	str += string(b)
+	if "" != perm.Parent {
+		if s, err := a.FindPermission(perm.Parent); err == nil {
+			str += s
+		}
 	}
 	return string(str), nil
 }

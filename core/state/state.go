@@ -81,6 +81,13 @@ func (s *State) AddPermission(index common.AccountName, perm Permission) error {
 	acc.AddPermission(perm)
 	return s.CommitAccount(acc)
 }
+func (s *State) CheckPermission(index common.AccountName, state *State, name string, signatures []common.Signature) error {
+	acc, err := s.GetAccountByName(index)
+	if err != nil {
+		return err
+	}
+	return acc.CheckPermission(state, name, signatures)
+}
 func (s *State) FindPermission(index common.AccountName, name string) (string, error) {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
