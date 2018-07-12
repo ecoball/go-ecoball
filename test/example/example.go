@@ -16,10 +16,10 @@ func ExampleAddAccount(state *state.State) error {
 	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
 	indexFrom := common.NameToIndex("from")
 	indexAddr := common.NameToIndex("addr")
-	if err := state.AddAccount(indexFrom, from); err != nil {
+	if _, err := state.AddAccount(indexFrom, from); err != nil {
 		return nil
 	}
-	if err := state.AddAccount(indexAddr, addr); err != nil {
+	if _, err := state.AddAccount(indexAddr, addr); err != nil {
 		return nil
 	}
 	return nil
