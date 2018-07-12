@@ -24,6 +24,25 @@ type Permission struct {
 	Keys      map[string]address `json:"keys, omitempty"`
 	Accounts  map[string]account `json:"accounts, omitempty"`
 }
+
+func NewPermission(name, parent string, threshold uint32, addr []address, acc []account) Permission {
+	Keys := make(map[string]address, 1)
+	for _, a := range addr {
+		Keys[a.Actor.HexString()] = a
+	}
+	Accounts := make(map[string]account, 1)
+	for _, a := range acc {
+		Accounts[a.Actor.String()] = a
+	}
+	return Permission{
+		PermName:  name,
+		Parent:    parent,
+		Threshold: threshold,
+		Keys:      Keys,
+		Accounts:  Accounts,
+	}
+}
+
 /**
  *  @brief check that the signatures meets the permission requirement
  *  @param state - the mpt trie, used to search account
