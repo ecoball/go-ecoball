@@ -70,9 +70,10 @@ func TestGenesesBlockInit(t *testing.T) {
 	}
 	acc_token.Show()
 
-	invoke, err := types.NewInvokeContract(root, root, "owner", types.VmNative, "set_account",
-		[]string{"token", common.AddressFromPubKey(common.FromHex("0x105cb8f936eec87d35e42fc0f656ab4b7fc9a007cbf4554f829c44e528df6ce4")).HexString()}, 0, timeStamp)
-	invoke.SetSignature(&config.Root)
+	param := `{"threshold" : 1, "keys" : [], "accounts" : [{"permission":{"actor":"pct","permission":"active"},"weight":1}, {"permission":{"actor":"test","permission":"active"},"weight":1}]}`
+	invoke, err := types.NewInvokeContract(token, token, "owner", types.VmNative, "set_account",
+		[]string{param}, 0, timeStamp)
+	invoke.SetSignature(&tokenAccount)
 	/*
 	transfer, err := types.NewTransfer(addr, common.NameToIndex("pct"), "owner", new(big.Int).SetUint64(1000), 100, timeStamp)
 	transfer.SetSignature(&config.Root)

@@ -52,14 +52,15 @@ func NewAccount(index common.AccountName, addr common.Address) (*Account, error)
 		Tokens:      make(map[string]Token, 1),
 		Permissions: make(map[string]Permission, 1),
 	}
-	acc.Permissions["owner"] = acc.AddPermission("owner", "", 1, []address{{Actor: addr, Weight: 1}}, []account{})
-	acc.Permissions["active"] = acc.AddPermission("active", "owner", 1, []address{}, []account{{Actor: index, Weight: 1, Permission: "owner"}})
+	acc.AddPermission("owner", "", 1, []address{{Actor: addr, Weight: 1}}, []account{})
+	acc.AddPermission("active", "owner", 1, []address{}, []account{{Actor: index, Weight: 1, Permission: "owner"}})
 
 	return &acc, nil
 }
 
-func (a *Account) AddPermission(name, parent string, threshold uint32, addr []address, acc []account) Permission {
-	return NewPermission(name, parent, threshold, addr, acc)
+func (a *Account) AddPermission(name, parent string, threshold uint32, addr []address, acc []account) {
+	perm := NewPermission(name, parent, threshold, addr, acc)
+	a.Permissions[name] = perm
 }
 
 /**
