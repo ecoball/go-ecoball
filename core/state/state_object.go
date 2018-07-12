@@ -251,6 +251,7 @@ func (a *Account) JsonString() string {
 	return string(data)
 }
 func (a *Account) Show() {
+	fmt.Println("------------------------------")
 	fmt.Println(a.JsonString())
 }
 /**

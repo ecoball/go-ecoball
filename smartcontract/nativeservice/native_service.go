@@ -44,11 +44,15 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 			return nil, err
 		}
 	case "set_account":
+		index := common.NameToIndex(ns.params[0])
 		perm := state.Permission{Keys:make(map[string]state.KeyFactor, 1), Accounts:make(map[string]state.AccFactor, 1)}
-		if err := json.Unmarshal([]byte(ns.params[0]), perm); err != nil {
+		if err := json.Unmarshal([]byte(ns.params[1]), &perm); err != nil {
+			fmt.Println(ns.params[1])
 			return nil, err
 		}
-
+		if err := ns.ledger.AddPermission(index, perm); err != nil {
+			return nil, err
+	}
 	default:
 		return nil, errors.New(fmt.Sprintf("unknown method:%s", ns.method))
 	}

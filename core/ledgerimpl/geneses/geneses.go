@@ -25,6 +25,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"time"
 	"github.com/ecoball/go-ecoball/core/state"
+	"fmt"
 )
 
 func GenesisBlockInit(ledger ledger.Ledger) (*types.Block, error) {
@@ -68,8 +69,8 @@ func PresetContract(ledger ledger.Ledger, t int64) ([]*types.Transaction, error)
 		return nil, errors.New("ledger is nil")
 	}
 	index := common.NameToIndex("root")
-	data := common.FromHex(config.RootPubkey)
-	addr := common.AddressFromPubKey(data)
+	addr := common.AddressFromPubKey(common.FromHex(config.RootPubkey))
+	fmt.Println("preset insert a root account:", addr.HexString())
 	if _, err := ledger.AccountAdd(index, addr); err != nil {
 		return nil, err
 	}

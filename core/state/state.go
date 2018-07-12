@@ -51,10 +51,6 @@ func NewState(path string, root common.Hash) (st *State, err error) {
 	return st, nil
 }
 
-func (s *State) Close() {
-	s.diskDb.Close()
-}
-
 func (s *State) AddAccount(index common.AccountName, addr common.Address) (*Account, error) {
 	key := common.IndexToBytes(index)
 	acc, err := s.trie.TryGet(key)
@@ -214,4 +210,7 @@ func (s *State) Reset(hash common.Hash) error {
 		}
 	}
 	return nil
+}
+func (s *State) Close() {
+	s.diskDb.Close()
 }

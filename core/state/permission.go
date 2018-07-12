@@ -57,8 +57,7 @@ func (p *Permission) CheckPermission(state *State, signatures []common.Signature
 		if err == nil {
 			Accounts[acc.Index.String()] = s.SigData
 		} else {
-			log.Warn("permission", p.PermName, "error:", err)
-			return err
+			log.Warn("permission", p.PermName, "error:", err) //allow mixed with invalid account, just have enough weight
 		}
 		Keys[addr] = s.SigData
 	}
