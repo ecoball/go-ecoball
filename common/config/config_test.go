@@ -27,4 +27,5 @@ import (
 func TestConfig(t *testing.T) {
 	fmt.Println(config.HttpLocalPort)
 	fmt.Println(config.ConsensusAlgorithm)
+	fmt.Println(config.PeerList)
 }
