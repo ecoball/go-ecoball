@@ -63,6 +63,17 @@ var (
 				},
 			},
 			{
+				Name:   "createkey",
+				Usage:  "create key",
+				Action: createKey,
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "password, p",
+						Usage: "wallet password",
+					},
+				},
+			},
+			{
 				Name:   "lock",
 				Usage:  "lock wallet",
 				Action: lockWallet,
@@ -70,6 +81,21 @@ var (
 					cli.StringFlag{
 						Name:  "password, p",
 						Usage: "wallet password",
+					},
+				},
+			},
+			{
+				Name:   "import",
+				Usage:  "import private key",
+				Action: importKey,
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "password, p",
+						Usage: "wallet password",
+					},
+					cli.StringFlag{
+						Name:  "private, k",
+						Usage: "private key",
 					},
 				},
 			},
@@ -151,6 +177,44 @@ func createWallet(c *cli.Context) error {
 	}
 
 	fmt.Println("create wallet success, wallet file path:", name)
+	return nil
+}
+
+func createKey(c *cli.Context) error {
+	//Check the number of flags
+	if c.NumFlags() == 0 {
+		cli.ShowSubcommandHelp(c)
+		return nil
+	}
+
+	//Check the number of flags
+	passwd := c.String("password")
+	if "" == passwd {
+		fmt.Println("Invalid password")
+		return errors.New("Invalid password")
+	}
+
+	//whether the wallet open
+	if nil == account.Wallet {
+		fmt.Println("The wallet has not been opened!")
+	}
+
+	//whether the wallet locked
+	if account.Wallet.CheckLocked() {
+		fmt.Println("The wallet has been locked!")
+		return errors.New("The wallet has been locked!")
+	}
+
+	//create account
+	ac, err := account.Wallet.CreateKey([]byte(passwd))
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	fmt.Println("create key success")
+	fmt.Println("PrivateKey: ", common.ToHex(ac.PrivateKey[:]))
+	fmt.Println("PublicKey: ", common.ToHex(ac.PublicKey[:]))
 	return nil
 }
 
@@ -345,6 +409,48 @@ func createAccount(c *cli.Context) error {
 	fmt.Println("create account suuccess, account name: ", accountName)
 	fmt.Println("PrivateKey: ", common.ToHex(ac.PrivateKey[:]))
 	fmt.Println("PublicKey: ", common.ToHex(ac.PublicKey[:]))
+	return nil
+}
+
+func importKey(c *cli.Context) error {
+	//Check the number of flags
+	if c.NumFlags() == 0 {
+		cli.ShowSubcommandHelp(c)
+		return nil
+	}
+
+	passwd := c.String("password")
+	if "" == passwd {
+		fmt.Println("Invalid password")
+		return errors.New("Invalid password")
+	}
+
+	privateKey := c.String("private")
+	if "" == passwd {
+		fmt.Println("Invalid private key")
+		return errors.New("Invalid private key")
+	}
+
+	//whether the wallet open
+	if nil == account.Wallet {
+		fmt.Println("The wallet has not been opened!")
+	}
+
+	//whether the wallet locked
+	if account.Wallet.CheckLocked() {
+		fmt.Println("The wallet has been locked!")
+		return errors.New("The wallet has been locked!")
+	}
+
+	//create account
+	publickey, err := account.Wallet.ImportKey([]byte(passwd), common.FromHex(privateKey))
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+
+	fmt.Println("import private key success!")
+	fmt.Println("PublicKey: ", common.ToHex(publickey[:]))
 	return nil
 }
 

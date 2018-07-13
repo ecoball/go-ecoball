@@ -29,6 +29,10 @@ import (
 	"github.com/ecoball/go-ecoball/common/utils"
 )
 
+// peer list
+var PeerList []string
+var PeerIndex []string
+
 const (
 	StringBlock     = "/Block"
 	StringHeader    = "/Header"
@@ -36,6 +40,9 @@ const (
 	StringContract  = "/Contract"
 	StringState     = "/State"
 	StringConsensus = "/Consensus"
+	ConsensusPro = "consensus_algorithm"
+	ListPeers  = "peer_list"
+	IndexPeers = "peer_index"
 )
 
 var configDefault = `#toml configuration for EcoBall system
@@ -44,9 +51,12 @@ version = "1.0"              # system version
 log_dir = "/tmp/Log/"        # log file location
 output_to_terminal = "true"	 	
 log_level = 1                # debug level	
-consensus_algorithm = "SOLO" # can set as SOLO, DPOS
+consensus_algorithm = "SOLO" # can set as SOLO, DPOS, ababft
 root_privkey = "0x33a0330cd18912c215c9b1125fab59e9a5ebfb62f0223bbea0c6c5f95e30b1c6"
 root_pubkey = "0x0463613734b23e5dd247b7147b63369bf8f5332f894e600f7357f3cfd56886f75544fd095eb94dac8401e4986de5ea620f5a774feb71243e95b4dd6b83ca49910c"
+peer_list = [ "120202c924ed1a67fd1719020ce599d723d09d48362376836e04b0be72dfe825e24d810000", 
+              "120202935fb8d28b70706de6014a937402a30ae74a56987ed951abbe1ac9eeda56f0160000" ]
+peer_index = [ "1", "2" ]
 `
 
 var (
@@ -137,4 +147,6 @@ func initVariable() {
 	RootPrivkey = viper.GetString("root_privkey")
 	RootPubkey = viper.GetString("root_pubkey")
 	Root = account.Account{PrivateKey: common.FromHex(RootPrivkey), PublicKey: common.FromHex(RootPubkey), Alg: 0}
+	PeerList = viper.GetStringSlice(ListPeers)
+	PeerIndex = viper.GetStringSlice(IndexPeers)
 }
