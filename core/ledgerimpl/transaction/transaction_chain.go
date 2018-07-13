@@ -77,7 +77,10 @@ func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err err
 
 	return c, nil
 }
-
+/**
+*  @brief  create a new block, this function will execute the transaction to rebuild mpt trie
+*  @param  consensusData - the data of consensus module set
+*/
 func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData) (*types.Block, error) {
 	for i := 0; i < len(txs); i++ {
 		if _, err := c.HandleTransaction(ledger, txs[i]); err != nil {
