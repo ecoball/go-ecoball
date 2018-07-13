@@ -35,7 +35,11 @@ type State struct {
 	db     Database
 	diskDb *store.LevelDBStore
 }
-
+/**
+ *  @brief create a new mpt trie and a levelDB
+ *  @param path - the levelDB store path
+ *  @param root - the root of mpt trie, this value decide the state of trie
+ */
 func NewState(path string, root common.Hash) (st *State, err error) {
 	st = &State{path: path}
 	st.diskDb, err = store.NewLevelDBStore(path, 0, 0)
@@ -50,7 +54,11 @@ func NewState(path string, root common.Hash) (st *State, err error) {
 	}
 	return st, nil
 }
-
+/**
+ *  @brief create a new account and store into mpt trie, meanwhile store the mapping of addr and index
+ *  @param index - account's index
+ *  @param addr - account's address convert from public key
+ */
 func (s *State) AddAccount(index common.AccountName, addr common.Address) (*Account, error) {
 	key := common.IndexToBytes(index)
 	acc, err := s.trie.TryGet(key)
@@ -73,6 +81,10 @@ func (s *State) AddAccount(index common.AccountName, addr common.Address) (*Acco
 	}
 	return obj, nil
 }
+/**
+ *  @brief add a permission object into account, then update to mpt trie
+ *  @param perm - the permission object
+ */
 func (s *State) AddPermission(index common.AccountName, perm Permission) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
@@ -81,6 +93,13 @@ func (s *State) AddPermission(index common.AccountName, perm Permission) error {
 	acc.AddPermission(perm)
 	return s.CommitAccount(acc)
 }
+/**
+ *  @brief check the permission's validity, this method will not modified mpt trie
+ *  @param index - the account index
+ *  @param state - the world state tree
+ *  @param name - the permission names
+ *  @param signatures - the signatures list
+ */
 func (s *State) CheckPermission(index common.AccountName, state *State, name string, signatures []common.Signature) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
@@ -88,13 +107,26 @@ func (s *State) CheckPermission(index common.AccountName, state *State, name str
 	}
 	return acc.CheckPermission(state, name, signatures)
 }
+/**
+ *  @brief search the permission by name, return json array string
+ *  @param index - the account index
+ *  @param name - the permission names
+ */
 func (s *State) FindPermission(index common.AccountName, name string) (string, error) {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return "", err
 	}
-	return acc.FindPermission(name)
+	if str, err := acc.FindPermission(name); err != nil {
+		return "", err
+	} else {
+		return "[" + str + "]", nil
+	}
 }
+/**
+ *  @brief search the account by name index
+ *  @param index - the account index
+ */
 func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
 	key := common.IndexToBytes(index)
 	fData, err := s.trie.TryGet(key)
@@ -110,6 +142,10 @@ func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
 	}
 	return acc, nil
 }
+/**
+ *  @brief search the account by address
+ *  @param addr - the account address
+ */
 func (s *State) GetAccountByAddr(addr common.Address) (*Account, error) {
 	if fData, err := s.trie.TryGet(addr.Bytes()); err != nil {
 		return nil, err
@@ -125,6 +161,10 @@ func (s *State) GetAccountByAddr(addr common.Address) (*Account, error) {
 		}
 	}
 }
+/**
+ *  @brief update the account's information into trie
+ *  @param acc - account object
+ */
 func (s *State) CommitAccount(acc *Account) error {
 	d, err := acc.Serialize()
 	if err != nil {
@@ -200,14 +240,19 @@ func (s *State) CommitToMemory() error {
 	log.Debug("Commit State DB:", root.HexString())
 	return nil
 }
-
+/**
+ *  @brief save the information of mpt trie into levelDB
+ */
 func (s *State) CommitToDB() error {
 	if err := s.CommitToMemory(); err != nil {
 		return err
 	}
 	return s.db.TrieDB().Commit(s.trie.Hash(), false)
 }
-
+/**
+ *  @brief reset the mpt state by root hash
+ *  @param hash - the hash of mpt witch state will be reset
+ */
 func (s *State) Reset(hash common.Hash) error {
 	s.Close()
 	diskDb, err := store.NewLevelDBStore(s.path, 0, 0)

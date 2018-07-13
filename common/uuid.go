@@ -24,11 +24,18 @@ import (
 )
 
 type AccountName uint64
+var base32Alphabet = []byte(".12345abcdefghijklmnopqrstuvwxyz")
 
+/**
+ *  @brief get a account index name
+ */
 func (a AccountName) String() string {
 	return IndexToName(a)
 }
-
+/**
+ *  @brief convert a string name to uint64 type
+ *  @param name - the account name string
+ */
 func NameToIndex(name string) AccountName {
 	var index uint64
 	var i uint32
@@ -48,9 +55,10 @@ func NameToIndex(name string) AccountName {
 	}
 	return AccountName(index)
 }
-
-var base32Alphabet = []byte(".12345abcdefghijklmnopqrstuvwxyz")
-
+/**
+ *  @brief convert a uint64 name to string type
+ *  @param index - the account name index
+ */
 func IndexToName(index AccountName) string {
 	a := []byte{'.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.', '.'}
 	tmp := uint64(index)
@@ -72,18 +80,27 @@ func IndexToName(index AccountName) string {
 
 	return strings.TrimRight(string(a), ".")
 }
-
+/**
+ *  @brief convert a uint64 name to byte type for mpt trie's key
+ *  @param index - the account name index
+ */
 func IndexToBytes(index AccountName) []byte {
 	b := make([]byte, 8)
 	binary.BigEndian.PutUint64(b, uint64(index))
 	return b
 }
-
+/**
+ *  @brief convert name's byte to uint64 type
+ *  @param data - the account name bytes
+ */
 func IndexSetBytes(data []byte) AccountName {
 	index := binary.BigEndian.Uint64(data)
 	return AccountName(index)
 }
-
+/**
+ *  @brief check a name string validity, must be 1-5, a-z and ., the len of name must be 1-12
+ *  @param name - the account name
+ */
 func AccountNameCheck(name string) error {
 	reg := `^[.1-5a-z]{1,12}$`
 	rgx := regexp.MustCompile(reg)
@@ -96,7 +113,7 @@ func AccountNameCheck(name string) error {
 }
 
 func TokenNameCheck(name string) error {
-	reg := `^[1-5a-z]{1,12}$`
+	reg := `^[A-Z]{1,12}$`
 	rgx := regexp.MustCompile(reg)
 	if !rgx.MatchString(name) {
 		e := fmt.Sprintf("Invalid name\n" +

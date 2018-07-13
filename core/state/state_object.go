@@ -59,11 +59,19 @@ func NewAccount(index common.AccountName, addr common.Address) (*Account, error)
 
 	return &acc, nil
 }
-
+/**
+ *  @brief set the permission into account, if the permission existed, will be to overwrite
+ *  @param name - the permission name
+ */
 func (a *Account) AddPermission(perm Permission) {
 	a.Permissions[perm.PermName] = perm
 }
-
+/**
+ *  @brief check that the signatures meets the permission requirement
+ *  @param state - the mpt trie, used to search account
+ *  @param name - the permission name
+ *  @param signatures - the transaction's signatures list
+ */
 func (a *Account) CheckPermission(state *State, name string, signatures []common.Signature) error {
 	if perm, ok := a.Permissions[name]; !ok {
 		return errors.New(fmt.Sprintf("can't find this permission in account:%s", name))
@@ -79,7 +87,10 @@ func (a *Account) CheckPermission(state *State, name string, signatures []common
 	}
 	return nil
 }
-
+/**
+ *  @brief get the permission information by name, return json string
+ *  @param name - the permission name
+ */
 func (a *Account) FindPermission(name string) (str string, err error) {
 	perm, ok := a.Permissions[name]
 	if !ok {
@@ -92,12 +103,11 @@ func (a *Account) FindPermission(name string) (str string, err error) {
 	str += string(b)
 	if "" != perm.Parent {
 		if s, err := a.FindPermission(perm.Parent); err == nil {
-			str += s
+			str += "," + s
 		}
 	}
 	return string(str), nil
 }
-
 /**
  *  @brief create a new token in account
  *  @param index - the unique id of token name created by common.NameToIndex()
