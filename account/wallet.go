@@ -16,6 +16,7 @@
 package account
 
 import (
+	"bytes"
 	"crypto/sha512"
 	"encoding/json"
 	"errors"
@@ -34,8 +35,8 @@ const (
 )
 
 type KeyData struct {
-	Checksum [64]byte                      `json:"Checksum"`
-	Accounts map[inner.AccountName]Account `json:"Accounts"`
+	Checksum [64]byte  `json:"Checksum"`
+	Accounts []Account `json:"Accounts"`
 }
 
 type WalletImpl struct {
@@ -61,7 +62,7 @@ func Create(path string, password []byte) error {
 		lockflag: unlock,
 		KeyData: KeyData{
 			Checksum: sha512.Sum512(password),
-			Accounts: make(map[inner.AccountName]Account),
+			Accounts: []Account{},
 		},
 	}
 
@@ -92,7 +93,7 @@ func Open(path string, password []byte) (*WalletImpl, error) {
 		path:     path,
 		lockflag: unlock,
 		KeyData: KeyData{
-			Accounts: make(map[inner.AccountName]Account),
+			Accounts: []Account{},
 		},
 	}
 
@@ -200,9 +201,8 @@ func (wi *WalletImpl) Lock(password []byte) ([]byte, error) {
 	for i := 0; i < len(wi.Checksum); i++ {
 		wi.Checksum[i] = 0
 	}
-	for k, _ := range wi.Accounts {
-		delete(wi.Accounts, k)
-	}
+	wi.Accounts = []Account{}
+
 	wi.lockflag = locked
 
 	return cipherkeyTemp, nil
@@ -270,11 +270,72 @@ func (wi *WalletImpl) CreateAccount(password []byte, name string) (Account, erro
 }
 
 /**
+创建公私钥对
+*/
+func (wi *WalletImpl) CreateKey(password []byte) (Account, error) {
+	//create keys
+	ac, err := NewAccount(0)
+	if err != nil {
+		return Account{}, err
+	}
+
+	bfound := false
+	for _, v := range wi.Accounts {
+		if v.Equal(ac) {
+			bfound = true
+			break
+		}
+	}
+
+	if !bfound {
+		wi.Accounts = append(wi.Accounts, ac)
+	}
+
+	//lock wallet
+	cipherkeysTemp, err := wi.Lock(password)
+	if nil != err {
+		return Account{}, err
+	}
+
+	//write data
+	if err := wi.StoreWallet(cipherkeysTemp); nil != err {
+		return Account{}, err
+	}
+
+	//unlock wallet
+	if err := wi.Unlock(password, cipherkeysTemp); nil != err {
+		return Account{}, err
+	}
+
+	return ac, nil
+}
+
+/**
+导入私钥
+**/
+func (wi *WalletImpl) ImportKey(password, privateKey []byte) ([]byte, error) {
+	bFound := false
+	ac := Account{}
+	for _, v := range wi.Accounts {
+		if bytes.Equal(v.PrivateKey[:], privateKey[:]) {
+			bFound = true
+			ac = v
+			break
+		}
+	}
+
+	if !bFound {
+		return nil, errors.New("invalid private key")
+	}
+
+	return ac.PublicKey, nil
+}
+
+/**
 列出所有账号
 */
 func (wi *WalletImpl) ListAccount() {
-	for k, v := range wi.KeyData.Accounts {
-		fmt.Println("account name: ", inner.IndexToName(k))
+	for _, v := range wi.KeyData.Accounts {
 		fmt.Println("PrivateKey: ", inner.ToHex(v.PrivateKey[:]))
 		fmt.Println("PublicKey: ", inner.ToHex(v.PublicKey[:]))
 	}

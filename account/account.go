@@ -16,6 +16,7 @@
 package account
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"errors"
 
@@ -76,6 +77,15 @@ func (s *Account) Verify(data []byte, signature []byte) (bool, error) {
 		return false, errors.New("no public key")
 	}
 	return secp256k1.Verify(data, signature, s.PublicKey)
+}
+
+/**
+判断两个相等
+**/
+func (s *Account) Equal(other Account) bool {
+	return bytes.Equal(s.PublicKey[:], other.PublicKey[:]) &&
+		bytes.Equal(s.PrivateKey[:], other.PrivateKey[:]) &&
+		s.Alg == other.Alg
 }
 
 /**
