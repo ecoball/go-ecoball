@@ -29,7 +29,6 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"time"
 	"github.com/ecoball/go-ecoball/consensus/ababft"
-	"github.com/ecoball/go-ecoball/account"
 )
 
 var log = elog.NewLogger("LedgerImpl", elog.DebugLog)
@@ -69,19 +68,6 @@ func NewLedger(path string) (l ledger.Ledger, err error) {
 		ll.bc.Setup(ll.dpos)
 		ll.dpos.Setup(ll.bc, ll)
 	}
-
-	if config.ConsensusAlgorithm == "ABABFT" {
-		// todo account
-		var acc account.Account
-		ll.Service_ABA, err = ababft.Service_ababft_gen(l, &acc)
-		/*
-		service_consensus, err = ababft.Service_ababft_gen(l, account)
-		println("build the ababft service")
-		service_consensus.Start()
-		println("start the ababft service")
-		*/
-	}
-
 
 	actor := &LedActor{ledger: ll}
 	actor.pid, err = NewLedgerActor(actor)
