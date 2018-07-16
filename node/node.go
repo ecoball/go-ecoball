@@ -70,7 +70,6 @@ func runNode(c *cli.Context) error {
 		println("build the ababft service")
 		service_consensus.Start()
 		println("start the ababft service")
-		
 	default:
 		log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}
