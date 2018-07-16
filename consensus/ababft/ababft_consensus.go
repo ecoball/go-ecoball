@@ -23,9 +23,8 @@ import (
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/account"
-	"strconv"
-	"bytes"
 	"github.com/ecoball/go-ecoball/common/config"
+	"sort"
 )
 
 // in this version, the peers take turns to generate the block
@@ -79,6 +78,29 @@ func (this *Service_ababft) Start() error {
 	var err error
 	// start the ababft service
 	// build the peers list
+
+	// todo start
+	// the following code is just temporary, and will be replaced later
+	Num_peers = 3
+	Peers_list = make([]Peer_info, Num_peers)
+	var Peers_list_t []string
+	Peers_list_t[0] = string(config.Worker1.PublicKey)
+	Peers_list_t[1] = string(config.Worker2.PublicKey)
+	Peers_list_t[2] = string(config.Worker3.PublicKey)
+	// sort the peers as list
+	sort.Strings(Peers_list_t)
+
+	for i := 0; i < Num_peers; i++ {
+		Peers_list[i].PublicKey = []byte(Peers_list_t[i])
+		Peers_list[i].Index = i
+	}
+	// set this account as the first worker (temporary code)
+	Self_index = Peers_list[0].Index
+	this.account.PublicKey = Peers_list[0].PublicKey
+	this.account.PrivateKey = config.Worker1.PrivateKey
+	// todo end
+
+	/*
 	Num_peers = len(config.PeerIndex)
 	Peers_list = make([]Peer_info, Num_peers)
 	for i := 0; i < Num_peers; i++ {
@@ -89,6 +111,7 @@ func (this *Service_ababft) Start() error {
 			Self_index = Peers_list[i].Index
 		}
 	}
+	*/
 	return err
 }
 
