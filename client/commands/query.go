@@ -56,7 +56,6 @@ func queryBalance(c *cli.Context) error {
 	address := c.String("address")
 	if address == "" {
 		fmt.Println("Invalid account address: ", address)
-		os.Exit(1)
 	}
 
 	//rpc call

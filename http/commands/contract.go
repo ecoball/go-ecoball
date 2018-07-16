@@ -39,7 +39,7 @@ func SetContract(params []interface{}) *common.Response {
 	}
 
 	switch {
-	case len(params) == 5:
+	case len(params) == 3:
 		if errCode, result := handleSetContract(params); errCode != common.SUCCESS {
 			log.Error(errCode.Info())
 			return common.NewResponse(errCode, nil)
@@ -61,8 +61,6 @@ func handleSetContract(params []interface{}) (common.Errcode, string) {
 		code         []byte
 		contractName string
 		description  string
-		author       string
-		email        string
 		invalid      bool = false
 	)
 
@@ -80,18 +78,6 @@ func handleSetContract(params []interface{}) (common.Errcode, string) {
 
 	if v, ok := params[2].(string); ok {
 		description = v
-	} else {
-		invalid = true
-	}
-
-	if v, ok := params[3].(string); ok {
-		author = v
-	} else {
-		invalid = true
-	}
-
-	if v, ok := params[4].(string); ok {
-		email = v
 	} else {
 		invalid = true
 	}
@@ -118,10 +104,9 @@ func handleSetContract(params []interface{}) (common.Errcode, string) {
 	address := account.AddressFromPubKey(public)
 
 	//from address
-	from := account.AddressFromPubKey(common.Account.PublicKey)
+	//from := account.AddressFromPubKey(common.Account.PublicKey)
 
-	transaction, err := types.NewDeployContract(from, address, types.VmWasm, author,
-		contractName, email, description, code, 0, time)
+	transaction, err := types.NewDeployContract(innerCommon.NameToIndex("root"), innerCommon.NameToIndex(contractName), "owner", types.VmWasm, description, code, 0, time)
 	if nil != err {
 		return common.INVALID_PARAMS, ""
 	}
@@ -162,15 +147,15 @@ func InvokeContract(params []interface{}) *common.Response {
 
 func handleInvokeContract(params []interface{}) common.Errcode {
 	var (
-		contractAddress string
-		contractMethod  string
-		contractParam   string
-		parameters      []string
-		invalid         bool = false
+		contractName   string
+		contractMethod string
+		contractParam  string
+		parameters     []string
+		invalid        bool = false
 	)
 
 	if v, ok := params[0].(string); ok {
-		contractAddress = v
+		contractName = v
 	} else {
 		invalid = true
 	}
@@ -196,15 +181,15 @@ func handleInvokeContract(params []interface{}) common.Errcode {
 	}
 
 	//from address
-	from := account.AddressFromPubKey(common.Account.PublicKey)
+	//from := account.AddressFromPubKey(common.Account.PublicKey)
 
 	//contract address
-	address := innerCommon.NewAddress(innerCommon.CopyBytes(innerCommon.FromHex(contractAddress)))
+	//address := innerCommon.NewAddress(innerCommon.CopyBytes(innerCommon.FromHex(contractAddress)))
 
 	//time
 	time := time.Now().Unix()
 
-	transaction, err := types.NewInvokeContract(from, address, types.VmWasm, contractMethod, parameters, 0, time)
+	transaction, err := types.NewInvokeContract(innerCommon.NameToIndex("root"), innerCommon.NameToIndex(contractName), "owner", types.VmWasm, contractMethod, parameters, 0, time)
 	if nil != err {
 		return common.INVALID_PARAMS
 	}

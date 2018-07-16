@@ -50,20 +50,20 @@ func Transfer(params []interface{}) *common.Response {
 
 func handleTransfer(params []interface{}) common.Errcode {
 	var (
-		from    inner.Address
-		to      inner.Address
+		from    string
+		to      string
 		value   *big.Int
 		invalid bool = false
 	)
 
 	if v, ok := params[0].(string); ok {
-		from = inner.NewAddress([]byte(v))
+		from = v
 	} else {
 		invalid = true
 	}
 
 	if v, ok := params[1].(string); ok {
-		to = inner.NewAddress([]byte(v))
+		to = v
 	} else {
 		invalid = true
 	}
@@ -81,7 +81,7 @@ func handleTransfer(params []interface{}) common.Errcode {
 	//time
 	time := time.Now().Unix()
 
-	transaction, err := types.NewTransfer(from, to, value, 0, time)
+	transaction, err := types.NewTransfer(inner.NameToIndex(from), inner.NameToIndex(to), "owner", value, 0, time)
 	if nil != err {
 		return common.INVALID_PARAMS
 	}

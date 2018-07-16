@@ -60,6 +60,7 @@ func newClientApp() *cli.App {
 		commands.WalletCommands,
 		commands.QueryCommands,
 		commands.AttachCommands,
+		commands.CreateCommands,
 		ncli.P2pCommand,
 	}
 

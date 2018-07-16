@@ -23,8 +23,8 @@ import (
 	"os"
 
 	"github.com/ecoball/go-ecoball/client/rpc"
-	"github.com/urfave/cli"
 	"github.com/ecoball/go-ecoball/common"
+	"github.com/urfave/cli"
 )
 
 var (
@@ -52,14 +52,6 @@ var (
 						Name:  "description, d",
 						Usage: "contract description",
 					},
-					cli.StringFlag{
-						Name:  "author, a",
-						Usage: "contract author",
-					},
-					cli.StringFlag{
-						Name:  "email, e",
-						Usage: "author email",
-					},
 				},
 			},
 			{
@@ -68,8 +60,8 @@ var (
 				Action: invokeContract,
 				Flags: []cli.Flag{
 					cli.StringFlag{
-						Name:  "address, a",
-						Usage: "contract address",
+						Name:  "name, n",
+						Usage: "contract name",
 					},
 					cli.StringFlag{
 						Name:  "method, m",
@@ -127,22 +119,8 @@ func setContract(c *cli.Context) error {
 		return errors.New("Invalid contract description")
 	}
 
-	//contract author
-	author := c.String("author")
-	if author == "" {
-		fmt.Println("Invalid contract author: ", author)
-		return errors.New("Invalid contract author")
-	}
-
-	//author email
-	email := c.String("email")
-	if email == "" {
-		fmt.Println("Invalid author email: ", email)
-		return errors.New("Invalid author email")
-	}
-
 	//rpc call
-	resp, err := rpc.Call("setContract", []interface{}{common.ToHex(data), contractName, description, author, email})
+	resp, err := rpc.Call("setContract", []interface{}{common.ToHex(data), contractName, description})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err
@@ -169,10 +147,10 @@ func invokeContract(c *cli.Context) error {
 	}
 
 	//contract address
-	contractAddress := c.String("address")
+	contractName := c.String("name")
 	if contractAddress == "" {
-		fmt.Println("Invalid contract address: ", contractAddress)
-		return errors.New("Invalid contract address")
+		fmt.Println("Invalid contract name: ", contractAddress)
+		return errors.New("Invalid contract name")
 	}
 
 	//contract name
@@ -186,7 +164,7 @@ func invokeContract(c *cli.Context) error {
 	contractParam := c.String("param")
 
 	//rpc call
-	resp, err := rpc.Call("invokeContract", []interface{}{contractAddress, contractMethod, contractParam})
+	resp, err := rpc.Call("invokeContract", []interface{}{contractName, contractMethod, contractParam})
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return err
