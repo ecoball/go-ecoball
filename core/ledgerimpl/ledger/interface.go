@@ -4,6 +4,7 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
+
 )
 
 type Ledger interface {
@@ -29,4 +30,6 @@ type Ledger interface {
 	TokenCreate(index common.AccountName, token string, maximum uint64) error
 	TokenIsExisted(token string) bool
 	Start()
+
+	GetChainTx() ChainInterface
 }

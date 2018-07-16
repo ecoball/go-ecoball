@@ -31,6 +31,12 @@ import (
 	"github.com/ecoball/go-ecoball/txpool"
 	"github.com/ecoball/go-ecoball/webserver"
 	"github.com/urfave/cli"
+
+	"github.com/ecoball/go-ecoball/consensus/dpos"
+
+	"github.com/ecoball/go-ecoball/account"
+	"github.com/ecoball/go-ecoball/consensus/ababft"
+
 )
 
 var (
@@ -60,7 +66,18 @@ func runNode(c *cli.Context) error {
 	case "DPOS":
 		log.Info("Start DPOS consensus")
 
-		l.Start()
+		c, _ := dpos.NewDposService()
+		c.Setup(l)
+		c.Start()
+
+	case "ABABFT":
+		var acc account.Account
+		acc = config.Root
+		service_consensus, _ := ababft.Service_ababft_gen(l, &acc)
+		println("build the ababft service")
+		service_consensus.Start()
+		println("start the ababft service")
+
 	default:
 		log.Fatal("unsupported consensus algorithm:", config.ConsensusAlgorithm)
 	}

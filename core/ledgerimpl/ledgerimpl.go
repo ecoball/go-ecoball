@@ -18,18 +18,15 @@ package ledgerimpl
 
 import (
 	"github.com/ecoball/go-ecoball/common"
-	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
-	"github.com/ecoball/go-ecoball/consensus/dpos"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/transaction"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
 	"time"
 	"github.com/ecoball/go-ecoball/consensus/ababft"
-	"github.com/ecoball/go-ecoball/account"
 )
 
 var log = elog.NewLogger("LedgerImpl", elog.DebugLog)
@@ -39,10 +36,6 @@ type LedgerImpl struct {
 	//ChainCt *ChainContract
 	//ChainAc *account.ChainAccount
 
-	//TODO, start
-	bc   *dpos.Blockchain
-	dpos *dpos.DposService
-	//TODO, end
 
 	// ababft
 	Service_ABA  *ababft.Service_ababft
@@ -57,30 +50,6 @@ func NewLedger(path string) (l ledger.Ledger, err error) {
 	if err := ll.ChainTx.GenesesBlockInit(); err != nil {
 		return nil, err
 	}
-	//TODO
-	if config.ConsensusAlgorithm == "DPOS" {
-		ll.bc, err = dpos.NewBlockChain(ll.ChainTx)
-		ll.dpos, err = dpos.NewDposService()
-		if err != nil {
-			log.Debug("Init NewBlockChain error")
-			return nil, err
-		}
-		log.Debug("DPOS setup")
-		ll.bc.Setup(ll.dpos)
-		ll.dpos.Setup(ll.bc, ll)
-	}
-
-	if config.ConsensusAlgorithm == "ABABFT" {
-		// todo account
-		var acc account.Account
-		ll.Service_ABA, err = ababft.Service_ababft_gen(l, &acc)
-		/*
-		service_consensus, err = ababft.Service_ababft_gen(l, account)
-		println("build the ababft service")
-		service_consensus.Start()
-		println("start the ababft service")
-		*/
-	}
 
 
 	actor := &LedActor{ledger: ll}
@@ -93,27 +62,22 @@ func NewLedger(path string) (l ledger.Ledger, err error) {
 }
 
 func (l *LedgerImpl) Start() {
-	//TODO start
-	if config.ConsensusAlgorithm == "DPOS" {
-		log.Debug("Ledger start DPOS")
-		l.bc.Start()
-		l.dpos.Start()
-		//TODO end
-	} else {
-		t := time.NewTimer(time.Second * 10)
 
-		go func() {
-			for {
-				select {
-				case <-t.C:
-					log.Debug("Request a new block")
-					event.Send(event.ActorLedger, event.ActorTxPool, message.GetTxs{})
-					t.Reset(time.Second * 10)
-				}
+	t := time.NewTimer(time.Second * 10)
+
+	go func() {
+		for {
+			select {
+			case <-t.C:
+				log.Debug("Request a new block")
+				event.Send(event.ActorLedger, event.ActorTxPool, message.GetTxs{})
+				t.Reset(time.Second * 10)
 			}
-		}()
-	}
+		}
+	}()
+
 }
+
 
 func (l *LedgerImpl) StateDB() *state.State {
 	return l.ChainTx.StateDB
@@ -182,10 +146,15 @@ func (l *LedgerImpl) CheckTransaction(tx *types.Transaction) error {
 	//}
 	return nil
 }
+
 func (l *LedgerImpl) SaveTxBlock(block *types.Block) error {
 	if err := l.ChainTx.SaveBlock(block); err != nil {
 		return err
 	}
 	return nil
+}
+
+func (l *LedgerImpl) GetChainTx() ledger.ChainInterface {
+	return l.ChainTx
 }
 

@@ -34,7 +34,7 @@ import (
 )
 
 var (
-	historyFilePath = filepath.Join(os.TempDir(), ".liner_example_history")
+	historyFilePath = filepath.Join(os.TempDir(), ".ecoclient_history")
 	commandName     = []string{"contract", "transfer", "wallet", "query", "attach"}
 )
 
