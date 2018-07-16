@@ -36,6 +36,9 @@ type Account struct {
 	Nonce       uint64                `json:"nonce"`
 	Tokens      map[string]Token      `json:"token"`
 	Permissions map[string]Permission `json:"permissions"`
+
+	Hash  common.Hash `json:"hash"`
+	state *State
 }
 
 /**
@@ -59,6 +62,7 @@ func NewAccount(index common.AccountName, addr common.Address) (*Account, error)
 
 	return &acc, nil
 }
+
 /**
  *  @brief set the permission into account, if the permission existed, will be to overwrite
  *  @param name - the permission name
@@ -66,6 +70,7 @@ func NewAccount(index common.AccountName, addr common.Address) (*Account, error)
 func (a *Account) AddPermission(perm Permission) {
 	a.Permissions[perm.PermName] = perm
 }
+
 /**
  *  @brief check that the signatures meets the permission requirement
  *  @param state - the mpt trie, used to search account
@@ -87,6 +92,7 @@ func (a *Account) CheckPermission(state *State, name string, signatures []common
 	}
 	return nil
 }
+
 /**
  *  @brief get the permission information by name, return json string
  *  @param name - the permission name
@@ -108,6 +114,7 @@ func (a *Account) FindPermission(name string) (str string, err error) {
 	}
 	return string(str), nil
 }
+
 /**
  *  @brief create a new token in account
  *  @param index - the unique id of token name created by common.NameToIndex()
@@ -118,6 +125,7 @@ func (a *Account) AddToken(name string) error {
 	a.Tokens[name] = ac
 	return nil
 }
+
 /**
  *  @brief check the token for existence, return true if existed
  *  @param index - the unique id of token name created by common.NameToIndex()
@@ -129,6 +137,7 @@ func (a *Account) TokenExisted(token string) bool {
 	}
 	return false
 }
+
 /**
  *  @brief add balance into account
  *  @param index - the unique id of token name created by common.NameToIndex()
@@ -151,6 +160,7 @@ func (a *Account) AddBalance(name string, amount *big.Int) error {
 	a.Tokens[name] = ac
 	return nil
 }
+
 /**
  *  @brief sub balance into account
  *  @param index - the unique id of token name created by common.NameToIndex()
@@ -169,6 +179,7 @@ func (a *Account) SubBalance(token string, amount *big.Int) error {
 	a.Tokens[token] = ac
 	return nil
 }
+
 /**
  *  @brief get the balance of account
  *  @param index - the unique id of token name created by common.NameToIndex()
@@ -181,6 +192,7 @@ func (a *Account) Balance(token string) (*big.Int, error) {
 	}
 	return t.GetBalance(), nil
 }
+
 /**
  *  @brief converts a structure into a sequence of characters
  *  @return []byte - a sequence of characters
@@ -235,10 +247,12 @@ func (a *Account) ProtoBuf() (*pb.Account, error) {
 		Nonce:       a.Nonce,
 		Tokens:      tokens,
 		Permissions: perms,
+		Hash:        a.Hash.Bytes(),
 	}
 
 	return &pbAcc, nil
 }
+
 /**
  *  @brief converts a sequence of characters into a structure
  *  @param data - a sequence of characters
@@ -253,6 +267,7 @@ func (a *Account) Deserialize(data []byte) error {
 	}
 	a.Index = common.AccountName(pbAcc.Index)
 	a.Nonce = pbAcc.Nonce
+	a.Hash = common.NewHash(pbAcc.Hash)
 	a.Tokens = make(map[string]Token)
 	a.Permissions = make(map[string]Permission, 1)
 	for _, v := range pbAcc.Tokens {
@@ -298,6 +313,7 @@ func (a *Account) Show() {
 	fmt.Println("------------------------------")
 	fmt.Println(a.JsonString())
 }
+
 /**
  *  @brief set balance of account
  *  @param amount - value of token

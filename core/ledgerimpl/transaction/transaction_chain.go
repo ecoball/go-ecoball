@@ -223,10 +223,20 @@ func (c *ChainTx) GenesesBlockInit() error {
 	if err != nil {
 		return err
 	}
+	if err := c.VerifyTxBlock(block); err != nil {
+		return err
+	}
 	c.CurrentHeader = block.Header
 	if err := c.SaveBlock(block); err != nil {
 		log.Error("Save geneses block error:", err)
 		return err
+	}
+	for i := 0; i < len(block.Transactions); i++ {
+		if _, err := c.HandleTransaction(c.ledger, block.Transactions[i]); err != nil {
+			log.Error("Handle Transaction Error:", err)
+			return err
+		}
+		//event.Send(event.ActorLedger, event.ActorP2P, txs[i]) //send result to p2p actor
 	}
 	c.CurrentHeader = block.Header
 	return nil
@@ -362,7 +372,7 @@ func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction)
 	//tx.Show()
 	switch tx.Type {
 	case types.TxTransfer:
-		log.Info("Execute Transfer")
+		log.Info("Transfer Execute")
 		payload, ok := tx.Payload.GetObject().(types.TransferInfo)
 		if !ok {
 			return nil, errors.New("transaction type error[transfer]")
@@ -380,7 +390,7 @@ func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction)
 		}
 		log.Info("Deploy Execute:", common.ToHex(payload.Code))
 	case types.TxInvoke:
-		log.Info("InvokeInfo Execute()")
+		log.Info("Invoke Execute")
 		invoke, ok := tx.Payload.GetObject().(types.InvokeInfo)
 		if !ok {
 			return nil, errors.New("transaction type error[invoke]")

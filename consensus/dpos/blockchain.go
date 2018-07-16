@@ -24,6 +24,7 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 
 	"errors"
+	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 )
 
 type Blockchain struct {
@@ -43,9 +44,7 @@ type Blockchain struct {
 
 
 	quitCh chan int
-	chainTx ChainInterface
-
-
+	chainTx ledger.ChainInterface
 
 }
 
@@ -55,7 +54,7 @@ const (
 
 )
 
-func NewBlockChain(chainTx ChainInterface) (*Blockchain, error)  {
+func NewBlockChain(chainTx ledger.ChainInterface) (*Blockchain, error)  {
 
 	blockPool, err := NewBlockForest(128)
 	if err != nil {

@@ -30,6 +30,7 @@ import (
 	"github.com/ecoball/go-ecoball/account"
 	"reflect"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
+
 )
 
 
@@ -46,7 +47,7 @@ var (
 	ErrSyncParent         = errors.New("floating block received, sync its parent from others")
 	ErrDuplicatedBlock    = errors.New("DuplicatedBlock")
 	ErrCannotRevertLIB    = errors.New("Cannot revert LIB")
-	)
+)
 
 type DposService struct {
 
@@ -58,15 +59,18 @@ type DposService struct {
 
 	bookkeeper common.Hash
 	//TODO, init account
-    account *account.Account
+	account *account.Account
 
 	enable bool
 	pending bool
 
 	ledger ledger.Ledger
+
 }
 
 func NewDposService() (*DposService, error)  {
+
+
 	service := &DposService{
 		exitChan: make(chan bool, 5),
 		enable: false,
@@ -88,8 +92,14 @@ func NewDposService() (*DposService, error)  {
 }
 
 //TODO
-func (dpos *DposService) Setup(bc *Blockchain, ledger ledger.Ledger)  {
-	dpos.chain = bc
+func (dpos *DposService) Setup(ledger ledger.Ledger)  {
+	dpos.ledger = ledger
+	blockchain, e := NewBlockChain(ledger.GetChainTx())
+	if e != nil {
+		return
+	}
+
+	dpos.chain = blockchain
 	addr1 := common.Address{1,2,3,4,5,6,7,8,9,10,11,12,13,1,2,3,4,5,6,7}
 	s1 := addr1.ToBase58()
 	hash := common.NewHash(common.AddressFromBase58(s1).Bytes())
@@ -100,11 +110,14 @@ func (dpos *DposService) Setup(bc *Blockchain, ledger ledger.Ledger)  {
 
 	dpos.enable = true
 
-	dpos.ledger = ledger
+
 }
 
 func (dpos *DposService) Start()  {
 	log.Info("Starting Dpos Accouting")
+
+	dpos.chain.Start()
+
 	go dpos.working()
 }
 
