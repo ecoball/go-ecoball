@@ -20,15 +20,22 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"sort"
 	"strings"
 	"syscall"
 
 	"github.com/ecoball/go-ecoball/client/commands"
+	"github.com/ecoball/go-ecoball/client/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	ncli "github.com/ecoball/go-ecoball/net/cli"
 	"github.com/peterh/liner"
 	"github.com/urfave/cli"
+)
+
+var (
+	historyFilePath = filepath.Join(os.TempDir(), ".liner_example_history")
+	commandName     = []string{"contract", "transfer", "wallet", "query", "attach"}
 )
 
 func newClientApp() *cli.App {
@@ -75,28 +82,45 @@ func main() {
 }
 
 func newConsole() {
-	normalMode, err := liner.TerminalMode()
-	if nil != err {
-		fmt.Println("new teminal failed: ", err)
-		return
-	}
-	normalMode.ApplyMode()
-
-	rawMode, err := liner.TerminalMode()
-	if nil != err {
-		fmt.Println("new teminal failed: ", err)
-		return
-	}
-
 	state := liner.NewLiner()
-	state.SetCtrlCAborts(true)
-	state.SetTabCompletionStyle(liner.TabPrints)
-	state.SetMultiLineMode(true)
-
 	defer func() {
+		state.Close()
 		if err := recover(); err != nil {
 			fmt.Println("panic occur：", err)
 		}
+	}()
+
+	//set attribute of console
+	state.SetCtrlCAborts(true)
+	state.SetTabCompletionStyle(liner.TabPrints)
+	state.SetMultiLineMode(true)
+	state.SetCompleter(func(line string) (c []string) {
+		for _, n := range commandName {
+			if strings.HasPrefix(n, strings.ToLower(line)) {
+				c = append(c, n)
+			}
+		}
+		return
+	})
+
+	//read history info
+	var historyFile *os.File
+	var err error
+	if common.FileExisted(historyFilePath) {
+		historyFile, err = os.Open(historyFilePath)
+		_, err = state.ReadHistory(historyFile)
+	} else {
+		historyFile, err = os.Create(historyFilePath)
+	}
+
+	if nil != err {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	defer func() {
+		state.WriteHistory(historyFile)
+		historyFile.Close()
 	}()
 
 	//new console
@@ -105,15 +129,19 @@ func newConsole() {
 	go func() {
 		for {
 			info := <-scheduler
-			rawMode.ApplyMode()
-			defer normalMode.ApplyMode()
-			line, err := state.Prompt(info)
-			if nil != err {
+			line, errLine := state.Prompt(info)
+			if errLine == nil {
+				state.AppendHistory(line)
+				scheduler <- line
+			} else if errLine == liner.ErrPromptAborted {
+				fmt.Println("Aborted")
+				close(scheduler)
+				return
+			} else {
+				fmt.Println("Error reading line: ", errLine)
 				close(scheduler)
 				return
 			}
-
-			scheduler <- line
 		}
 	}()
 

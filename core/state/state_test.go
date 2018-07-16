@@ -165,3 +165,47 @@ func TestHashRoot(t *testing.T) {
 	fmt.Println("root6:", tree.Hash().HexString())
 
 }
+
+func TestStateDB(t *testing.T) {
+	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
+	indexAcc := common.NameToIndex("pct")
+	indexToken := state.AbaToken
+	s, err := state.NewState("/tmp/state_root", common.HexToHash("0x10fc4b078057cfdd54c7d0914b194f6398196c99aa8e213eb7bca8ced70f7eba"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.AddAccount(indexAcc, addr); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.AddBalance(indexAcc, indexToken, new(big.Int).SetInt64(100)); err != nil {
+		t.Fatal(err)
+	}
+	s.CommitToDB()
+	value, err := s.GetBalance(indexAcc, indexToken)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println("value:", value)
+	fmt.Println("root:", s.GetHashRoot().HexString())
+
+	if err := s.AddBalance(indexAcc, indexToken, new(big.Int).SetInt64(100)); err != nil {
+		t.Fatal(err)
+	}
+	s.CommitToDB()
+	value, err = s.GetBalance(indexAcc, indexToken)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println("value:", value)
+	fmt.Println("root:", s.GetHashRoot().HexString())
+
+	if err := s.Reset(common.HexToHash("0x10fc4b078057cfdd54c7d0914b194f6398196c99aa8e213eb7bca8ced70f7eba")); err != nil {
+		t.Fatal(err)
+	}
+	value, err = s.GetBalance(indexAcc, indexToken)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println("value:", value)
+	fmt.Println("root:", s.GetHashRoot().HexString())
+}
