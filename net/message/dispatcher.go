@@ -19,6 +19,7 @@ package message
 import (
 	"github.com/ecoball/go-ecoball/core/types"
 	eactor "github.com/ecoball/go-ecoball/common/event"
+	"github.com/ecoball/go-ecoball/consensus/ababft"
 )
 
 func HdTransactionMsg(data []byte) error {
@@ -64,6 +65,91 @@ func HdGossipBlkAck2Msg(data []byte) error {
 	return nil
 }
 
+func HdSignPreMsg(data []byte) error {
+	signpre_receive := new(ababft.Signature_Preblock)
+	err := signpre_receive.Deserialize(data)
+	if err != nil {
+		return err
+	}
+	log.Debug("dispatch signpre msg")
+	eactor.Send(0, eactor.ActorConsensus, signpre_receive)
+	return nil
+}
+
+func HdBlkFMsg(data []byte) error {
+	block_firstround := new(ababft.Block_FirstRound)
+	err := block_firstround.Blockfirst.Deserialize(data)
+	if err != nil {
+		return err
+	}
+	log.Debug("dispatch first round block msg")
+	eactor.Send(0, eactor.ActorConsensus, block_firstround)
+	return nil
+}
+
+func HdReqSynMsg(data []byte) error {
+	reqsyn := new(ababft.REQSyn)
+	err := reqsyn.Deserialize(data)
+	if err != nil {
+		return err
+	}
+	log.Debug("dispatch synchronization request msg")
+	eactor.Send(0, eactor.ActorConsensus, reqsyn)
+	return nil
+}
+
+/*
+
+
+
+
+func HdSignBlkFMsg(data []byte) error {
+	signblkf_receive := new(ababft.Signature_BlkF)
+	err := signblkf_receive.Deserialize(data)
+	if err != nil {
+		return err
+	}
+	log.Debug("dispatch the signature of first-round block msg")
+	eactor.Send(0, eactor.ActorConsensus, signblkf_receive)
+	return nil
+}
+
+func HdBlkSMsg(data []byte) error {
+	block_secondround := new(ababft.Block_SecondRound)
+	err := block_secondround.Blocksecond.Deserialize(data)
+	if err != nil {
+		return err
+	}
+	log.Debug("dispatch second-round(final) block msg")
+	eactor.Send(0, eactor.ActorConsensus, block_secondround)
+	return nil
+}
+
+
+
+func HdBlkSynMsg(data []byte) error {
+	blksyn := new(ababft.Block_Syn)
+	err := blksyn.Blksyn.Deserialize(data)
+	if err != nil {
+		return err
+	}
+	log.Debug("dispatch the block according to the synchronization request")
+	eactor.Send(0, eactor.ActorConsensus, blksyn)
+	return nil
+}
+
+func HdToutMsg(data []byte) error {
+	toutmsg := new(ababft.TimeoutMsg)
+	err := toutmsg.Deserialize(data)
+	if err != nil {
+		return err
+	}
+	log.Debug("dispatch synchronization request msg")
+	eactor.Send(0, eactor.ActorConsensus, toutmsg)
+	return nil
+}
+ */
+
 // MakeHandlers generates a map of MsgTypes to their corresponding handler functions
 func MakeHandlers() map[uint32]HandlerFunc {
 	return map[uint32]HandlerFunc{
@@ -72,7 +158,16 @@ func MakeHandlers() map[uint32]HandlerFunc {
 		APP_MSG_GOSSIP_PULL_BLK_REQ: HdGossipBlkReqMsg,
 		APP_MSG_GOSSIP_PULL_BLK_ACK: HdGossipBlkAckMsg,
 		APP_MSG_GOSSIP_PUSH_BLKS:    HdGossipBlkAck2Msg,
+		APP_MSG_SIGNPRE:   HdSignPreMsg,
+		APP_MSG_BLKF:      HdBlkFMsg,
+		APP_MSG_REQSYN:    HdReqSynMsg,
+		/*
+		APP_MSG_SIGNBLKF:  HdSignBlkFMsg,
+		APP_MSG_BLKS:      HdBlkSMsg,
 
+		APP_MSG_BLKSYN:    HdBlkSynMsg,
+		APP_MSG_TIMEOUT:   HdToutMsg,
+		*/
 		//TODO add new msg handler at here
 	}
 }

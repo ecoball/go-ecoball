@@ -206,3 +206,21 @@ message PushBlocks {
     repeated BlockTx data   = 3;
 }
 
+/**
+** Signature for the previous block
+*/
+message SignaturePreblock {
+    uint32      round       = 1;
+    uint32      height      = 2;
+    bytes       PubKey      = 3;
+    bytes       SigData     = 4;
+}
+
+/**
+** Synchronization Request
+*/
+message RequestSyn {
+    uint64      RequestHeight  = 1;
+    bytes       PubKey         = 2;
+    bytes       SigData        = 3;
+}

@@ -22,6 +22,7 @@ import (
 	"github.com/ecoball/go-ecoball/net/message"
 	"github.com/ecoball/go-ecoball/net/rpc"
 	"reflect"
+	"github.com/ecoball/go-ecoball/consensus/ababft"
 )
 
 type NetActor struct {
@@ -89,6 +90,51 @@ func (this *NetActor) Receive(ctx actor.Context) {
 		peers := this.node.Nbrs()
 		log.Info(peers)
 		ctx.Sender().Request(&rpc.ListPeersRsp{Peer: peers}, ctx.Self())
+	case ababft.Signature_Preblock:
+		// broadcast the signature for the previous block
+		msgType = message.APP_MSG_SIGNPRE
+		buffer, _ = msg.(*ababft.Signature_Preblock).Serialize()
+		netMsg := message.New(msgType, buffer)
+		this.node.broadCastCh <- netMsg
+	case ababft.Block_FirstRound:
+		// broadcast the first round block
+		msgType = message.APP_MSG_BLKF
+		buffer, _ = msg.(*ababft.Block_FirstRound).Blockfirst.Serialize()
+		netMsg := message.New(msgType, buffer)
+		this.node.broadCastCh <- netMsg
+	case ababft.REQSyn:
+		// broadcast the synchronization request to update the ledger
+		msgType = message.APP_MSG_REQSYN
+		buffer, _ = msg.(*ababft.REQSyn).Serialize()
+		netMsg := message.New(msgType, buffer)
+		this.node.broadCastCh <- netMsg
+		/*
+
+	case ababft.Signature_BlkF:
+		// broadcast the signature for the first-round block
+		msgType = message.APP_MSG_SIGNBLKF
+		buffer, _ = msg.(*ababft.Signature_BlkF).Serialize()
+		netMsg := message.New(msgType, buffer)
+		this.node.broadCastCh <- netMsg
+	case ababft.Block_SecondRound:
+		// broadcast the first round block
+		msgType = message.APP_MSG_BLKS
+		buffer, _ = msg.(*ababft.Block_SecondRound).Blocksecond.Serialize()
+		netMsg := message.New(msgType, buffer)
+		this.node.broadCastCh <- netMsg
+
+	case ababft.Block_Syn:
+		// broadcast the block according to the synchronization request
+		msgType = message.APP_MSG_BLKSYN
+		buffer, _ = msg.(*ababft.Block_Syn).Blksyn.Serialize()
+		netMsg := message.New(msgType, buffer)
+		this.node.broadCastCh <- netMsg
+	case ababft.TimeoutMsg:
+		msgType = message.APP_MSG_TIMEOUT
+		buffer, _ = msg.(*ababft.TimeoutMsg).Serialize()
+		netMsg := message.New(msgType, buffer)
+		this.node.broadCastCh <- netMsg
+		*/
 	default:
 		log.Error("Error Xmit message ", reflect.TypeOf(ctx.Message()))
 	}

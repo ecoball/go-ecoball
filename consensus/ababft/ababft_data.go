@@ -19,7 +19,11 @@
 
 package ababft
 
-import "github.com/ecoball/go-ecoball/core/types"
+import (
+	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/core/pb"
+	"github.com/syndtr/goleveldb/leveldb/errors"
+)
 
 type Block_FirstRound struct {
 	Blockfirst types.Block
@@ -27,4 +31,50 @@ type Block_FirstRound struct {
 
 type Block_SecondRound struct {
 	Blocksecond *types.Block
+}
+
+type Signature_Preblock struct {
+	Signature_preblock pb.SignaturePreblock
+}
+
+func (sign *Signature_Preblock) Serialize() ([]byte, error) {
+	b, err := sign.Signature_preblock.Marshal()
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
+}
+
+func (sign *Signature_Preblock) Deserialize(data []byte) error {
+	if len(data) == 0 {
+		return errors.New("input data's length is zero")
+	}
+
+	if err := sign.Signature_preblock.Unmarshal(data); err != nil {
+		return err
+	}
+	return nil
+}
+
+type REQSyn struct {
+	Reqsyn *pb.RequestSyn
+}
+
+func (reqsyn *REQSyn) Serialize() ([]byte, error) {
+	b, err := reqsyn.Reqsyn.Marshal()
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
+}
+
+func (reqsyn *REQSyn) Deserialize(data []byte) error {
+	if len(data) == 0 {
+		return errors.New("input data's length is zero")
+	}
+
+	if err := reqsyn.Reqsyn.Unmarshal(data); err != nil {
+		return err
+	}
+	return nil
 }

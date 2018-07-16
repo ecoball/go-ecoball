@@ -24,6 +24,12 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/common/event"
+	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/common"
+	"time"
+	"github.com/ecoball/go-ecoball/core/pb"
+	"bytes"
+	"github.com/ecoball/go-ecoball/crypto/secp256k1"
 )
 type Actor_ababft struct {
 	status uint // 1: actor generated,
@@ -55,8 +61,13 @@ var current_ledger ledger.Ledger
 var primary_tag int // 0: verification peer; 1: is the primary peer, who generate the block at current round;
 var signature_preblock_list [][]byte // list for saving the signatures for the previous block
 var signature_BlkF_list [][]byte // list for saving the signatures for the first round block
-var block_firstround Block_FirstRound // temporary parameters for saving the first round block
-var block_secondround Block_SecondRound // temporary parameters for saving the second round block
+var block_firstround Block_FirstRound // temporary parameters for the first round block
+var block_secondround Block_SecondRound // temporary parameters for the second round block
+var currentheader *types.Header // temporary parameters for the current block header, according to the blocks saved in the local ledger
+var current_payload types.AbaBftData // temporary parameters for current payload
+var received_signpre_num int // the number of received signatures for the previous block
+var cache_signature_preblk []pb.SignaturePreblock // cache the received signatures for the previous block
+
 
 
 func Actor_ababft_gen(actor_ababft *Actor_ababft) (*actor.PID, error) {
@@ -72,7 +83,7 @@ func Actor_ababft_gen(actor_ababft *Actor_ababft) (*actor.PID, error) {
 }
 
 func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
-	// var err error
+	var err error
 	// log.Debug("ababft service receives the message")
 
 	// deal with the message
@@ -95,6 +106,134 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		if v,ok:= currentheader.ConsensusData.Payload.(* types.AbaBftData); ok {
 			current_payload = *v
 		}
+
+		// todo
+		// the update of current_round_num
+		// current_round_num = int(current_payload.NumberRound)
+		// the timeout/changeview message
+		// need to check whether the update of current_round_num is necessary
+
+		current_height_num = int(currentheader.Height)
+		// signature the current highest block and broadcast
+		var signature_preblock common.Signature
+		signature_preblock.PubKey = actor_c.service_ababft.account.PublicKey
+		signature_preblock.SigData, err = actor_c.service_ababft.account.Sign(currentheader.Hash.Bytes())
+		if err != nil {
+			return
+		}
+		// check whether self is the prime or peer
+		if current_round_num % Num_peers == (Self_index-1) {
+			// if is prime
+			primary_tag = 1
+			actor_c.status = 3
+			received_signpre_num = 0
+			// increase the round index
+			current_round_num ++
+			// set up a timer to wait for the signature_preblock from other peera
+			t0 := time.NewTimer(time.Second * WAIT_RESPONSE_TIME * 2)
+			go func() {
+				select {
+				case <-t0.C:
+					// timeout for the preblock signature
+					err = event.Send(event.ActorConsensus, event.ActorConsensus, PreBlockTimeout{})
+					t0.Stop()
+				}
+			}()
+		} else {
+			// is peer
+			primary_tag = 0
+			actor_c.status = 5
+			// broadcast the signature_preblock and set up a timer for receiving the data
+			var signaturepre_send Signature_Preblock
+			signaturepre_send.Signature_preblock.PubKey = signature_preblock.PubKey
+			signaturepre_send.Signature_preblock.SigData = signature_preblock.SigData
+			signaturepre_send.Signature_preblock.Round = uint32(current_round_num)
+			signaturepre_send.Signature_preblock.Height = uint32(currentheader.Height)
+			// broadcast
+			event.Send(event.ActorConsensus, event.ActorP2P, signaturepre_send)
+			// increase the round index
+			current_round_num ++
+			// set up a timer for receiving the data
+			t1 := time.NewTimer(time.Second * WAIT_RESPONSE_TIME * 2)
+			go func() {
+				select {
+				case <-t1.C:
+					// timeout for the preblock signature
+					err = event.Send(event.ActorConsensus, event.ActorConsensus, TxTimeout{})
+					t1.Stop()
+				}
+			}()
+		}
+		return
+
+	case Signature_Preblock:
+		// the prime will verify the signature for the previous block
+		round_in := int(msg.Signature_preblock.Round)
+		height_in := int(msg.Signature_preblock.Height)
+		if round_in >= current_round_num {
+			// cache the Signature_Preblock
+			cache_signature_preblk = append(cache_signature_preblk,msg.Signature_preblock)
+		}
+		if primary_tag == 1 && (actor_c.status == 2 || actor_c.status == 3){
+			// verify the signature
+			// first check the round number and height
+			if round_in >= (current_round_num-1) && height_in >= current_height_num {
+				if round_in > (current_round_num - 1) && height_in > current_height_num {
+					// require synchronization, the longest chain is ok
+					// send synchronization message
+					var requestsyn REQSyn
+					requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
+					requestsyn.Reqsyn.SigData = []byte("none")
+					requestsyn.Reqsyn.RequestHeight = uint64(current_height_num+1)
+					event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
+					// todo
+					// attention
+					// to against the height cheat, do not change the actor_c.status
+				} else {
+					// check the signature
+					pubkey_in := msg.Signature_preblock.PubKey// signaturepre_send.signature_preblock.PubKey = signature_preblock.PubKey
+					// check the pubkey_in is in the peer list
+					var found_peer bool
+					found_peer = false
+					var peer_index int
+					for index,peer := range Peers_list {
+						if ok := bytes.Equal(peer.PublicKey, pubkey_in); ok == true {
+							found_peer = true
+							peer_index = index
+							break
+						}
+					}
+					if found_peer == false {
+						// the signature is not from the peer in the list
+						return
+					}
+					// 1. check that signature in or not in list of
+					if signature_preblock_list[peer_index] != nil {
+						// already receive the signature
+						return
+					}
+					// 2. verify the correctness of the signature
+					sigdata_in := msg.Signature_preblock.SigData
+					header_hash := currentheader.Hash.Bytes()
+					var result_verify bool
+					result_verify, err = secp256k1.Verify(header_hash, sigdata_in, pubkey_in)
+					if result_verify == true {
+						// add the incoming signature to signature preblock list
+						signature_preblock_list[peer_index] = sigdata_in
+						received_signpre_num ++
+					} else {
+						return
+					}
+				}
+			} else {
+				// the message is old
+				return
+			}
+		} else {
+			return
+		}
+
+
 	default :
 		log.Debug(msg)
 		log.Warn("unknown message")

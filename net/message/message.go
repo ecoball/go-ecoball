@@ -30,6 +30,13 @@ const (
 	APP_MSG_GOSSIP_PULL_BLK_REQ
 	APP_MSG_GOSSIP_PULL_BLK_ACK
 	APP_MSG_GOSSIP_PUSH_BLKS
+	APP_MSG_SIGNPRE
+	APP_MSG_BLKF
+	APP_MSG_SIGNBLKF
+	APP_MSG_BLKS
+	APP_MSG_REQSYN
+	APP_MSG_BLKSYN
+	APP_MSG_TIMEOUT
 )
 var log = elog.NewLogger("message", elog.DebugLog)
 type HandlerFunc func(data []byte) (err error)

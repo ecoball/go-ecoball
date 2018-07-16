@@ -19,4 +19,6 @@
 
 package ababft
 type ABABFTStart struct{}
+type PreBlockTimeout struct{}
+type TxTimeout struct{}
 
