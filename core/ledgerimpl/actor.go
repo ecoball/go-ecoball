@@ -27,6 +27,7 @@ import (
 
 type LedActor struct {
 	ledger *LedgerImpl
+
 	pid    *actor.PID //保存自身的pid，用于和其他Actor交互
 }
 
@@ -82,10 +83,12 @@ func (l *LedActor) Receive(ctx actor.Context) {
 			log.Error("send block to tx pool error:", err)
 		}
 	case *dpos.DposBlock:
-		if err := l.ledger.bc.SaveBlock(msg); err != nil {
+		//TODO
+		/*if err := l.ledger.bc.SaveBlock(msg); err != nil {
 			log.Error("save block error", err)
 			break
-		}
+		}*/
+		
 		if err := event.Send(event.ActorLedger, event.ActorTxPool, msg.Block); err != nil {
 			log.Error("send block to tx pool error:", err)
 		}
