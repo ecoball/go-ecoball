@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/pb"
+	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/gogo/protobuf/proto"
 	"math/big"
-	"github.com/ecoball/go-ecoball/core/types"
 )
 
 type Token struct {
@@ -37,8 +37,8 @@ type Account struct {
 	Nonce       uint64                `json:"nonce"`
 	Tokens      map[string]Token      `json:"token"`
 	Permissions map[string]Permission `json:"permissions"`
+	Contract    types.DeployInfo      `json:"contract"`
 
-	Contract types.DeployInfo `json:"contract"`
 	Hash  common.Hash `json:"hash"`
 	state *State
 }
@@ -62,7 +62,7 @@ func NewAccount(path string, index common.AccountName, addr common.Address) (acc
 	perm = NewPermission("active", "owner", 1, []KeyFactor{{Actor: addr, Weight: 1}}, []AccFactor{})
 	acc.AddPermission(perm)
 
-	acc.state, err = NewState(path + "/" + common.IndexToName(acc.Index), acc.Hash)
+	acc.state, err = NewState(path+"/"+common.IndexToName(acc.Index), acc.Hash)
 	if err != nil {
 		return nil, err
 	}
@@ -267,7 +267,12 @@ func (a *Account) ProtoBuf() (*pb.Account, error) {
 		Nonce:       a.Nonce,
 		Tokens:      tokens,
 		Permissions: perms,
-		Hash:        a.Hash.Bytes(),
+		Contract: &pb.DeployInfo{
+			TypeVm:   uint32(a.Contract.TypeVm),
+			Describe: common.CopyBytes(a.Contract.Describe),
+			Code:     common.CopyBytes(a.Contract.Code),
+		},
+		Hash: a.Hash.Bytes(),
 	}
 
 	return &pbAcc, nil
@@ -289,6 +294,11 @@ func (a *Account) Deserialize(data []byte) error {
 	a.Nonce = pbAcc.Nonce
 	a.Hash = common.NewHash(pbAcc.Hash)
 	a.Tokens = make(map[string]Token)
+	a.Contract = types.DeployInfo{
+		TypeVm:   types.VmType(pbAcc.Contract.TypeVm),
+		Describe: common.CopyBytes(pbAcc.Contract.Describe),
+		Code:     common.CopyBytes(pbAcc.Contract.Code),
+	}
 	a.Permissions = make(map[string]Permission, 1)
 	for _, v := range pbAcc.Tokens {
 		ac := Token{

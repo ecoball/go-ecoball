@@ -153,6 +153,7 @@ message Account {
     uint64      nonce               = 5;
     repeated    Token      Tokens   = 3;
     repeated    Permission Permissions = 1;
+    DeployInfo  Contract            = 2;
 
     bytes       Hash                = 6;
 }

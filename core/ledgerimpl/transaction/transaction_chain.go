@@ -398,7 +398,9 @@ func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction)
 			return nil, errors.New("transaction type error[deploy]")
 		}
 		log.Info("Deploy Execute:", common.ToHex(payload.Code))
-		ledger.SetContract(tx.From, payload.TypeVm, payload.Describe, payload.Code)
+		if err := ledger.SetContract(tx.From, payload.TypeVm, payload.Describe, payload.Code); err != nil {
+			return nil, err
+		}
 	case types.TxInvoke:
 		log.Info("Invoke Execute")
 		service, err := smartcontract.NewContractService(ledger, tx)
