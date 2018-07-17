@@ -22,4 +22,5 @@ type ABABFTStart struct{}
 type PreBlockTimeout struct{}
 type TxTimeout struct{}
 type SignTxTimeout struct{}
+type BlockSTimeout struct{}
 

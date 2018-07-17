@@ -101,3 +101,26 @@ func (toutmsg *TimeoutMsg) Deserialize(data []byte) error {
 	}
 	return nil
 }
+
+type Signature_BlkF struct {
+	Signature_blkf pb.Signature
+}
+
+func (sign *Signature_BlkF) Serialize() ([]byte, error) {
+	b, err := sign.Signature_blkf.Marshal()
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
+}
+
+func (sign *Signature_BlkF) Deserialize(data []byte) error {
+	if len(data) == 0 {
+		return errors.New("input data's length is zero")
+	}
+
+	if err := sign.Signature_blkf.Unmarshal(data); err != nil {
+		return err
+	}
+	return nil
+}
