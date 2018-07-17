@@ -233,6 +233,13 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			return
 		}
 
+	case PreBlockTimeout:
+		if primary_tag == 1 && (actor_c.status == 2 || actor_c.status == 3){
+
+
+		} else {
+			return
+		}
 
 	default :
 		log.Debug(msg)
