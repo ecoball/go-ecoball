@@ -108,6 +108,11 @@ func (this *NetActor) Receive(ctx actor.Context) {
 		buffer, _ = msg.(*ababft.REQSyn).Serialize()
 		netMsg := message.New(msgType, buffer)
 		this.node.broadCastCh <- netMsg
+	case ababft.TimeoutMsg:
+		msgType = message.APP_MSG_TIMEOUT
+		buffer, _ = msg.(*ababft.TimeoutMsg).Serialize()
+		netMsg := message.New(msgType, buffer)
+		this.node.broadCastCh <- netMsg
 		/*
 
 	case ababft.Signature_BlkF:
@@ -129,11 +134,7 @@ func (this *NetActor) Receive(ctx actor.Context) {
 		buffer, _ = msg.(*ababft.Block_Syn).Blksyn.Serialize()
 		netMsg := message.New(msgType, buffer)
 		this.node.broadCastCh <- netMsg
-	case ababft.TimeoutMsg:
-		msgType = message.APP_MSG_TIMEOUT
-		buffer, _ = msg.(*ababft.TimeoutMsg).Serialize()
-		netMsg := message.New(msgType, buffer)
-		this.node.broadCastCh <- netMsg
+
 		*/
 	default:
 		log.Error("Error Xmit message ", reflect.TypeOf(ctx.Message()))

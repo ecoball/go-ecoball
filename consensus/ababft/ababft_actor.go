@@ -30,6 +30,8 @@ import (
 	"github.com/ecoball/go-ecoball/core/pb"
 	"bytes"
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
+	"fmt"
+	"github.com/ecoball/go-ecoball/common/message"
 )
 type Actor_ababft struct {
 	status uint // 1: actor generated,
@@ -235,11 +237,118 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 
 	case PreBlockTimeout:
 		if primary_tag == 1 && (actor_c.status == 2 || actor_c.status == 3){
+			// 1. check the cache cache_signature_preblk
+			header_hash := currentheader.Hash.Bytes()
+			for _,signpreblk := range cache_signature_preblk {
+				round_in := signpreblk.Round
+				if int(round_in) != current_round_num {
+					continue
+				}
+				// check the signature
+				pubkey_in := signpreblk.PubKey// signaturepre_send.signature_preblock.PubKey = signature_preblock.PubKey
+				// check the pubkey_in is in the peer list
+				var found_peer bool
+				found_peer = false
+				var peer_index int
+				for index,peer := range Peers_list {
+					if ok := bytes.Equal(peer.PublicKey, pubkey_in); ok == true {
+						found_peer = true
+						peer_index = index
+						break
+					}
+				}
+				if found_peer == false {
+					// the signature is not from the peer in the list
+					continue
+				}
+				// first check that signature in or not in list of
+				if signature_preblock_list[peer_index] != nil {
+					// already receive the signature
+					continue
+				}
+				// second, verify the correctness of the signature
+				sigdata_in := signpreblk.SigData
+				var result_verify bool
+				result_verify, err = secp256k1.Verify(header_hash, sigdata_in, pubkey_in)
+				if result_verify == true {
+					// add the incoming signature to signature preblock list
+					signature_preblock_list[peer_index] = sigdata_in
+					received_signpre_num ++
+				} else {
+					continue
+				}
 
-
+			}
+			// clean the cache_signature_preblk
+			cache_signature_preblk = make([]pb.SignaturePreblock,len(Peers_list)*2)
+			fmt.Println("valid sign_pre:",received_signpre_num)
+			// 2. check the number of the preblock signature
+			if received_signpre_num >= int(len(Peers_list)/3+1) {
+				// enough preblock signature, so generate the first-round block, only including the preblock signatures and
+				// prepare the ConsensusData
+				var signpre_send []common.Signature
+				for index,signpre := range signature_preblock_list {
+					if signpre != nil {
+						var sign_tmp common.Signature
+						sign_tmp.SigData = signpre
+						sign_tmp.PubKey = Peers_list[index].PublicKey
+						signpre_send = append(signpre_send, sign_tmp)
+					}
+				}
+				conData := types.ConsensusData{Type: types.ConABFT, Payload: &types.AbaBftData{uint32(current_round_num),signpre_send}}
+				fmt.Println("conData for blk firstround",conData)
+				// prepare the tx list
+				value, err := event.SendSync(event.ActorTxPool, message.GetTxs{}, time.Second*1)
+				if err != nil {
+					log.Error("AbaBFT Consensus error:", err)
+					return
+				}
+				txList, ok := value.(*types.TxsList)
+				if !ok {
+					// log.Error("The format of value error [solo]")
+					return
+				}
+				var txs []*types.Transaction
+				for _, v := range txList.Txs {
+					txs = append(txs, v)
+				}
+				// generate the first-round block
+				var block_first *types.Block
+				block_first,err = actor_c.service_ababft.ledger.NewTxBlock(txs,conData)
+				block_first.SetSignature(actor_c.service_ababft.account)
+				// broadcast the first-round block to peers for them to verify the transactions and wait for the corresponding signatures back
+				block_firstround.Blockfirst = *block_first
+				event.Send(event.ActorConsensus, event.ActorP2P, block_firstround)
+				// change the statue
+				actor_c.status = 4
+				// set the timer for collecting the signature for txs (i.e. the first round block)
+				t2 := time.NewTimer(time.Second * WAIT_RESPONSE_TIME)
+				go func() {
+					select {
+					case <-t2.C:
+						// timeout for the preblock signature
+						err = event.Send(event.ActorConsensus, event.ActorConsensus, SignTxTimeout{})
+						t2.Stop()
+					}
+				}()
+			} else {
+				// did not receive enough preblock signature in the assigned time interval
+				actor_c.status = 7
+				primary_tag = 0 // reset to zero, and the next primary will take the turn
+				// send out the timeout message
+				var timeoutmsg TimeoutMsg
+				timeoutmsg.Toutmsg.RoundNumber = uint64(current_round_num)
+				timeoutmsg.Toutmsg.PubKey = actor_c.service_ababft.account.PublicKey
+				timeoutmsg.Toutmsg.SigData = []byte("none")
+				event.Send(event.ActorConsensus,event.ActorP2P,timeoutmsg)
+				// start/enter the next turn
+				event.Send(event.ActorConsensus, event.ActorConsensus, ABABFTStart{})
+			}
 		} else {
 			return
 		}
+
+		
 
 	default :
 		log.Debug(msg)

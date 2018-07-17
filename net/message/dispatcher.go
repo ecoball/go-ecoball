@@ -98,6 +98,17 @@ func HdReqSynMsg(data []byte) error {
 	return nil
 }
 
+func HdToutMsg(data []byte) error {
+	toutmsg := new(ababft.TimeoutMsg)
+	err := toutmsg.Deserialize(data)
+	if err != nil {
+		return err
+	}
+	log.Debug("dispatch synchronization request msg")
+	eactor.Send(0, eactor.ActorConsensus, toutmsg)
+	return nil
+}
+
 /*
 
 
@@ -138,16 +149,7 @@ func HdBlkSynMsg(data []byte) error {
 	return nil
 }
 
-func HdToutMsg(data []byte) error {
-	toutmsg := new(ababft.TimeoutMsg)
-	err := toutmsg.Deserialize(data)
-	if err != nil {
-		return err
-	}
-	log.Debug("dispatch synchronization request msg")
-	eactor.Send(0, eactor.ActorConsensus, toutmsg)
-	return nil
-}
+
  */
 
 // MakeHandlers generates a map of MsgTypes to their corresponding handler functions
