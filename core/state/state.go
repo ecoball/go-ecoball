@@ -92,7 +92,7 @@ func (s *State) SetContract(index common.AccountName, t types.VmType, des, code 
 func (s *State) GetContract(index common.AccountName) (*types.DeployInfo, error) {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	return acc.GetContract()
 }

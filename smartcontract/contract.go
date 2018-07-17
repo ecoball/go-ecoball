@@ -18,61 +18,45 @@ package smartcontract
 
 import (
 	"errors"
-	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/smartcontract/nativeservice"
 	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
+	"fmt"
+	"github.com/ecoball/go-ecoball/smartcontract/nativeservice"
 )
 
-type Service interface {
+type ContractService interface {
 	Execute() ([]byte, error)
 }
 
-type ContractService struct {
-	ledger  ledger.Ledger
-	tx      *types.Transaction
-	Service Service
-}
-
-func NewContractService(ledger ledger.Ledger, tx *types.Transaction) (*ContractService, error) {
-	if ledger == nil {
-		return nil, errors.New("the contract service's ledger interface is nil")
+func NewContractService(ledger ledger.Ledger, tx *types.Transaction) (ContractService, error) {
+	if ledger == nil || tx == nil {
+		return nil, errors.New("the contract service's ledger interface or tx is nil")
 	}
-	return &ContractService{ledger: ledger, tx:tx}, nil
-}
-
-func (c *ContractService) ExecuteContract(vmType types.VmType, method string, code []byte, params []string, owner common.AccountName) (ret []byte, err error) {
-	if c.ledger == nil {
-		return nil, errors.New("the contract service's ledger interface is nil")
+	contract, err := ledger.GetContract(tx.Addr)
+	if err != nil {
+		return nil, err
 	}
-	switch vmType {
+	invoke, ok := tx.Payload.GetObject().(types.InvokeInfo)
+	if !ok {
+		return nil, errors.New("transaction type error[invoke]")
+	}
+	fmt.Println("method:", string(invoke.Method))
+	fmt.Println("param:", invoke.Param)
+	switch contract.TypeVm {
 	case types.VmNative:
-		c.Service, err = nativeservice.NewNativeService(c.ledger, owner, method, params)
+		service, err := nativeservice.NewNativeService(ledger, tx.Addr, string(invoke.Method), invoke.Param)
 		if err != nil {
 			return nil, err
 		}
+		return service, nil
 	case types.VmWasm:
-		//args, err := c.ParseArguments(params)
-		//if err != nil {
-		//	return nil, err
-		//}
-		c.Service, err = wasmservice.NewWasmService(c.ledger, c.tx)
+		service, err := wasmservice.NewWasmService(ledger, contract, &invoke)
 		if err != nil {
 			return nil, err
 		}
+		return service, nil
+	default:
+		return nil, errors.New("unknown virtual machine")
 	}
-	return c.Service.Execute()
-}
-
-func (c *ContractService) ParseArguments(param []string) ([]uint64, error) {
-	var args []uint64
-	for _, v := range param {
-		arg, err := common.StringToPointer(v)
-		if err != nil {
-			return nil, err
-		}
-		args = append(args, arg)
-	}
-	return args, nil
 }

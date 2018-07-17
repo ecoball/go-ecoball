@@ -43,43 +43,35 @@ type WasmService struct {
 	Method string
 }
 
-func NewWasmService(ledger ledger.Ledger, tx *types.Transaction) (*WasmService, error) {
-	if tx == nil {
-		return nil, errors.New("tx is nil")
+func NewWasmService(ledger ledger.Ledger, contract *types.DeployInfo, invoke *types.InvokeInfo) (*WasmService, error) {
+	if contract == nil {
+		return nil, errors.New("contract is nil")
 	}
 
-/*
-	invoke, ok := tx.Payload.GetObject().(types.InvokeInfo)
-	if !ok {
-		return nil, errors.New("transaction type error[invoke]")
-	}
-	data, err := c.TxsStore.Get(common.IndexToBytes(tx.Addr))
+	params, err := ParseArguments(invoke.Param)
 	if err != nil {
 		return nil, err
 	}
-	txDeploy := &types.Transaction{Payload: &types.DeployInfo{}}
-	if err := txDeploy.Deserialize(data); err != nil {
-		return nil, err
-	}
-	//txDeploy.Show()
-	deployInfo, ok := txDeploy.Payload.GetObject().(types.DeployInfo)
-	if !ok {
-		return nil, errors.New(fmt.Sprintf("can't find the deploy contract:%s", common.IndexToName(tx.Addr)))
-	}
-	fmt.Println("execute code:", common.ToHex(deployInfo.Code))
-	fmt.Println("method:", string(invoke.Method))
-	fmt.Println("param:", invoke.Param)
-
-
 	ws := &WasmService{
 		ledger: ledger,
-		Code:   code,
-		Args:   arg,
-		Method: method,
+		Code:   contract.Code,
+		Args:   params,
+		Method: string(invoke.Method),
 	}
 	ws.RegisterApi()
-	return ws, nil*/
-	return nil, nil
+	return ws, nil
+}
+
+func ParseArguments(param []string) ([]uint64, error) {
+	var args []uint64
+	for _, v := range param {
+		arg, err := common.StringToPointer(v)
+		if err != nil {
+			return nil, err
+		}
+		args = append(args, arg)
+	}
+	return args, nil
 }
 
 func ReadWasm(file string) ([]byte, error) {
