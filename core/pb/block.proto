@@ -225,3 +225,12 @@ message RequestSyn {
     bytes       PubKey         = 2;
     bytes       SigData        = 3;
 }
+
+/**
+** Timeout Message
+*/
+message ToutMsg {
+    uint64      RoundNumber    = 1;
+    bytes       PubKey         = 2;
+    bytes       SigData        = 3;
+}
