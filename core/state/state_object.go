@@ -24,6 +24,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/pb"
 	"github.com/gogo/protobuf/proto"
 	"math/big"
+	"github.com/ecoball/go-ecoball/core/types"
 )
 
 type Token struct {
@@ -37,6 +38,7 @@ type Account struct {
 	Tokens      map[string]Token      `json:"token"`
 	Permissions map[string]Permission `json:"permissions"`
 
+	Contract types.DeployInfo `json:"contract"`
 	Hash  common.Hash `json:"hash"`
 	state *State
 }
@@ -65,6 +67,20 @@ func NewAccount(path string, index common.AccountName, addr common.Address) (acc
 		return nil, err
 	}
 	return acc, nil
+}
+
+func (a *Account) SetContract(t types.VmType, des, code []byte) error {
+	a.Contract.TypeVm = t
+	a.Contract.Describe = common.CopyBytes(des)
+	a.Contract.Code = common.CopyBytes(code)
+	return nil
+}
+
+func (a *Account) GetContract() (*types.DeployInfo, error) {
+	if a.Contract.TypeVm == 0 {
+		return nil, errors.New("this account is not set contract")
+	}
+	return &a.Contract, nil
 }
 
 /**
@@ -314,7 +330,7 @@ func (a *Account) JsonString() string {
 	return string(data)
 }
 func (a *Account) Show() {
-	fmt.Println("------------------------------")
+	fmt.Println("----------------" + common.IndexToName(a.Index) + ":")
 	fmt.Println(a.JsonString())
 }
 

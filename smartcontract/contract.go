@@ -35,11 +35,11 @@ type ContractService struct {
 	Service Service
 }
 
-func NewContractService(ledger ledger.Ledger) (*ContractService, error) {
+func NewContractService(ledger ledger.Ledger, tx *types.Transaction) (*ContractService, error) {
 	if ledger == nil {
 		return nil, errors.New("the contract service's ledger interface is nil")
 	}
-	return &ContractService{ledger: ledger}, nil
+	return &ContractService{ledger: ledger, tx:tx}, nil
 }
 
 func (c *ContractService) ExecuteContract(vmType types.VmType, method string, code []byte, params []string, owner common.AccountName) (ret []byte, err error) {
@@ -53,11 +53,11 @@ func (c *ContractService) ExecuteContract(vmType types.VmType, method string, co
 			return nil, err
 		}
 	case types.VmWasm:
-		args, err := c.ParseArguments(params)
-		if err != nil {
-			return nil, err
-		}
-		c.Service, err = wasmservice.NewWasmService(c.ledger, method, code, args)
+		//args, err := c.ParseArguments(params)
+		//if err != nil {
+		//	return nil, err
+		//}
+		c.Service, err = wasmservice.NewWasmService(c.ledger, c.tx)
 		if err != nil {
 			return nil, err
 		}
