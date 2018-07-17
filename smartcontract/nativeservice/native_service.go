@@ -52,7 +52,7 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		}
 		if err := ns.ledger.AddPermission(index, perm); err != nil {
 			return nil, err
-	}
+		}
 	default:
 		return nil, errors.New(fmt.Sprintf("unknown method:%s", ns.method))
 	}

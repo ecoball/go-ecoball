@@ -51,7 +51,7 @@ func NewContractService(ledger ledger.Ledger, tx *types.Transaction) (ContractSe
 		}
 		return service, nil
 	case types.VmWasm:
-		service, err := wasmservice.NewWasmService(ledger, contract, &invoke)
+		service, err := wasmservice.NewWasmService(ledger, tx, contract, &invoke)
 		if err != nil {
 			return nil, err
 		}
