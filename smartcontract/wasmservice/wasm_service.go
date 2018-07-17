@@ -43,18 +43,35 @@ type WasmService struct {
 	Method string
 }
 
-func NewWasmService(ledger ledger.Ledger, method string, code []byte, arg []uint64) (*WasmService, error) {
-	if len(code) == 0 {
-		return nil, errors.New("code is nil")
+func NewWasmService(ledger ledger.Ledger, contract *types.DeployInfo, invoke *types.InvokeInfo) (*WasmService, error) {
+	if contract == nil {
+		return nil, errors.New("contract is nil")
+	}
+
+	params, err := ParseArguments(invoke.Param)
+	if err != nil {
+		return nil, err
 	}
 	ws := &WasmService{
 		ledger: ledger,
-		Code:   code,
-		Args:   arg,
-		Method: method,
+		Code:   contract.Code,
+		Args:   params,
+		Method: string(invoke.Method),
 	}
 	ws.RegisterApi()
 	return ws, nil
+}
+
+func ParseArguments(param []string) ([]uint64, error) {
+	var args []uint64
+	for _, v := range param {
+		arg, err := common.StringToPointer(v)
+		if err != nil {
+			return nil, err
+		}
+		args = append(args, arg)
+	}
+	return args, nil
 }
 
 func ReadWasm(file string) ([]byte, error) {
@@ -211,4 +228,12 @@ func (ws *WasmService) TokenIsExisted(indexToken common.AccountName) int32 {
 	} else {
 		return 0
 	}
+}
+
+func (ws *WasmService) RequirePermission(perm string) int32 {
+	if err := ws.ledger.CheckPermission(ws.tx.Addr, perm, ws.tx.Signatures); err != nil {
+		log.Error(err)
+		return -1
+	}
+	return 0
 }

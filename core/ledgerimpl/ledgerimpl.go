@@ -92,12 +92,22 @@ func (l *LedgerImpl) AccountGet(index common.AccountName) (*state.Account, error
 func (l *LedgerImpl) AccountAdd(index common.AccountName, addr common.Address) (*state.Account, error) {
 	return l.ChainTx.AccountAdd(index, addr)
 }
+func (l *LedgerImpl) SetContract(index common.AccountName, t types.VmType, des, code []byte) error {
+	return l.ChainTx.SetContract(index, t, des, code)
+}
+func (l *LedgerImpl) GetContract(index common.AccountName) (*types.DeployInfo, error) {
+	return l.ChainTx.GetContract(index)
+}
 func (l *LedgerImpl) AddPermission(index common.AccountName, perm state.Permission) error {
 	return l.ChainTx.AddPermission(index, perm)
 }
 func (l *LedgerImpl) FindPermission(index common.AccountName, name string) (string, error) {
 	return l.ChainTx.FindPermission(index, name)
 }
+func (l *LedgerImpl) CheckPermission(index common.AccountName, name string, sig []common.Signature) error {
+	return l.ChainTx.CheckPermission(index, name, sig)
+}
+
 func (l *LedgerImpl) AccountGetBalance(index common.AccountName, token string) (uint64, error) {
 	value, err := l.ChainTx.AccountGetBalance(index, token)
 	if err != nil {

@@ -23,6 +23,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/store"
 	"math/big"
+	"github.com/ecoball/go-ecoball/core/types"
 )
 
 var log = elog.NewLogger("state", elog.DebugLog)
@@ -68,7 +69,7 @@ func (s *State) AddAccount(index common.AccountName, addr common.Address) (*Acco
 	if acc != nil {
 		return nil, errors.New("reduplicate name")
 	}
-	obj, err := NewAccount(index, addr)
+	obj, err := NewAccount(s.path, index, addr)
 	if err != nil {
 		return nil, err
 	}
@@ -80,6 +81,23 @@ func (s *State) AddAccount(index common.AccountName, addr common.Address) (*Acco
 		return nil, err
 	}
 	return obj, nil
+}
+func (s *State) SetContract(index common.AccountName, t types.VmType, des, code []byte) error {
+	acc, err := s.GetAccountByName(index)
+	if err != nil {
+		return err
+	}
+	if err := acc.SetContract(t, des, code); err != nil {
+		return err
+	}
+	return s.CommitAccount(acc)
+}
+func (s *State) GetContract(index common.AccountName) (*types.DeployInfo, error) {
+	acc, err := s.GetAccountByName(index)
+	if err != nil {
+		return nil, err
+	}
+	return acc.GetContract()
 }
 /**
  *  @brief add a permission object into account, then update to mpt trie
@@ -100,12 +118,12 @@ func (s *State) AddPermission(index common.AccountName, perm Permission) error {
  *  @param name - the permission names
  *  @param signatures - the signatures list
  */
-func (s *State) CheckPermission(index common.AccountName, state *State, name string, signatures []common.Signature) error {
+func (s *State) CheckPermission(index common.AccountName, name string, signatures []common.Signature) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return err
 	}
-	return acc.CheckPermission(state, name, signatures)
+	return acc.CheckPermission(s, name, signatures)
 }
 /**
  *  @brief search the permission by name, return json array string

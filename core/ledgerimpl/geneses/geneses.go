@@ -109,7 +109,7 @@ func PresetContract(ledger ledger.Ledger, t int64) ([]*types.Transaction, error)
 	if err != nil {
 		return nil, err
 	}
-	invoke, err = types.NewInvokeContract(index, index, "owner", types.VmNative, "set_account", []string{"root", string(param)}, 0, time.Now().Unix())
+	invoke, err = types.NewInvokeContract(index, index, "active", types.VmNative, "set_account", []string{"root", string(param)}, 0, time.Now().Unix())
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 	//END
