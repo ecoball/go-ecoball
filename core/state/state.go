@@ -68,7 +68,7 @@ func (s *State) AddAccount(index common.AccountName, addr common.Address) (*Acco
 	if acc != nil {
 		return nil, errors.New("reduplicate name")
 	}
-	obj, err := NewAccount(index, addr)
+	obj, err := NewAccount(s.path, index, addr)
 	if err != nil {
 		return nil, err
 	}

@@ -46,10 +46,10 @@ type Account struct {
  *  @param index - the unique id of account name created by common.NameToIndex()
  *  @param address - the account's public key
  */
-func NewAccount(index common.AccountName, addr common.Address) (*Account, error) {
+func NewAccount(path string, index common.AccountName, addr common.Address) (acc *Account, err error) {
 	log.Info("add a new account:", index)
 	fmt.Printf("index:%d\n", index)
-	acc := Account{
+	acc = &Account{
 		Index:       index,
 		Nonce:       0,
 		Tokens:      make(map[string]Token, 1),
@@ -60,7 +60,11 @@ func NewAccount(index common.AccountName, addr common.Address) (*Account, error)
 	perm = NewPermission("active", "owner", 1, []KeyFactor{{Actor: addr, Weight: 1}}, []AccFactor{})
 	acc.AddPermission(perm)
 
-	return &acc, nil
+	acc.state, err = NewState(path + "/" + common.IndexToName(acc.Index), acc.Hash)
+	if err != nil {
+		return nil, err
+	}
+	return acc, nil
 }
 
 /**
