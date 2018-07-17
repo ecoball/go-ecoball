@@ -391,7 +391,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					}
 					// 1c. check the block header, except the consensus data
 					var valid_blk bool
-					valid_blk,err = actor_c.verify_header(blockfirst_received, current_round_num)
+					valid_blk,err = actor_c.verify_header(&blockfirst_received, current_round_num)
 					if valid_blk==false {
 						println("header check fail")
 						return

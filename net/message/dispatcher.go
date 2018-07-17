@@ -109,11 +109,6 @@ func HdToutMsg(data []byte) error {
 	return nil
 }
 
-/*
-
-
-
-
 func HdSignBlkFMsg(data []byte) error {
 	signblkf_receive := new(ababft.Signature_BlkF)
 	err := signblkf_receive.Deserialize(data)
@@ -124,6 +119,13 @@ func HdSignBlkFMsg(data []byte) error {
 	eactor.Send(0, eactor.ActorConsensus, signblkf_receive)
 	return nil
 }
+
+/*
+
+
+
+
+
 
 func HdBlkSMsg(data []byte) error {
 	block_secondround := new(ababft.Block_SecondRound)
