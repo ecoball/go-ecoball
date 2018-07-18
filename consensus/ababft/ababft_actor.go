@@ -70,7 +70,8 @@ var current_payload types.AbaBftData // temporary parameters for current payload
 var received_signpre_num int // the number of received signatures for the previous block
 var cache_signature_preblk []pb.SignaturePreblock // cache the received signatures for the previous block
 var block_first_cal *types.Block // cache the first-round block
-
+var received_signblkf_num int // temporary parameters for received signatures for first round block
+var TimeoutMsgs = make(map[string]int, 1000) // cache the timeout message
 
 func Actor_ababft_gen(actor_ababft *Actor_ababft) (*actor.PID, error) {
 	props := actor.FromProducer(func() actor.Actor {
@@ -321,6 +322,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				event.Send(event.ActorConsensus, event.ActorP2P, block_firstround)
 				// change the statue
 				actor_c.status = 4
+				// initial the received_signblkf_num to count the signatures for txs (i.e. the first round block)
+				received_signblkf_num = 0
 				// set the timer for collecting the signature for txs (i.e. the first round block)
 				t2 := time.NewTimer(time.Second * WAIT_RESPONSE_TIME)
 				go func() {
@@ -466,43 +469,353 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				}
 			}
 		}
-		/*
-				if primary_tag == 0 && (actor_c.status == 2 || actor_c.status == 5) {
 
-			if blockfirst_received.ConsensusData.Type == types.ConABFT {
+	case TxTimeout:
+		if primary_tag == 0 && (actor_c.status == 2 || actor_c.status == 5) {
+			// not receive the first round block
+			// change the status
+			actor_c.status = 8
+			primary_tag = 0
+			// send out the timeout message
+			var timeoutmsg TimeoutMsg
+			timeoutmsg.Toutmsg.RoundNumber = uint64(current_round_num)
+			timeoutmsg.Toutmsg.PubKey = actor_c.service_ababft.account.PublicKey
+			timeoutmsg.Toutmsg.SigData = []byte("none")
+			event.Send(event.ActorConsensus,event.ActorP2P,timeoutmsg)
+			// start/enter the next turn
+			event.Send(event.ActorConsensus, event.ActorConsensus, ABABFTStart{})
+			// todo
+			// the above needed to be checked
+			// here, enter the next term and broadcast the preblock signature with the increased round number has the same effect as the changeview/ nextround message
+			// handle of the timeout message has been added, please check case TimeoutMsg
+			return
+		}
 
-				if data_preblk_received.NumberRound < uint32(current_round_num) {
-					return
-				} else if data_preblk_received.NumberRound > uint32(current_round_num) {
-
-					if (current_height_num+1) < int(blockfirst_received.Header.Height) {
-
-					}
-				} else {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	case Signature_BlkF:
+		// the prime will verify the signatures of first-round block from peers
+		if primary_tag == 1 && actor_c.status == 4 {
+			// verify the signature
+			// 1. check the peer in the peers list
+			pubkey_in := msg.Signature_blkf.PubKey
+			var found_peer bool
+			found_peer = false
+			var peer_index int
+			for index,peer := range Peers_list {
+				if ok := bytes.Equal(peer.PublicKey, pubkey_in); ok == true {
+					found_peer = true
+					peer_index = index
+					break
 				}
+			}
+			if found_peer == false {
+				// the signature is not from the peer in the list
+				return
+			}
+			// 2. verify the correctness of the signature
+			if signature_BlkF_list[peer_index] != nil {
+				// already receive the signature
+				return
+			}
+			sigdata_in := msg.Signature_blkf.SigData
+			header_hash := block_firstround.Blockfirst.Header.Hash.Bytes()
+			var result_verify bool
+			result_verify, err = secp256k1.Verify(header_hash, sigdata_in, pubkey_in)
+			if result_verify == true {
+				// add the incoming signature to signature preblock list
+				signature_BlkF_list[peer_index] = sigdata_in
+				received_signblkf_num ++
+				return
+			} else {
+				return
+			}
+
+		}
+
+	case SignTxTimeout:
+		if primary_tag == 1 && actor_c.status == 4 {
+			// check the number of the signatures of first-round block from peers
+			if received_signblkf_num >= int(2*len(Peers_list)/3+1) {
+				// enough first-round block signatures, so generate the second-round(final) block
+				// 1. add the first-round block signatures into ConsensusData
+				pubkey_tag_b := []byte(pubkey_tag)
+				signdata_tag_b := []byte(signdata_tag)
+				var sign_tag common.Signature
+				sign_tag.PubKey = pubkey_tag_b
+				sign_tag.SigData = signdata_tag_b
+
+				ababftdata := block_firstround.Blockfirst.ConsensusData.Payload.(*types.AbaBftData)
+				// prepare the ConsensusData
+				// add the tag to distinguish preblock signature and second round signature
+				ababftdata.PerBlockSignatures = append(ababftdata.PerBlockSignatures, sign_tag)
+				for index,signblkf := range signature_BlkF_list {
+					if signblkf != nil {
+						var sign_tmp common.Signature
+						sign_tmp.SigData = signblkf
+						sign_tmp.PubKey = Peers_list[index].PublicKey
+						ababftdata.PerBlockSignatures = append(ababftdata.PerBlockSignatures, sign_tmp)
+					}
+				}
+
+				conData := types.ConsensusData{Type: types.ConABFT, Payload: &types.AbaBftData{uint32(current_round_num),ababftdata.PerBlockSignatures}}
+				// 2. generate the second-round(final) block
+				var block_second types.Block
+				block_second,err =  actor_c.update_block(block_firstround.Blockfirst, conData)
+				block_second.SetSignature(actor_c.service_ababft.account)
+				// 3. broadcast the second-round(final) block
+				block_secondround.Blocksecond = &block_second
+				event.Send(event.ActorConsensus, event.ActorP2P, block_secondround)
+				// 4. save the second-round(final) block to ledger
+				if err = actor_c.service_ababft.ledger.SaveTxBlock(&block_second); err != nil {
+					// log.Error("save block error:", err)
+					println("save block error:", err)
+					return
+				}
+				// 5. change the status
+				actor_c.status = 7
+				primary_tag = 0
+				// start/enter the next turn
+				event.Send(event.ActorConsensus, event.ActorConsensus, ABABFTStart{})
+				return
+			} else {
+				// 1. did not receive enough signatures of first-round block from peers in the assigned time interval
+				actor_c.status = 7
+				primary_tag = 0 // reset to zero, and the next primary will take the turn
+				// 2. reset the stateDB
+				err = actor_c.service_ababft.ledger.ResetStateDB(currentheader.Hash)
+				if err != nil {
+					log.Debug("ResetStateDB fail")
+					return
+				}
+				// send out the timeout message
+				var timeoutmsg TimeoutMsg
+				timeoutmsg.Toutmsg = new(pb.ToutMsg)
+				timeoutmsg.Toutmsg.RoundNumber = uint64(current_round_num)
+				timeoutmsg.Toutmsg.PubKey = actor_c.service_ababft.account.PublicKey
+				timeoutmsg.Toutmsg.SigData = []byte("none")
+				event.Send(event.ActorConsensus,event.ActorP2P,timeoutmsg)
+				// 3. start/enter the next turn
+				event.Send(event.ActorConsensus, event.ActorConsensus, ABABFTStart{})
 			}
 		}
 
-		 */
+	case Block_SecondRound:
+		if primary_tag == 0 && (actor_c.status == 6 || actor_c.status == 2 || actor_c.status == 5) {
+			// to verify the first round block
+			blocksecond_received := msg.Blocksecond
+			// check the protocal type is ababft
+			if blocksecond_received.ConsensusData.Type == types.ConABFT {
+				data_blks_received := blocksecond_received.ConsensusData.Payload.(*types.AbaBftData)
+				// 1. check the round number and height
+				// 1a. current round number
+				if data_blks_received.NumberRound < uint32(current_round_num) || blocksecond_received.Header.Height <= uint64(current_height_num) {
+					return
+				} else if (blocksecond_received.Header.Height-1) > uint64(current_height_num) {
+					// send synchronization message
+					var requestsyn REQSyn
+					requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
+					requestsyn.Reqsyn.SigData = []byte("none")
+					requestsyn.Reqsyn.RequestHeight = uint64(current_height_num+1)
+					event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
 
+					// todo
+					// attention:
+					// to against the height cheat, do not change the actor_c.status
+				} else {
+					// here, the add new block into the ledger, data_blks_received.NumberRound >= current_round_num is ok instead of data_blks_received.NumberRound == current_round_num
+					// 1b. the round number corresponding to the block generator
+					index_g := (int(data_blks_received.NumberRound)-1) % Num_peers + 1
+					pukey_g_in := blocksecond_received.Signatures[0].PubKey
+					var index_g_in int
+					index_g_in = -1
+					for _, peer := range Peers_list {
+						if ok := bytes.Equal(peer.PublicKey, pukey_g_in); ok == true {
+							index_g_in = int(peer.Index)
+							break
+						}
+					}
+					if index_g != index_g_in {
+						// illegal block generator
+						return
+					}
+					// 1c. check the block header, except the consensus data
+					var valid_blk bool
+					valid_blk,err = actor_c.verify_header(blocksecond_received, int(data_blks_received.NumberRound))
+					// todo
+					// can check the hash and statdb and merker root instead of the total head to speed up
+					if valid_blk==false {
+						println("header check fail")
+						return
+					}
+					// 2. check the signatures ( for both previous and current blocks) in ConsensusData
+					preblkhash := currentheader.Hash
+					valid_blk, err = actor_c.verify_signatures(data_blks_received, preblkhash, blocksecond_received.Header)
+					if valid_blk==false {
+						println("previous and first-round blocks signatures check fail")
+						return
+					}
+					// 3.save the second-round block into the ledger
+					if err = actor_c.service_ababft.ledger.SaveTxBlock(blocksecond_received); err != nil {
+						// log.Error("save block error:", err)
+						println("save block error:", err)
+						return
+					}
+					// 4. change status
+					actor_c.status = 8
+					primary_tag = 0
+					// update the current_round_num
+					current_round_num = int(data_blks_received.NumberRound)
+					// start/enter the next turn
+					event.Send(event.ActorConsensus, event.ActorConsensus, ABABFTStart{})
+					// 5. broadcast the received second-round block, which has been checked valid
+					// to let other peer know this block
+					block_secondround.Blocksecond = blocksecond_received
+					event.Send(event.ActorConsensus, event.ActorP2P, block_secondround)
+					return
+				}
+			}
+		}
+	case BlockSTimeout:
+		if primary_tag == 0 && actor_c.status == 5 {
+			actor_c.status = 8
+			primary_tag = 0
+			// reset the state of merkle tree, statehash and so on
+			err = actor_c.service_ababft.ledger.ResetStateDB(currentheader.Hash)
+			if err != nil {
+				log.Debug("ResetStateDB fail")
+				return
+			}
+			// send out the timeout message
+			var timeoutmsg TimeoutMsg
+			timeoutmsg.Toutmsg.RoundNumber = uint64(current_round_num)
+			timeoutmsg.Toutmsg.PubKey = actor_c.service_ababft.account.PublicKey
+			timeoutmsg.Toutmsg.SigData = []byte("none")
+			event.Send(event.ActorConsensus,event.ActorP2P,timeoutmsg)
+			// start/enter the next turn
+			event.Send(event.ActorConsensus, event.ActorConsensus, ABABFTStart{})
+			return
+		}
+
+	case REQSyn:
+		// receive the shronization request
+		height_req := msg.Reqsyn.RequestHeight
+		// 1. get the response block from the ledger
+		blk_syn,err := actor_c.service_ababft.ledger.GetTxBlockByHeight(height_req)
+		if err== nil && blk_syn!=nil {
+			// find the corresponding block
+			var blksyn_send Block_Syn
+			blksyn_send.Blksyn = blk_syn
+			// 2. send the required block to
+			event.Send(event.ActorConsensus,event.ActorP2P,blksyn_send)
+		}
+
+	case Block_Syn:
+		height_syn := msg.Blksyn.Header.Height
+		// 1. compare the height
+		if (current_height_num + 1) == int(height_syn) {
+			// 2. to check and save the block if it passes the verification
+			// to verify the first round block
+			blocksecond_received := msg.Blksyn
+			// check the protocal type is ababft
+			if blocksecond_received.ConsensusData.Type == types.ConABFT {
+				data_blks_received := blocksecond_received.ConsensusData.Payload.(*types.AbaBftData)
+				// 1. no need to check the round number, maybe the peer misses one block in the previous round.
+				// Only the height is important
+				round_num_in := int(data_blks_received.NumberRound)
+				index_g := (int(data_blks_received.NumberRound)-1) % Num_peers + 1
+				pukey_g_in := blocksecond_received.Signatures[0].PubKey
+				var index_g_in int
+				index_g_in = -1
+				for _, peer := range Peers_list {
+					if ok := bytes.Equal(peer.PublicKey, pukey_g_in); ok == true {
+						index_g_in = int(peer.Index)
+						break
+					}
+				}
+				if index_g != index_g_in {
+					// illegal block generator
+					return
+				}
+				// 1c. check the block header, except the consensus data
+				var valid_blk bool
+				valid_blk,err = actor_c.verify_header(blocksecond_received, round_num_in)
+				if valid_blk==false {
+					println("header check fail")
+					return
+				}
+				// 2. check the signatures ( for both previous and current blocks) in ConsensusData
+				preblkhash := currentheader.Hash
+				valid_blk, err = actor_c.verify_signatures(data_blks_received, preblkhash, blocksecond_received.Header)
+				if valid_blk==false {
+					println("previous and first-round blocks signatures check fail")
+					return
+				}
+				// 3.save the second-round block into the ledger
+				if err = actor_c.service_ababft.ledger.SaveTxBlock(blocksecond_received); err != nil {
+					// log.Error("save block error:", err)
+					println("save block error:", err)
+					return
+				}
+				// 4. only the block is sucessfully saved, then change the status
+				actor_c.status = 8
+				primary_tag = 0
+				// update the current_round_num
+				current_round_num = int(data_blks_received.NumberRound)
+				// start/enter the next turn
+				event.Send(event.ActorConsensus, event.ActorConsensus, ABABFTStart{})
+				return
+
+				// todo
+				// only need to check the hash and signature is enough?
+				// this may help to speed up the ababft
+			}
+		}
+
+	case TimeoutMsg:
+		pubkey_in := msg.Toutmsg.PubKey
+		round_in := int(msg.Toutmsg.RoundNumber)
+		// check the peer in the peers list
+		if round_in < current_round_num {
+			return
+		}
+		for _, peer := range Peers_list {
+			if ok := bytes.Equal(peer.PublicKey, pubkey_in); ok == true {
+				// legal peer
+				TimeoutMsgs[string(pubkey_in)] = round_in
+				// to count the number is enough
+				var count_r []int
+				var max_r int
+				max_r = 0
+				for _,v := range TimeoutMsgs {
+					if v > current_round_num {
+						count_r[v-current_round_num]++
+					}
+					if v > max_r {
+						max_r = v
+					}
+				}
+				var total_count int
+				total_count = 0
+				for i := max_r-current_round_num; i > 0; i-- {
+					total_count = total_count + count_r[i]
+					if total_count > int(2*len(Peers_list)/3+1) {
+						// reset the round number
+						current_round_num += i
+						// start/enter the next turn
+						actor_c.status = 8
+						primary_tag = 0
+						event.Send(event.ActorConsensus, event.ActorConsensus, ABABFTStart{})
+						break
+					}
+				}
+				break
+			}
+		}
+		return
 
 	default :
 		log.Debug(msg)
 		log.Warn("unknown message")
+		return
 	}
 }
 
@@ -581,4 +894,143 @@ func (actor_c *Actor_ababft) verify_header(block_in *types.Block, current_round_
 		return false,err
 	}
 	return true,err
+}
+
+func (actor_c *Actor_ababft) update_block(block_first types.Block, condata types.ConsensusData) (types.Block,error){
+	var block_second types.Block
+	var err error
+	header_in := block_first.Header
+	header, _ := types.NewHeader(header_in.Version, header_in.Height, header_in.PrevHash, header_in.MerkleHash,
+		header_in.StateHash, condata, header_in.Bloom, header_in.TimeStamp)
+	block_second = types.Block{header, uint32(len(block_first.Transactions)), block_first.Transactions}
+	return block_second,err
+}
+
+func (actor_c *Actor_ababft) verify_signatures(data_blks_received *types.AbaBftData, preblkhash common.Hash, curheader *types.Header) (bool,error){
+	var err error
+	// 1. devide the signatures into two part
+	var sign_blks_preblk []common.Signature
+	var sign_blks_curblk []common.Signature
+	pubkey_tag_byte := []byte(pubkey_tag)
+	sigdata_tag_byte := []byte(signdata_tag)
+	var tag_sign int
+	tag_sign = 0
+	for _,sign := range data_blks_received.PerBlockSignatures {
+		ok1 := bytes.Equal(sign.PubKey, pubkey_tag_byte);
+		ok2 := bytes.Equal(sign.SigData,sigdata_tag_byte);
+		if ok1 == true && ok2 == true {
+			tag_sign = 1
+			continue
+		}
+		if tag_sign == 0 {
+			sign_blks_preblk = append(sign_blks_preblk,sign)
+		} else if tag_sign == 1 {
+			sign_blks_curblk = append(sign_blks_curblk,sign)
+		}
+	}
+
+	// 2. check the preblock signature
+	var num_verified int
+	num_verified = 0
+	for index,sign_preblk := range sign_blks_preblk {
+		// 2a. check the peers in the peer list
+		var peerin_tag bool
+		peerin_tag = false
+		for _, peer := range Peers_list {
+			if ok := bytes.Equal(peer.PublicKey, sign_preblk.PubKey); ok == true {
+				peerin_tag = true
+				break
+			}
+		}
+		if peerin_tag == false {
+			// there exists signature not from the peer list
+			fmt.Println("the signature is not from the peer list, its index is:", index)
+			return false,nil
+		}
+		// 2b. verify the correctness of the signature
+		pubkey_in := sign_preblk.PubKey
+		sigdata_in := sign_preblk.SigData
+		var result_verify bool
+		result_verify, err = secp256k1.Verify(preblkhash.Bytes(), sigdata_in, pubkey_in)
+		if result_verify == true {
+			num_verified++
+		}
+	}
+	// 2c. check the valid signature number
+	if num_verified < int(len(Peers_list)/3+1){
+		fmt.Println(" not enough signature for the previous block:", num_verified)
+		return false,nil
+	}
+
+	// 3. check the current block signature
+	num_verified = 0
+	// calculate firstround block header hash for the check of the first-round block signatures
+	conData := types.ConsensusData{Type: types.ConABFT, Payload: &types.AbaBftData{uint32(current_round_num),sign_blks_preblk}}
+	header_recal, _ := types.NewHeader(curheader.Version, curheader.Height, curheader.PrevHash, curheader.MerkleHash,
+		curheader.StateHash, conData, curheader.Bloom, curheader.TimeStamp)
+	blkFhash := header_recal.Hash
+	for index,sign_curblk := range sign_blks_curblk {
+		// 3a. check the peers in the peer list
+		var peerin_tag bool
+		peerin_tag = false
+		for _, peer := range Peers_list {
+			if ok := bytes.Equal(peer.PublicKey, sign_curblk.PubKey); ok == true {
+				peerin_tag = true
+				break
+			}
+		}
+		if peerin_tag == false {
+			// there exists signature not from the peer list
+			fmt.Println("the signature is not from the peer list, its index is:", index)
+			return false,nil
+		}
+		// 3b. verify the correctness of the signature
+		pubkey_in := sign_curblk.PubKey
+		sigdata_in := sign_curblk.SigData
+		var result_verify bool
+		result_verify, err = secp256k1.Verify(blkFhash.Bytes(), sigdata_in, pubkey_in)
+		if result_verify == true {
+			num_verified++
+		}
+	}
+	// 3c. check the valid signature number
+	if num_verified < int(2*len(Peers_list)/3+1){
+		fmt.Println(" not enough signature for first round block:", num_verified)
+		return false,nil
+	}
+	return  true,err
+
+	// todo
+	// use CheckPermission(index common.AccountName, name string, sig []common.Signature) instead
+	/*
+	// 4. check the current block signature by using function CheckPermission
+	// 4a. check the peers permission
+	err = actor_c.service_ababft.ledger.CheckPermission(0, "active",sign_blks_curblk)
+	if err != nil {
+		log.Debug("signature permission check fail")
+		return false,err
+	}
+	num_verified = 0
+	// calculate firstround block header hash for the check of the first-round block signatures
+	conData := types.ConsensusData{Type: types.ConABFT, Payload: &types.AbaBftData{uint32(current_round_num),sign_blks_preblk}}
+	header_recal, _ := types.NewHeader(curheader.Version, curheader.Height, curheader.PrevHash, curheader.MerkleHash,
+		curheader.StateHash, conData, curheader.Bloom, curheader.TimeStamp)
+	blkFhash := header_recal.Hash
+	for _,sign_curblk := range sign_blks_curblk {
+		// 4b. verify the correctness of the signature
+		pubkey_in := sign_curblk.PubKey
+		sigdata_in := sign_curblk.SigData
+		var result_verify bool
+		result_verify, err = secp256k1.Verify(blkFhash.Bytes(), sigdata_in, pubkey_in)
+		if result_verify == true {
+			num_verified++
+		}
+	}
+	// 4c. check the valid signature number
+	if num_verified < int(2*len(Peers_list)/3+1){
+		fmt.Println(" not enough signature for first round block:", num_verified)
+		return false,nil
+	}
+	return  true,err
+	*/
 }

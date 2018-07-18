@@ -113,8 +113,6 @@ func (this *NetActor) Receive(ctx actor.Context) {
 		buffer, _ = msg.(*ababft.TimeoutMsg).Serialize()
 		netMsg := message.New(msgType, buffer)
 		this.node.broadCastCh <- netMsg
-		/*
-
 	case ababft.Signature_BlkF:
 		// broadcast the signature for the first-round block
 		msgType = message.APP_MSG_SIGNBLKF
@@ -127,15 +125,12 @@ func (this *NetActor) Receive(ctx actor.Context) {
 		buffer, _ = msg.(*ababft.Block_SecondRound).Blocksecond.Serialize()
 		netMsg := message.New(msgType, buffer)
 		this.node.broadCastCh <- netMsg
-
 	case ababft.Block_Syn:
 		// broadcast the block according to the synchronization request
 		msgType = message.APP_MSG_BLKSYN
 		buffer, _ = msg.(*ababft.Block_Syn).Blksyn.Serialize()
 		netMsg := message.New(msgType, buffer)
 		this.node.broadCastCh <- netMsg
-
-		*/
 	default:
 		log.Error("Error Xmit message ", reflect.TypeOf(ctx.Message()))
 	}
