@@ -57,9 +57,9 @@ func NewAccount(path string, index common.AccountName, addr common.Address) (acc
 		Tokens:      make(map[string]Token, 1),
 		Permissions: make(map[string]Permission, 1),
 	}
-	perm := NewPermission("owner", "", 1, []KeyFactor{{Actor: addr, Weight: 1}}, []AccFactor{})
+	perm := NewPermission(Owner, "", 1, []KeyFactor{{Actor: addr, Weight: 1}}, []AccFactor{})
 	acc.AddPermission(perm)
-	perm = NewPermission("active", "owner", 1, []KeyFactor{{Actor: addr, Weight: 1}}, []AccFactor{})
+	perm = NewPermission(Active, Owner, 1, []KeyFactor{{Actor: addr, Weight: 1}}, []AccFactor{})
 	acc.AddPermission(perm)
 
 	acc.state, err = NewState(path+"/"+common.IndexToName(acc.Index), acc.Hash)

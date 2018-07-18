@@ -6,6 +6,9 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 )
 
+var Owner = "owner"
+var Active = "active"
+
 type AccFactor struct {
 	Actor      common.AccountName `json:"actor"`
 	Weight     uint32             `json:"weight"`

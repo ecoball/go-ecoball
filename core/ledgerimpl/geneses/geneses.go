@@ -85,7 +85,7 @@ func PresetContract(ledger ledger.Ledger, t int64) ([]*types.Transaction, error)
 	if err != nil {
 		return nil, err
 	}
-	tokenContract, err := types.NewDeployContract(index, index, "active", types.VmWasm, "system control", code, 0, t)
+	tokenContract, err := types.NewDeployContract(index, index, state.Active, types.VmWasm, "system control", code, 0, t)
 	if err != nil {
 		return nil, err
 	}
@@ -94,27 +94,27 @@ func PresetContract(ledger ledger.Ledger, t int64) ([]*types.Transaction, error)
 	}
 	txs = append(txs, tokenContract)
 
-	invoke, err := types.NewInvokeContract(index, index, "owner", types.VmWasm, "new_account",
+	invoke, err := types.NewInvokeContract(index, index, state.Owner, types.VmWasm, "new_account",
 		[]string{"worker1", common.AddressFromPubKey(config.Worker1.PublicKey).HexString()}, 0, t)
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
-	invoke, err = types.NewInvokeContract(index, index, "owner", types.VmWasm, "new_account",
+	invoke, err = types.NewInvokeContract(index, index, state.Owner, types.VmWasm, "new_account",
 		[]string{"worker2", common.AddressFromPubKey(config.Worker2.PublicKey).HexString()}, 1, t)
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
-	invoke, err = types.NewInvokeContract(index, index, "owner", types.VmWasm, "new_account",
+	invoke, err = types.NewInvokeContract(index, index, state.Owner, types.VmWasm, "new_account",
 		[]string{"worker3", common.AddressFromPubKey(config.Worker3.PublicKey).HexString()}, 2, t)
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
-	perm := state.NewPermission("active", "owner", 2, []state.KeyFactor{}, []state.AccFactor{{Actor: common.NameToIndex("worker1"), Weight: 1, Permission: "active"}, {Actor: common.NameToIndex("worker2"), Weight: 1, Permission: "active"}, {Actor: common.NameToIndex("worker3"), Weight: 1, Permission: "active"}})
+	perm := state.NewPermission(state.Active, state.Owner, 2, []state.KeyFactor{}, []state.AccFactor{{Actor: common.NameToIndex("worker1"), Weight: 1, Permission: "active"}, {Actor: common.NameToIndex("worker2"), Weight: 1, Permission: "active"}, {Actor: common.NameToIndex("worker3"), Weight: 1, Permission: "active"}})
 	param, err := json.Marshal(perm)
 	if err != nil {
 		return nil, err
 	}
-	invoke, err = types.NewInvokeContract(index, index, "active", types.VmWasm, "set_account", []string{"root", string(param)}, 0, time.Now().Unix())
+	invoke, err = types.NewInvokeContract(index, index, state.Active, types.VmWasm, "set_account", []string{"root", string(param)}, 0, time.Now().Unix())
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 	//END

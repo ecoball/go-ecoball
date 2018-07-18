@@ -393,6 +393,9 @@ func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction)
 			return nil, err
 		}
 	case types.TxDeploy:
+		if err := c.CheckPermission(tx.From, state.Active, tx.Signatures); err != nil {
+			return nil, err
+		}
 		payload, ok := tx.Payload.GetObject().(types.DeployInfo)
 		if !ok {
 			return nil, errors.New("transaction type error[deploy]")

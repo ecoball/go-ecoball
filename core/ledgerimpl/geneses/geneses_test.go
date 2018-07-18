@@ -17,6 +17,7 @@ import (
 var log = elog.NewLogger("worker2", elog.InfoLog)
 
 var root = common.NameToIndex("root")
+var token = common.NameToIndex("token")
 var worker1 = common.NameToIndex("worker1")
 var worker2 = common.NameToIndex("worker2")
 var worker3 = common.NameToIndex("worker3")
@@ -136,4 +137,33 @@ func ShowAccountInfo(l ledger.Ledger, t *testing.T) {
 		t.Fatal(err)
 	}
 	acc.Show()
+}
+
+func AddTokenAccount(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T) {
+	var txs []*types.Transaction
+	invoke, err := types.NewInvokeContract(root, root, "owner", types.VmWasm, "new_account",
+		[]string{"token", common.AddressFromPubKey(config.Worker1.PublicKey).HexString()}, 0, time.Now().Unix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	invoke.SetSignature(&config.Root)
+	txs = append(txs, invoke)
+
+	tokenContract, err := types.NewDeployContract(token, token, "active", types.VmWasm, "system control", nil, 0, time.Now().Unix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	invoke.SetSignature(&config.Worker1)
+	txs = append(txs, tokenContract)
+	block, err := ledger.NewTxBlock(txs, *con)
+	if err != nil {
+		t.Fatal(err)
+	}
+	block.SetSignature(&config.Root)
+	if err := ledger.VerifyTxBlock(block); err != nil {
+		t.Fatal(err)
+	}
+	if err := ledger.SaveTxBlock(block); err != nil {
+		t.Fatal(err)
+	}
 }
