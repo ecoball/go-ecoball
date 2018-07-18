@@ -68,14 +68,21 @@ func NewAccount(path string, index common.AccountName, addr common.Address) (acc
 	}
 	return acc, nil
 }
-
+/**
+ *  @brief add a smart contract into a account data
+ *  @param t - the type of virtual machine
+ *  @param des - the description of smart contract
+ *  @param code - the code of smart contract
+ */
 func (a *Account) SetContract(t types.VmType, des, code []byte) error {
 	a.Contract.TypeVm = t
 	a.Contract.Describe = common.CopyBytes(des)
 	a.Contract.Code = common.CopyBytes(code)
 	return nil
 }
-
+/**
+ *  @brief get a smart contract from a account data
+ */
 func (a *Account) GetContract() (*types.DeployInfo, error) {
 	if a.Contract.TypeVm == 0 {
 		return nil, errors.New("this account is not set contract")

@@ -76,6 +76,8 @@ func PresetContract(ledger ledger.Ledger, t int64) ([]*types.Transaction, error)
 	if _, err := ledger.AccountAdd(index, addr); err != nil {
 		return nil, err
 	}
+
+	//TODO
 	if err := ledger.AccountAddBalance(index, state.AbaToken, 10000); err != nil {
 		return nil, err
 	}
@@ -92,7 +94,6 @@ func PresetContract(ledger ledger.Ledger, t int64) ([]*types.Transaction, error)
 	}
 	txs = append(txs, tokenContract)
 
-	//TODO
 	invoke, err := types.NewInvokeContract(index, index, "owner", types.VmWasm, "new_account",
 		[]string{"worker1", common.AddressFromPubKey(config.Worker1.PublicKey).HexString()}, 0, t)
 	invoke.SetSignature(&config.Root)
