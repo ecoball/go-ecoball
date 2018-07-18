@@ -81,7 +81,7 @@ func PresetContract(ledger ledger.Ledger, t int64) ([]*types.Transaction, error)
 	if err := ledger.AccountAddBalance(index, state.AbaToken, 10000); err != nil {
 		return nil, err
 	}
-	code, err := wasmservice.ReadWasm("../../../test/root/root.wasm")
+	code, err := wasmservice.ReadWasm("../test/root/root.wasm")
 	if err != nil {
 		return nil, err
 	}
