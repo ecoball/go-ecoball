@@ -148,8 +148,8 @@ func invokeContract(c *cli.Context) error {
 
 	//contract address
 	contractName := c.String("name")
-	if contractAddress == "" {
-		fmt.Println("Invalid contract name: ", contractAddress)
+	if contractName == "" {
+		fmt.Println("Invalid contract name: ", contractName)
 		return errors.New("Invalid contract name")
 	}
 
