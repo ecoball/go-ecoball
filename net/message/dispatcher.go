@@ -120,13 +120,6 @@ func HdSignBlkFMsg(data []byte) error {
 	return nil
 }
 
-/*
-
-
-
-
-
-
 func HdBlkSMsg(data []byte) error {
 	block_secondround := new(ababft.Block_SecondRound)
 	err := block_secondround.Blocksecond.Deserialize(data)
@@ -137,8 +130,6 @@ func HdBlkSMsg(data []byte) error {
 	eactor.Send(0, eactor.ActorConsensus, block_secondround)
 	return nil
 }
-
-
 
 func HdBlkSynMsg(data []byte) error {
 	blksyn := new(ababft.Block_Syn)
@@ -151,9 +142,6 @@ func HdBlkSynMsg(data []byte) error {
 	return nil
 }
 
-
- */
-
 // MakeHandlers generates a map of MsgTypes to their corresponding handler functions
 func MakeHandlers() map[uint32]HandlerFunc {
 	return map[uint32]HandlerFunc{
@@ -165,13 +153,10 @@ func MakeHandlers() map[uint32]HandlerFunc {
 		APP_MSG_SIGNPRE:   HdSignPreMsg,
 		APP_MSG_BLKF:      HdBlkFMsg,
 		APP_MSG_REQSYN:    HdReqSynMsg,
-		/*
 		APP_MSG_SIGNBLKF:  HdSignBlkFMsg,
 		APP_MSG_BLKS:      HdBlkSMsg,
-
 		APP_MSG_BLKSYN:    HdBlkSynMsg,
 		APP_MSG_TIMEOUT:   HdToutMsg,
-		*/
 		//TODO add new msg handler at here
 	}
 }

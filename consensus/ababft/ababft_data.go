@@ -124,3 +124,7 @@ func (sign *Signature_BlkF) Deserialize(data []byte) error {
 	}
 	return nil
 }
+
+type Block_Syn struct {
+	Blksyn *types.Block
+}
