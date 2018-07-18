@@ -230,13 +230,31 @@ func (s *State) AddBalance(index common.AccountName, token string, value *big.In
 	if err := s.CommitAccount(acc); err != nil {
 		return err
 	}
+
+	return nil
+}
+func (s *State) CreateToken(token string, value *big.Int) error {
 	//add token into trie
-	if err := s.trie.TryUpdate([]byte(token), []byte(token)); err != nil {
+	data, err := value.GobEncode()
+	if err != nil {
+		return err
+	}
+	if err := s.trie.TryUpdate([]byte(token), data); err != nil {
 		return err
 	}
 	return nil
 }
-
+func (s *State) GetToken(token string) (*big.Int, error) {
+	if data, err := s.trie.TryGet([]byte(token)); err != nil {
+		return nil, err
+	} else {
+		value := new(big.Int)
+		if err := value.GobDecode(data); err != nil {
+			return nil, err
+		}
+		return value, nil
+	}
+}
 func (s *State) TokenExisted(name string) bool {
 	data, err := s.trie.TryGet([]byte(name))
 	if err != nil {
