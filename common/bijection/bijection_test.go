@@ -1,8 +1,8 @@
 package bijection_test
 
 import (
-	"github.com/eager7/go_study/2018/bijection"
 	"testing"
+	"github.com/ecoball/go-ecoball/common/bijection"
 )
 
 func TestNew(t *testing.T) {
