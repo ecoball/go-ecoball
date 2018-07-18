@@ -294,7 +294,7 @@ func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
 	} else if result == false {
 		return errors.New("tx verify signature failed")
 	}
-	if err := c.StateDB.CheckPermission(tx.From, c.StateDB, tx.Permission, tx.Signatures); err != nil {
+	if err := c.StateDB.CheckPermission(tx.From, tx.Permission, tx.Signatures); err != nil {
 		return err
 	}
 
@@ -325,6 +325,10 @@ func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
 
 	return nil
 }
+func (c *ChainTx) CheckPermission(index common.AccountName, name string, sig []common.Signature) error {
+	return c.StateDB.CheckPermission(index, name, sig)
+}
+
 /**
 *  @brief  create a new account in mpt tree
 *  @param  index - the uuid of account
@@ -332,6 +336,12 @@ func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
 */
 func (c *ChainTx) AccountAdd(index common.AccountName, addr common.Address) (*state.Account, error) {
 	return c.StateDB.AddAccount(index, addr)
+}
+func (c *ChainTx) SetContract(index common.AccountName, t types.VmType, des, code []byte) error {
+	return c.StateDB.SetContract(index, t, des, code)
+}
+func (c *ChainTx) GetContract(index common.AccountName) (*types.DeployInfo, error) {
+	return c.StateDB.GetContract(index)
 }
 func (c *ChainTx) AddPermission(index common.AccountName, perm state.Permission) error {
 	return c.StateDB.AddPermission(index, perm)
@@ -369,7 +379,6 @@ func (c *ChainTx) AccountSubBalance(index common.AccountName, token string, valu
 *  @param  tx - a transaction
 */
 func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction) ([]byte, error) {
-	//tx.Show()
 	switch tx.Type {
 	case types.TxTransfer:
 		log.Info("Transfer Execute")
@@ -389,33 +398,16 @@ func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction)
 			return nil, errors.New("transaction type error[deploy]")
 		}
 		log.Info("Deploy Execute:", common.ToHex(payload.Code))
+		if err := ledger.SetContract(tx.From, payload.TypeVm, payload.Describe, payload.Code); err != nil {
+			return nil, err
+		}
 	case types.TxInvoke:
 		log.Info("Invoke Execute")
-		invoke, ok := tx.Payload.GetObject().(types.InvokeInfo)
-		if !ok {
-			return nil, errors.New("transaction type error[invoke]")
-		}
-		data, err := c.TxsStore.Get(common.IndexToBytes(tx.Addr))
+		service, err := smartcontract.NewContractService(ledger, tx)
 		if err != nil {
 			return nil, err
 		}
-		txDeploy := &types.Transaction{Payload: &types.DeployInfo{}}
-		if err := txDeploy.Deserialize(data); err != nil {
-			return nil, err
-		}
-		//txDeploy.Show()
-		deployInfo, ok := txDeploy.Payload.GetObject().(types.DeployInfo)
-		if !ok {
-			return nil, errors.New(fmt.Sprintf("can't find the deploy contract:%s", common.IndexToName(tx.Addr)))
-		}
-		fmt.Println("execute code:", common.ToHex(deployInfo.Code))
-		fmt.Println("method:", string(invoke.Method))
-		fmt.Println("param:", invoke.Param)
-		service, err := smartcontract.NewContractService(ledger)
-		if err != nil {
-			return nil, err
-		}
-		return service.ExecuteContract(invoke.TypeVm, string(invoke.Method), deployInfo.Code, invoke.Param, tx.Addr)
+		return service.Execute()
 	default:
 		return nil, errors.New("the transaction's type error")
 	}

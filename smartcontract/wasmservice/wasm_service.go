@@ -31,6 +31,8 @@ import (
 	"github.com/ecoball/go-ecoball/vm/wasmvm/wasm"
 	"io/ioutil"
 	"os"
+	"github.com/ecoball/go-ecoball/core/state"
+	"encoding/json"
 )
 
 var log = elog.NewLogger("wasm", config.LogLevel)
@@ -43,18 +45,36 @@ type WasmService struct {
 	Method string
 }
 
-func NewWasmService(ledger ledger.Ledger, method string, code []byte, arg []uint64) (*WasmService, error) {
-	if len(code) == 0 {
-		return nil, errors.New("code is nil")
+func NewWasmService(ledger ledger.Ledger, tx *types.Transaction, contract *types.DeployInfo, invoke *types.InvokeInfo) (*WasmService, error) {
+	if contract == nil {
+		return nil, errors.New("contract is nil")
+	}
+
+	params, err := ParseArguments(invoke.Param)
+	if err != nil {
+		return nil, err
 	}
 	ws := &WasmService{
 		ledger: ledger,
-		Code:   code,
-		Args:   arg,
-		Method: method,
+		tx:tx,
+		Code:   contract.Code,
+		Args:   params,
+		Method: string(invoke.Method),
 	}
 	ws.RegisterApi()
 	return ws, nil
+}
+
+func ParseArguments(param []string) ([]uint64, error) {
+	var args []uint64
+	for _, v := range param {
+		arg, err := common.StringToPointer(v)
+		if err != nil {
+			return nil, err
+		}
+		args = append(args, arg)
+	}
+	return args, nil
 }
 
 func ReadWasm(file string) ([]byte, error) {
@@ -128,50 +148,58 @@ func importer(name string) (*wasm.Module, error) {
 }
 
 func (ws *WasmService) RegisterApi() {
-	funs := wasm.InitNativeFuns()
-	funs.Register("AbaAdd", ws.AbaAdd)
-	funs.Register("AbaLog", ws.AbaLog)
-	funs.Register("Println", ws.Println)
-	funs.Register("AbaLogString", ws.AbaLogString)
-	funs.Register("AbaLogInt", ws.AbaLogInt)
-	funs.Register("AbaGetCurrentHeight", ws.AbaGetCurrentHeight)
-	funs.Register("AbaAccountGetBalance", ws.AbaAccountGetBalance)
-	funs.Register("AbaAccountAddBalance", ws.AbaAccountAddBalance)
-	funs.Register("AbaAccountSubBalance", ws.AbaAccountSubBalance)
-	funs.Register("TokenIsExisted", ws.TokenIsExisted)
-	funs.Register("TokenCreate", ws.TokenCreate)
-	funs.Register("TokenCreate", ws.TokenCreate)
+	functions := wasm.InitNativeFuns()
+	functions.Register("AbaLog", ws.AbaLog)
+	functions.Register("Println", ws.Println)
+	functions.Register("RequirePermission", ws.RequirePermission)
+	functions.Register("AddPermission", ws.AddPermission)
+	functions.Register("AbaAccountAdd", ws.AbaAccountAdd)
 }
-
-func (ws *WasmService) AbaAdd(a int32, b int32) int32 {
-	return a + b
-}
-
-func (ws *WasmService) AbaLogString(str string) int32 {
-	fmt.Println(str)
-	return 0
-}
-
 func (ws *WasmService) Println(str string) int32 {
 	fmt.Println(str)
 	return 0
 }
-func (ws *WasmService) AbaLog(strP uint64) int32 {
+func (ws *WasmService) AbaLog(pointer uint64) int32 {
 	fmt.Println("AbaLog:---------")
-	str := common.PointerToString(strP)
+	str := common.PointerToString(pointer)
 	fmt.Printf(str)
 	return 0
 }
 
-func (ws *WasmService) AbaLogInt(value uint64) int32 {
-	fmt.Println("value:", value)
+func (ws *WasmService) AbaAccountAdd(user, addr uint64) int32 {
+	name := common.PointerToString(user)
+	log.Debug("AbaAccountAdd:", name)
+	address := common.FormHexString(common.PointerToString(addr))
+	_, err := ws.ledger.AccountAdd(common.NameToIndex(name), address)
+	if err != nil {
+		log.Error(err)
+		return -1
+	}
+	return 0
+}
+func (ws *WasmService) AddPermission(user, perm uint64) int32 {
+	name := common.PointerToString(user)
+	permission := state.Permission{Keys:make(map[string]state.KeyFactor, 1), Accounts:make(map[string]state.AccFactor, 1)}
+	if err := json.Unmarshal([]byte(common.PointerToString(perm)), &permission); err != nil {
+		log.Error(err)
+		return -1
+	}
+	if err := ws.ledger.AddPermission(common.NameToIndex(name), permission); err != nil {
+		log.Error(err)
+		return -1
+	}
+	return 0
+}
+func (ws *WasmService) RequirePermission(perm string) int32 {
+	log.Debug("RequirePermission:", perm)
+	if err := ws.ledger.CheckPermission(ws.tx.Addr, perm, ws.tx.Signatures); err != nil {
+		log.Error(err)
+		return -1
+	}
 	return 0
 }
 
-func (ws *WasmService) AbaGetCurrentHeight() uint64 {
-	return ws.ledger.GetCurrentHeight()
-}
-
+/*
 func (ws *WasmService) AbaAccountGetBalance(indexAcc, indexToken common.AccountName) uint64 {
 	value, err := ws.ledger.AccountGetBalance(indexAcc, common.IndexToName(indexToken))
 	if err != nil {
@@ -212,3 +240,20 @@ func (ws *WasmService) TokenIsExisted(indexToken common.AccountName) int32 {
 		return 0
 	}
 }
+func (ws *WasmService) AbaAdd(a int32, b int32) int32 {
+	return a + b
+}
+func (ws *WasmService) AbaLogString(str string) int32 {
+	fmt.Println(str)
+	return 0
+}
+
+func (ws *WasmService) AbaLogInt(value uint64) int32 {
+	fmt.Println("value:", value)
+	return 0
+}
+func (ws *WasmService) AbaGetCurrentHeight() uint64 {
+	return ws.ledger.GetCurrentHeight()
+}
+
+*/

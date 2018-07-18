@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/pb"
+	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/gogo/protobuf/proto"
 	"math/big"
 )
@@ -36,6 +37,7 @@ type Account struct {
 	Nonce       uint64                `json:"nonce"`
 	Tokens      map[string]Token      `json:"token"`
 	Permissions map[string]Permission `json:"permissions"`
+	Contract    types.DeployInfo      `json:"contract"`
 
 	Hash  common.Hash `json:"hash"`
 	state *State
@@ -46,10 +48,10 @@ type Account struct {
  *  @param index - the unique id of account name created by common.NameToIndex()
  *  @param address - the account's public key
  */
-func NewAccount(index common.AccountName, addr common.Address) (*Account, error) {
+func NewAccount(path string, index common.AccountName, addr common.Address) (acc *Account, err error) {
 	log.Info("add a new account:", index)
 	fmt.Printf("index:%d\n", index)
-	acc := Account{
+	acc = &Account{
 		Index:       index,
 		Nonce:       0,
 		Tokens:      make(map[string]Token, 1),
@@ -60,7 +62,32 @@ func NewAccount(index common.AccountName, addr common.Address) (*Account, error)
 	perm = NewPermission("active", "owner", 1, []KeyFactor{{Actor: addr, Weight: 1}}, []AccFactor{})
 	acc.AddPermission(perm)
 
-	return &acc, nil
+	acc.state, err = NewState(path+"/"+common.IndexToName(acc.Index), acc.Hash)
+	if err != nil {
+		return nil, err
+	}
+	return acc, nil
+}
+/**
+ *  @brief add a smart contract into a account data
+ *  @param t - the type of virtual machine
+ *  @param des - the description of smart contract
+ *  @param code - the code of smart contract
+ */
+func (a *Account) SetContract(t types.VmType, des, code []byte) error {
+	a.Contract.TypeVm = t
+	a.Contract.Describe = common.CopyBytes(des)
+	a.Contract.Code = common.CopyBytes(code)
+	return nil
+}
+/**
+ *  @brief get a smart contract from a account data
+ */
+func (a *Account) GetContract() (*types.DeployInfo, error) {
+	if a.Contract.TypeVm == 0 {
+		return nil, errors.New("this account is not set contract")
+	}
+	return &a.Contract, nil
 }
 
 /**
@@ -247,7 +274,12 @@ func (a *Account) ProtoBuf() (*pb.Account, error) {
 		Nonce:       a.Nonce,
 		Tokens:      tokens,
 		Permissions: perms,
-		Hash:        a.Hash.Bytes(),
+		Contract: &pb.DeployInfo{
+			TypeVm:   uint32(a.Contract.TypeVm),
+			Describe: common.CopyBytes(a.Contract.Describe),
+			Code:     common.CopyBytes(a.Contract.Code),
+		},
+		Hash: a.Hash.Bytes(),
 	}
 
 	return &pbAcc, nil
@@ -269,6 +301,11 @@ func (a *Account) Deserialize(data []byte) error {
 	a.Nonce = pbAcc.Nonce
 	a.Hash = common.NewHash(pbAcc.Hash)
 	a.Tokens = make(map[string]Token)
+	a.Contract = types.DeployInfo{
+		TypeVm:   types.VmType(pbAcc.Contract.TypeVm),
+		Describe: common.CopyBytes(pbAcc.Contract.Describe),
+		Code:     common.CopyBytes(pbAcc.Contract.Code),
+	}
 	a.Permissions = make(map[string]Permission, 1)
 	for _, v := range pbAcc.Tokens {
 		ac := Token{
@@ -310,7 +347,7 @@ func (a *Account) JsonString() string {
 	return string(data)
 }
 func (a *Account) Show() {
-	fmt.Println("------------------------------")
+	fmt.Println("----------------" + common.IndexToName(a.Index) + ":")
 	fmt.Println(a.JsonString())
 }
 

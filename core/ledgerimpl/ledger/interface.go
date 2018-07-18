@@ -19,10 +19,13 @@ type Ledger interface {
 	StateDB() *state.State
 	ResetStateDB(hash common.Hash) error
 
+	AccountAdd(index common.AccountName, addr common.Address) (*state.Account, error)
+	SetContract(index common.AccountName, t types.VmType, des, code []byte) error
+	GetContract(index common.AccountName) (*types.DeployInfo, error)
 	AccountGet(index common.AccountName) (*state.Account, error)
 	AddPermission(index common.AccountName, perm state.Permission) error
 	FindPermission(index common.AccountName, name string) (string, error)
-	AccountAdd(index common.AccountName, addr common.Address) (*state.Account, error)
+	CheckPermission(index common.AccountName, name string, sig []common.Signature) error
 	AccountGetBalance(index common.AccountName, token string) (uint64, error)
 	AccountAddBalance(index common.AccountName, token string, value uint64) error
 	AccountSubBalance(index common.AccountName, token string, value uint64) error
