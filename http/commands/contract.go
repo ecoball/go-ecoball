@@ -189,7 +189,7 @@ func handleInvokeContract(params []interface{}) common.Errcode {
 	//time
 	time := time.Now().Unix()
 
-	transaction, err := types.NewInvokeContract(innerCommon.NameToIndex("root"), innerCommon.NameToIndex(contractName), "owner", types.VmWasm, contractMethod, parameters, 0, time)
+	transaction, err := types.NewInvokeContract(innerCommon.NameToIndex("root"), innerCommon.NameToIndex(contractName), "owner", contractMethod, parameters, 0, time)
 	if nil != err {
 		return common.INVALID_PARAMS
 	}

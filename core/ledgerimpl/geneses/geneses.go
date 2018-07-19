@@ -96,17 +96,17 @@ func PresetContract(ledger ledger.Ledger, t int64) ([]*types.Transaction, error)
 	}
 	txs = append(txs, tokenContract)
 
-	invoke, err := types.NewInvokeContract(index, index, state.Owner, types.VmWasm, "new_account",
+	invoke, err := types.NewInvokeContract(index, index, state.Owner,"new_account",
 		[]string{"worker1", common.AddressFromPubKey(config.Worker1.PublicKey).HexString()}, 0, t)
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
-	invoke, err = types.NewInvokeContract(index, index, state.Owner, types.VmWasm, "new_account",
+	invoke, err = types.NewInvokeContract(index, index, state.Owner, "new_account",
 		[]string{"worker2", common.AddressFromPubKey(config.Worker2.PublicKey).HexString()}, 1, t)
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
-	invoke, err = types.NewInvokeContract(index, index, state.Owner, types.VmWasm, "new_account",
+	invoke, err = types.NewInvokeContract(index, index, state.Owner, "new_account",
 		[]string{"worker3", common.AddressFromPubKey(config.Worker3.PublicKey).HexString()}, 2, t)
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
@@ -116,7 +116,7 @@ func PresetContract(ledger ledger.Ledger, t int64) ([]*types.Transaction, error)
 	if err != nil {
 		return nil, err
 	}
-	invoke, err = types.NewInvokeContract(index, index, state.Active, types.VmWasm, "set_account", []string{"root", string(param)}, 0, time.Now().Unix())
+	invoke, err = types.NewInvokeContract(index, index, state.Active, "set_account", []string{"root", string(param)}, 0, time.Now().Unix())
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 	//END

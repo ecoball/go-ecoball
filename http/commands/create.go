@@ -76,7 +76,7 @@ func handleCreateAccount(params []interface{}) common.Errcode {
 	creatorAccount := innercommon.NameToIndex(creator)
 	timeStamp := time.Now().Unix()
 
-	invoke, err := types.NewInvokeContract(creatorAccount, creatorAccount, "owner", types.VmNative, "new_account",
+	invoke, err := types.NewInvokeContract(creatorAccount, creatorAccount, "owner","new_account",
 		[]string{name, innercommon.AddressFromPubKey(innercommon.FromHex(owner)).HexString()}, 0, timeStamp)
 	invoke.SetSignature(&config.Root)
 

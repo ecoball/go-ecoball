@@ -226,3 +226,34 @@ func ContractStore(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T)
 		t.Fatal(err)
 	}
 }
+
+func PledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T) {
+	var txs []*types.Transaction
+	tokenContract, err := types.NewDeployContract(worker1, worker1, "active", types.VmNative, "system control", nil, 0, time.Now().Unix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	tokenContract.SetSignature(&config.Worker1)
+	txs = append(txs, tokenContract)
+
+	invoke, err := types.NewInvokeContract(root, worker1, "owner", types.VmNative, "StoreGet",
+		[]string{"pct"}, 0, time.Now().Unix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	invoke.SetSignature(&config.Worker3)
+	txs = append(txs, invoke)
+
+
+	block, err := ledger.NewTxBlock(txs, *con)
+	if err != nil {
+		t.Fatal(err)
+	}
+	block.SetSignature(&config.Root)
+	if err := ledger.VerifyTxBlock(block); err != nil {
+		t.Fatal(err)
+	}
+	if err := ledger.SaveTxBlock(block); err != nil {
+		t.Fatal(err)
+	}
+}

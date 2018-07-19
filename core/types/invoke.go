@@ -25,13 +25,12 @@ import (
 )
 
 type InvokeInfo struct {
-	TypeVm VmType   `json:"typeVm"`
 	Method []byte   `json:"method"`
 	Param  []string `json:"param"`
 }
 
-func NewInvokeContract(from, addr common.AccountName, perm string, vm VmType, method string, param []string, nonce uint64, time int64) (*Transaction, error) {
-	invoke := &InvokeInfo{TypeVm: vm, Method: []byte(method), Param: param}
+func NewInvokeContract(from, addr common.AccountName, perm string, method string, param []string, nonce uint64, time int64) (*Transaction, error) {
+	invoke := &InvokeInfo{Method: []byte(method), Param: param}
 	trans, err := NewTransaction(TxInvoke, from, addr, perm, invoke, nonce, time)
 	if err != nil {
 		return nil, err
@@ -55,7 +54,6 @@ func (i *InvokeInfo) Serialize() ([]byte, error) {
 	}
 
 	p := &pb.InvokeInfo{
-		TypeVm: uint32(i.TypeVm),
 		Method: i.Method,
 		Param:  param,
 	}
@@ -78,7 +76,6 @@ func (i *InvokeInfo) Deserialize(data []byte) error {
 	if err := invoke.Unmarshal(data); err != nil {
 		return err
 	}
-	i.TypeVm = VmType(invoke.TypeVm)
 	i.Method = common.CopyBytes(invoke.Method)
 	for _, v := range invoke.Param {
 		p := string(v.Param)
@@ -90,7 +87,6 @@ func (i *InvokeInfo) Deserialize(data []byte) error {
 
 func (i *InvokeInfo) Show() {
 	fmt.Println("\t---------Show Invoke Info ----------")
-	fmt.Println("\tTypeVm        :", i.TypeVm)
 	fmt.Println("\tMethod        :", string(i.Method))
 	fmt.Println("\tParam Num     :", len(i.Param))
 	for _, v := range i.Param {

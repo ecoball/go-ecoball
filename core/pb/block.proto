@@ -92,7 +92,6 @@ message ParamData {
 }
 
 message InvokeInfo {
-    uint32      TypeVm      = 5;
     bytes       Method      = 1;
     repeated ParamData Param= 2;
 }
