@@ -19,10 +19,10 @@ int create(char * account, char * token, unsigned long long value) {
     t.account = account;
     t.name = token;
     t.value = value;
-    if(AbaGet(token) != 0) {
+    if(AbaStoreGet(token) != 0) {
         return -1;
     }
-    AbaSet(token, t);
+    AbaStoreSet(token, t);
     return 0;
 }
 
@@ -36,20 +36,20 @@ int transfer(char * from, char * to, char *token, unsigned long long value) {
 
 int sub_balance(char *account, char *token, unsigned long long value) {
     tsToken t = {0};
-    tsAccount *acc = AbaGet(account);
+    tsAccount *acc = AbaStoreGet(account);
     acc->value = acc->value - value;
-    AbaSet(account, acc);
+    AbaStoreSet(account, acc);
 }
 
 int add_balance(char *account, char *token, unsigned long long value) {
     tsToken t = {0};
-    tsAccount *acc = AbaGet(account);
+    tsAccount *acc = AbaStoreGet(account);
     acc->value = acc->value + value;
-    AbaSet(account, acc);
+    AbaStoreSet(account, acc);
 }
 
 tsAccount* balance(char *account, char *token) {
     tsToken t = {0};
-    tsAccount *acc = AbaGet(account);
+    tsAccount *acc = AbaStoreGet(account);
     return acc;
 }

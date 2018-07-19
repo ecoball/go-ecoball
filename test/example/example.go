@@ -9,7 +9,12 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"math/big"
 	"time"
+	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
+	"github.com/ecoball/go-ecoball/core/ledgerimpl"
+	"github.com/ecoball/go-ecoball/common/elog"
 )
+
+var log = elog.NewLogger("example", elog.InfoLog)
 
 func ExampleAddAccount(state *state.State) error {
 	from := common.NewAddress(common.FromHex("01b1a6569a557eafcccc71e0d02461fd4b601aea"))
@@ -72,4 +77,13 @@ func ExampleTestTx() *types.Transaction {
 	}
 	tx.Show()
 	return tx
+}
+
+func ExampleLedger() ledger.Ledger {
+	ledger, err := ledgerimpl.NewLedger("/tmp/example")
+	if err != nil {
+		log.Error(err)
+		return nil
+	}
+	return ledger
 }

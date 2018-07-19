@@ -73,15 +73,17 @@ func PresetContract(ledger ledger.Ledger, t int64) ([]*types.Transaction, error)
 	index := common.NameToIndex("root")
 	addr := common.AddressFromPubKey(common.FromHex(config.RootPubkey))
 	fmt.Println("preset insert a root account:", addr.HexString())
-	if _, err := ledger.AccountAdd(index, addr); err != nil {
+	if acc, err := ledger.AccountAdd(index, addr); err != nil {
 		return nil, err
+	} else {
+		acc.Show()
 	}
 
 	//TODO
 	if err := ledger.AccountAddBalance(index, state.AbaToken, 10000); err != nil {
 		return nil, err
 	}
-	code, err := wasmservice.ReadWasm("../test/root/root.wasm")
+	code, err := wasmservice.ReadWasm("../../test/root/root.wasm")
 	if err != nil {
 		return nil, err
 	}

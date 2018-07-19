@@ -92,6 +92,12 @@ func (l *LedgerImpl) AccountGet(index common.AccountName) (*state.Account, error
 func (l *LedgerImpl) AccountAdd(index common.AccountName, addr common.Address) (*state.Account, error) {
 	return l.ChainTx.AccountAdd(index, addr)
 }
+func (l *LedgerImpl) StoreSet(index common.AccountName, key, value []byte) (err error) {
+	return l.ChainTx.StoreSet(index, key, value)
+}
+func (l *LedgerImpl) StoreGet(index common.AccountName, key []byte) (value []byte, err error) {
+	return l.ChainTx.StoreGet(index, key)
+}
 func (l *LedgerImpl) SetContract(index common.AccountName, t types.VmType, des, code []byte) error {
 	return l.ChainTx.SetContract(index, t, des, code)
 }

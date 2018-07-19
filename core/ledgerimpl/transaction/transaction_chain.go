@@ -337,6 +337,12 @@ func (c *ChainTx) CheckPermission(index common.AccountName, name string, sig []c
 func (c *ChainTx) AccountAdd(index common.AccountName, addr common.Address) (*state.Account, error) {
 	return c.StateDB.AddAccount(index, addr)
 }
+func (c *ChainTx) StoreSet(index common.AccountName, key, value []byte) (err error) {
+	return c.StateDB.StoreSet(index, key, value)
+}
+func (c *ChainTx) StoreGet(index common.AccountName, key []byte) (value []byte, err error) {
+	return c.StateDB.StoreGet(index, key)
+}
 func (c *ChainTx) SetContract(index common.AccountName, t types.VmType, des, code []byte) error {
 	return c.StateDB.SetContract(index, t, des, code)
 }

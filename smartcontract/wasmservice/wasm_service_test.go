@@ -5,6 +5,7 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
 	"testing"
+	"github.com/ecoball/go-ecoball/test/example"
 )
 
 func TestLog(t *testing.T) {
@@ -56,3 +57,4 @@ func TestNewAccount(t *testing.T) {
 	ws.RegisterApi()
 	fmt.Println(ws.Execute())
 }
+

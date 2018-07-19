@@ -99,6 +99,23 @@ func (s *State) GetContract(index common.AccountName) (*types.DeployInfo, error)
 	}
 	return acc.GetContract()
 }
+func (s *State) StoreSet(index common.AccountName, key, value []byte) (err error) {
+	acc, err := s.GetAccountByName(index)
+	if err != nil {
+		return err
+	}
+	if err := acc.StoreSet(s.path, key, value); err != nil {
+		return err
+	}
+	return s.CommitAccount(acc)
+}
+func (s *State) StoreGet(index common.AccountName, key []byte) (value []byte, err error) {
+	acc, err := s.GetAccountByName(index)
+	if err != nil {
+		return nil, err
+	}
+	return acc.StoreGet(s.path, key)
+}
 /**
  *  @brief add a permission object into account, then update to mpt trie
  *  @param perm - the permission object

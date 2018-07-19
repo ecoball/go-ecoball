@@ -25,6 +25,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/gogo/protobuf/proto"
 	"math/big"
+	"github.com/ecoball/go-ecoball/core/store"
 )
 
 type Token struct {
@@ -40,7 +41,9 @@ type Account struct {
 	Contract    types.DeployInfo      `json:"contract"`
 
 	Hash  common.Hash `json:"hash"`
-	state *State
+	trie   Trie
+	db     Database
+	diskDb *store.LevelDBStore
 }
 
 /**
@@ -62,11 +65,28 @@ func NewAccount(path string, index common.AccountName, addr common.Address) (acc
 	perm = NewPermission(Active, Owner, 1, []KeyFactor{{Actor: addr, Weight: 1}}, []AccFactor{})
 	acc.AddPermission(perm)
 
-	acc.state, err = NewState(path+"/"+common.IndexToName(acc.Index), acc.Hash)
-	if err != nil {
+	if err := acc.NewStoreTrie(path); err != nil {
 		return nil, err
 	}
+	acc.diskDb.Close()
 	return acc, nil
+}
+
+func (a *Account) NewStoreTrie(path string) error {
+	diskDb, err := store.NewLevelDBStore(path+"/"+common.IndexToName(a.Index), 0, 0)
+	if err != nil {
+		return err
+	}
+	a.diskDb = diskDb
+	a.db = NewDatabase(diskDb)
+	a.trie, err = a.db.OpenTrie(a.Hash)
+	if err != nil {
+		a.trie, err = a.db.OpenTrie(common.Hash{})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 /**
  *  @brief add a smart contract into a account data
@@ -89,7 +109,36 @@ func (a *Account) GetContract() (*types.DeployInfo, error) {
 	}
 	return &a.Contract, nil
 }
-
+func (a *Account) StoreSet(path string, key, value []byte) (err error) {
+	if err := a.NewStoreTrie(path); err != nil {
+		return err
+	}
+	defer a.diskDb.Close()
+	log.Debug("StoreSet key:", string(key), "value:", string(value))
+	if err := a.trie.TryUpdate(key, value); err != nil {
+		return err
+	}
+	if _, err := a.trie.Commit(nil); err != nil {
+		return err
+	}
+	if err := a.db.TrieDB().Commit(a.trie.Hash(), false); err != nil {
+		return err
+	}
+	a.Hash = a.trie.Hash()
+	return nil
+}
+func (a *Account) StoreGet(path string, key []byte) (value []byte, err error) {
+	if err := a.NewStoreTrie(path); err != nil {
+		return nil, err
+	}
+	defer a.diskDb.Close()
+	value, err = a.trie.TryGet(key)
+	if err != nil {
+		return nil, err
+	}
+	log.Debug("StoreGet key:", string(key), "value:", string(value))
+	return value, nil
+}
 /**
  *  @brief set the permission into account, if the permission existed, will be to overwrite
  *  @param name - the permission name

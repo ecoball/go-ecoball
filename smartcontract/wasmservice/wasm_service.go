@@ -154,6 +154,8 @@ func (ws *WasmService) RegisterApi() {
 	functions.Register("RequirePermission", ws.RequirePermission)
 	functions.Register("AddPermission", ws.AddPermission)
 	functions.Register("AbaAccountAdd", ws.AbaAccountAdd)
+	functions.Register("AbaStoreSet", ws.AbaStoreSet)
+	functions.Register("AbaStoreGet", ws.AbaStoreGet)
 }
 func (ws *WasmService) Println(str string) int32 {
 	fmt.Println(str)
@@ -175,6 +177,25 @@ func (ws *WasmService) AbaAccountAdd(user, addr uint64) int32 {
 		log.Error(err)
 		return -1
 	}
+	return 0
+}
+func (ws *WasmService) AbaStoreSet(key, value uint64) int32 {
+	keyStr := common.PointerToString(key)
+	valueStr := common.PointerToString(value)
+	log.Debug("AbaStoreSet:", keyStr, valueStr)
+	if err := ws.ledger.StoreSet(common.NameToIndex("root"), []byte(keyStr), []byte(valueStr)); err != nil {
+		log.Error("AbaStoreSet error:", err)
+		return 1
+	}
+	return 0
+}
+func (ws *WasmService) AbaStoreGet(key uint64) int32 {
+	keyStr := common.PointerToString(key)
+	value, err := ws.ledger.StoreGet(common.NameToIndex("root"), []byte(keyStr))
+	if err != nil {
+		return 0
+	}
+	fmt.Println("AbaStoreGet:", string(value))
 	return 0
 }
 func (ws *WasmService) AddPermission(user, perm uint64) int32 {

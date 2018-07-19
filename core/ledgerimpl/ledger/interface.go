@@ -30,6 +30,9 @@ type Ledger interface {
 	AccountAddBalance(index common.AccountName, token string, value uint64) error
 	AccountSubBalance(index common.AccountName, token string, value uint64) error
 
+	StoreGet(index common.AccountName, key []byte) ([]byte, error)
+	StoreSet(index common.AccountName, key, value []byte) error
+
 	TokenCreate(index common.AccountName, token string, maximum uint64) error
 	TokenIsExisted(token string) bool
 	Start()
