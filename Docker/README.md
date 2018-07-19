@@ -1,6 +1,6 @@
 
 此Dockerfile基于Ubuntu 18.04
-
+```
 Ubuntu安装docker：
 14.04 版本系统中已经自带了 Docker 包，可以直接安装。
 $ sudo apt-get update
