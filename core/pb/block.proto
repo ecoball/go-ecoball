@@ -144,6 +144,16 @@ message Permission {
     repeated    key_weight keys = 2;
     repeated    account_weight accounts = 3;
 }
+message Ram {
+    float Quota = 1;
+    float Used = 2;
+}
+message Res {
+    float Staked = 1;
+    float Used = 2;
+    float Available = 3;
+    float Limit = 4;
+}
 /**
 ** Account Object
 */
@@ -153,6 +163,10 @@ message Account {
     repeated    Token      Tokens   = 3;
     repeated    Permission Permissions = 1;
     DeployInfo  Contract            = 2;
+
+    Ram         Ram                 = 7;
+    Res         Cpu                 = 8;
+    Res         Net                 = 9;
 
     bytes       Hash                = 6;
 }

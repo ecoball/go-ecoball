@@ -82,6 +82,26 @@ func (s *State) AddAccount(index common.AccountName, addr common.Address) (*Acco
 	}
 	return obj, nil
 }
+func (s *State) PledgeCpu(index common.AccountName, token string, value *big.Int) error {
+	acc, err := s.GetAccountByName(index)
+	if err != nil {
+		return err
+	}
+	if err := acc.PledgeCpu(token, value); err != nil {
+		return err
+	}
+	return s.CommitAccount(acc)
+}
+func (s *State) CancelPledgeCpu(index common.AccountName, token string, value *big.Int) error {
+	acc, err := s.GetAccountByName(index)
+	if err != nil {
+		return err
+	}
+	if err := acc.CancelPledgeCpu(token, value); err != nil {
+		return err
+	}
+	return s.CommitAccount(acc)
+}
 func (s *State) SetContract(index common.AccountName, t types.VmType, des, code []byte) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {

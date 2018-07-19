@@ -22,15 +22,34 @@ import (
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/core/pb"
+	"github.com/ecoball/go-ecoball/core/store"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/gogo/protobuf/proto"
 	"math/big"
-	"github.com/ecoball/go-ecoball/core/store"
 )
 
 type Token struct {
 	Name    string   `json:"index"`
 	Balance *big.Int `json:"balance"`
+}
+
+type Resource struct {
+	Ram struct {
+		Quota float32 `json:"quota"`
+		Used  float32 `json:"used"`
+	}
+	Net struct {
+		Staked    float32 `json:"staked"`
+		Used      float32 `json:"used"`
+		Available float32 `json:"available"`
+		Limit     float32 `json:"limit"`
+	}
+	Cpu struct {
+		Staked    float32 `json:"staked"`
+		Used      float32 `json:"used"`
+		Available float32 `json:"available"`
+		Limit     float32 `json:"limit"`
+	}
 }
 
 type Account struct {
@@ -39,8 +58,9 @@ type Account struct {
 	Tokens      map[string]Token      `json:"token"`
 	Permissions map[string]Permission `json:"permissions"`
 	Contract    types.DeployInfo      `json:"contract"`
+	Resource
 
-	Hash  common.Hash `json:"hash"`
+	Hash   common.Hash `json:"hash"`
 	trie   Trie
 	db     Database
 	diskDb *store.LevelDBStore
@@ -88,6 +108,7 @@ func (a *Account) NewStoreTrie(path string) error {
 	}
 	return nil
 }
+
 /**
  *  @brief add a smart contract into a account data
  *  @param t - the type of virtual machine
@@ -100,6 +121,7 @@ func (a *Account) SetContract(t types.VmType, des, code []byte) error {
 	a.Contract.Code = common.CopyBytes(code)
 	return nil
 }
+
 /**
  *  @brief get a smart contract from a account data
  */
@@ -108,6 +130,27 @@ func (a *Account) GetContract() (*types.DeployInfo, error) {
 		return nil, errors.New("this account is not set contract")
 	}
 	return &a.Contract, nil
+}
+func (a *Account) SetResourceLimits(ram, cpu, net float32) error {
+	return nil
+}
+func (a *Account) PledgeCpu(token string, value *big.Int) error {
+	if err := a.SubBalance(token, value); err != nil {
+		return err
+	}
+	a.Cpu.Available = 100
+	a.Cpu.Limit = 100
+	a.Cpu.Used = 0
+	return nil
+}
+func (a *Account) CancelPledgeCpu(token string, value *big.Int) error {
+	if err := a.AddBalance(token, value); err != nil {
+		return err
+	}
+	a.Cpu.Available = 0
+	a.Cpu.Limit = 100
+	a.Cpu.Used = 100
+	return nil
 }
 func (a *Account) StoreSet(path string, key, value []byte) (err error) {
 	if err := a.NewStoreTrie(path); err != nil {
@@ -139,6 +182,7 @@ func (a *Account) StoreGet(path string, key []byte) (value []byte, err error) {
 	log.Debug("StoreGet key:", string(key), "value:", string(value))
 	return value, nil
 }
+
 /**
  *  @brief set the permission into account, if the permission existed, will be to overwrite
  *  @param name - the permission name
@@ -328,6 +372,22 @@ func (a *Account) ProtoBuf() (*pb.Account, error) {
 			Describe: common.CopyBytes(a.Contract.Describe),
 			Code:     common.CopyBytes(a.Contract.Code),
 		},
+		Ram: &pb.Ram{
+			Quota: a.Ram.Quota,
+			Used:  a.Ram.Used,
+		},
+		Cpu: &pb.Res{
+			Staked:    a.Cpu.Staked,
+			Used:      a.Cpu.Used,
+			Available: a.Cpu.Available,
+			Limit:     a.Cpu.Limit,
+		},
+		Net: &pb.Res{
+			Staked:    a.Net.Staked,
+			Used:      a.Net.Used,
+			Available: a.Net.Available,
+			Limit:     a.Net.Limit,
+		},
 		Hash: a.Hash.Bytes(),
 	}
 
@@ -348,6 +408,18 @@ func (a *Account) Deserialize(data []byte) error {
 	}
 	a.Index = common.AccountName(pbAcc.Index)
 	a.Nonce = pbAcc.Nonce
+
+	a.Ram.Quota = pbAcc.Ram.Quota
+	a.Ram.Used = pbAcc.Ram.Used
+	a.Cpu.Staked = pbAcc.Cpu.Staked
+	a.Cpu.Used = pbAcc.Cpu.Used
+	a.Cpu.Available = pbAcc.Cpu.Available
+	a.Cpu.Limit = pbAcc.Cpu.Limit
+	a.Net.Staked = pbAcc.Net.Staked
+	a.Net.Used = pbAcc.Net.Used
+	a.Net.Available = pbAcc.Net.Available
+	a.Net.Limit = pbAcc.Net.Limit
+
 	a.Hash = common.NewHash(pbAcc.Hash)
 	a.Tokens = make(map[string]Token)
 	a.Contract = types.DeployInfo{

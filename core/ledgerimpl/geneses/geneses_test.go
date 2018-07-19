@@ -9,10 +9,10 @@ import (
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
+	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
 	"math/big"
 	"testing"
 	"time"
-	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
 )
 
 var log = elog.NewLogger("worker2", elog.InfoLog)
@@ -39,17 +39,17 @@ func CreateAccountBlock(ledger ledger.Ledger, con *types.ConsensusData, t *testi
 	timeStamp := time.Now().Unix()
 	var txs []*types.Transaction
 
-	invoke, err := types.NewInvokeContract(root, root, "owner", types.VmNative, "new_account",
+	invoke, err := types.NewInvokeContract(root, root, "owner", "new_account",
 		[]string{"worker1", common.AddressFromPubKey(common.FromHex("0x04e0c1852b110d1586bf6202abf6e519cc4161d00c3780c04cfde80fd66748cc189b6b0e2771baeb28189ec42a363461357422bf76b1e0724fc63fc97daf52769f")).HexString()}, 0, timeStamp)
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
-	invoke, err = types.NewInvokeContract(root, root, "owner", types.VmNative, "new_account",
+	invoke, err = types.NewInvokeContract(root, root, "owner", "new_account",
 		[]string{"worker2", common.AddressFromPubKey(common.FromHex("0x049e78e40b0dcca842b94cb2586d47ecc61888b52dce958b41aa38613c80f6607ee1de23eebb912431eccfe0fea81f8a38792ffecee38c490dde846c646ce1f0ee")).HexString()}, 0, timeStamp)
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
-	invoke, err = types.NewInvokeContract(root, root, "owner", types.VmNative, "new_account",
+	invoke, err = types.NewInvokeContract(root, root, "owner", "new_account",
 		[]string{"worker3", common.AddressFromPubKey(common.FromHex("0x0481bce0ad10bd3d8cdfd089ac5534379149ca5c3cdab28b5063f707d20f3a4a51f192ef7933e91e3fd0a8ea21d8dd735407780937c3c71753b486956fd481349f")).HexString()}, 0, timeStamp)
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
@@ -73,7 +73,7 @@ func SetTokenAccountBlock(ledger ledger.Ledger, con *types.ConsensusData, t *tes
 	if err != nil {
 		t.Fatal(err)
 	}
-	invoke, err := types.NewInvokeContract(worker3, root, "owner", types.VmNative, "set_account", []string{"root", string(param)}, 0, time.Now().Unix())
+	invoke, err := types.NewInvokeContract(worker3, root, "owner", "set_account", []string{"root", string(param)}, 0, time.Now().Unix())
 	invoke.SetSignature(&config.Worker3)
 	transfer, err := types.NewTransfer(root, worker3, "owner", new(big.Int).SetUint64(1000), 100, time.Now().Unix())
 	transfer.SetSignature(&config.Root)
@@ -145,7 +145,7 @@ func ShowAccountInfo(l ledger.Ledger, t *testing.T) {
 
 func AddTokenAccount(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T) {
 	var txs []*types.Transaction
-	invoke, err := types.NewInvokeContract(root, root, "owner", types.VmWasm, "new_account",
+	invoke, err := types.NewInvokeContract(root, root, "owner", "new_account",
 		[]string{"token", common.AddressFromPubKey(config.Worker1.PublicKey).HexString()}, 0, time.Now().Unix())
 	if err != nil {
 		t.Fatal(err)
@@ -164,7 +164,7 @@ func AddTokenAccount(ledger ledger.Ledger, con *types.ConsensusData, t *testing.
 	tokenContract.SetSignature(&config.Worker1)
 	txs = append(txs, tokenContract)
 
-	invoke, err = types.NewInvokeContract(token, token, "owner", types.VmWasm, "create",
+	invoke, err = types.NewInvokeContract(token, token, "owner", "create",
 		[]string{"token", "aba", "10000"}, 0, time.Now().Unix())
 	if err != nil {
 		t.Fatal(err)
@@ -198,7 +198,7 @@ func ContractStore(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T)
 	tokenContract.SetSignature(&config.Worker3)
 	txs = append(txs, tokenContract)
 
-	invoke, err := types.NewInvokeContract(worker3, worker3, "owner", types.VmWasm, "StoreSet",
+	invoke, err := types.NewInvokeContract(worker3, worker3, "owner", "StoreSet",
 		[]string{"pct", "panchangtao"}, 0, time.Now().Unix())
 	if err != nil {
 		t.Fatal(err)
@@ -206,7 +206,7 @@ func ContractStore(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T)
 	invoke.SetSignature(&config.Worker3)
 	txs = append(txs, invoke)
 
-	invoke, err = types.NewInvokeContract(worker3, worker3, "owner", types.VmWasm, "StoreGet",
+	invoke, err = types.NewInvokeContract(worker3, worker3, "owner", "StoreGet",
 		[]string{"pct"}, 0, time.Now().Unix())
 	if err != nil {
 		t.Fatal(err)
@@ -236,14 +236,13 @@ func PledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T
 	tokenContract.SetSignature(&config.Worker1)
 	txs = append(txs, tokenContract)
 
-	invoke, err := types.NewInvokeContract(root, worker1, "owner", types.VmNative, "StoreGet",
-		[]string{"pct"}, 0, time.Now().Unix())
+	invoke, err := types.NewInvokeContract(root, worker1, "owner", "pledge",
+		[]string{"ABA", "100"}, 0, time.Now().Unix())
 	if err != nil {
 		t.Fatal(err)
 	}
-	invoke.SetSignature(&config.Worker3)
+	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
-
 
 	block, err := ledger.NewTxBlock(txs, *con)
 	if err != nil {
