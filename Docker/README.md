@@ -56,15 +56,14 @@ sudo docker build -t="ecoball:v1" . （双引号里的内容为镜像文件名�
 ```
 docker images
 ```
-## 启动容器
+## 运行容器
 通过镜像文件启动进入容器
 ```
 sudo docker run -t -i ecoball:v1 /bin/bash  （ecoball:v1位镜像文件名称）
 ```
-## 进入容器
 go-ecoball位于root/go/src/github.com/ecoball/go-ecoball/路径下，这时候就可以在容器里启动go-ecoball服务
 
-守护态运行容器
+## 守护态运行容器
 ```
 sudo docker run -t -i -d ecoball:v1 /bin/bash
 ```
