@@ -128,7 +128,7 @@ func (this *NetActor) Receive(ctx actor.Context) {
 	case ababft.Block_Syn:
 		// broadcast the block according to the synchronization request
 		msgType = message.APP_MSG_BLKSYN
-		buffer, _ = msg.(*ababft.Block_Syn).Blksyn.Serialize()
+		buffer, _ = msg.(*ababft.Block_Syn).Serialize()
 		netMsg := message.New(msgType, buffer)
 		this.node.broadCastCh <- netMsg
 	default:

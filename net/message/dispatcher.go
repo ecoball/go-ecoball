@@ -133,7 +133,7 @@ func HdBlkSMsg(data []byte) error {
 
 func HdBlkSynMsg(data []byte) error {
 	blksyn := new(ababft.Block_Syn)
-	err := blksyn.Blksyn.Deserialize(data)
+	err := blksyn.Deserialize(data)
 	if err != nil {
 		return err
 	}
