@@ -1,6 +1,6 @@
 
 ## Ubuntu安装docker：
-18.04 版本系统中已经自带了 Docker 包，可以直接安装。
+14.04 版本系统中已经自带了 Docker 包，可以直接安装。
 ```
 $ sudo apt-get update
 $ sudo apt-get install -y docker.io
@@ -16,7 +16,7 @@ $ sudo apt-get update
 $ sudo apt-get install lxc-docker
 ```
 
-如果是较18.04 之前版本，需要先更新内核。
+如果是较14.04 之前版本，需要先更新内核。
 ```
 $ sudo apt-get update
 $ sudo apt-get install linux-image-generic-lts-raring linux-headers-generic-lts-raring
@@ -45,7 +45,8 @@ $ sudo yum install docker
 $ sudo service docker start
 $ sudo chkconfig docker on
 ```
-## 安装并启动Docker完毕
+## 制作Docker镜像
+本处Dockerfile基于Ubuntu 18.04构建镜像，如果是其他版本，请在Dockerfile第二行处修改为对应的版本
 
 下载的Dockerfile目录下，执行Dockerfile来构建镜像文件
 ```
