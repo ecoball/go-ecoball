@@ -150,6 +150,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			var signaturepre_send Signature_Preblock
 			signaturepre_send.Signature_preblock.PubKey = signature_preblock.PubKey
 			signaturepre_send.Signature_preblock.SigData = signature_preblock.SigData
+			// todo
+			// for the signature of previous block, maybe the round number is not needed
 			signaturepre_send.Signature_preblock.Round = uint32(current_round_num)
 			signaturepre_send.Signature_preblock.Height = uint32(currentheader.Height)
 			// broadcast
@@ -180,6 +182,9 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		if primary_tag == 1 && (actor_c.status == 2 || actor_c.status == 3){
 			// verify the signature
 			// first check the round number and height
+
+			// todo
+			// maybe round number is not needed for preblock signature
 			if round_in >= (current_round_num-1) && height_in >= current_height_num {
 				if round_in > (current_round_num - 1) && height_in > current_height_num {
 					// require synchronization, the longest chain is ok
@@ -187,7 +192,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					var requestsyn REQSyn
 					requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
 					requestsyn.Reqsyn.SigData = []byte("none")
-					requestsyn.Reqsyn.RequestHeight = uint64(current_height_num+1)
+					requestsyn.Reqsyn.RequestHeight = uint64(current_height_num)
 					event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
 					// todo
 					// attention
@@ -370,7 +375,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 						var requestsyn REQSyn
 						requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
 						requestsyn.Reqsyn.SigData = []byte("none")
-						requestsyn.Reqsyn.RequestHeight = uint64(current_height_num+1)
+						requestsyn.Reqsyn.RequestHeight = uint64(current_height_num)
 						event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
 						// todo
 						// attention:
@@ -614,7 +619,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					var requestsyn REQSyn
 					requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
 					requestsyn.Reqsyn.SigData = []byte("none")
-					requestsyn.Reqsyn.RequestHeight = uint64(current_height_num+1)
+					requestsyn.Reqsyn.RequestHeight = uint64(current_height_num)
 					event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
 
 					// todo
@@ -698,18 +703,39 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 	case REQSyn:
 		// receive the shronization request
 		height_req := msg.Reqsyn.RequestHeight
-		// 1. get the response block from the ledger
-		blk_syn,err := actor_c.service_ababft.ledger.GetTxBlockByHeight(height_req)
-		if err== nil && blk_syn!=nil {
-			// find the corresponding block
-			var blksyn_send Block_Syn
-			blksyn_send.Blksyn = blk_syn
-			// 2. send the required block to
-			event.Send(event.ActorConsensus,event.ActorP2P,blksyn_send)
+		// modify the synchronization code
+		// only the verified block will be send back
+		// 1. check the height of the verified chain
+		if height_req > uint64(current_height_num - 1) {
+			return
 		}
+		// 2. get the response blocks from the ledger
+		blk_syn_v,err1 := actor_c.service_ababft.ledger.GetTxBlockByHeight(height_req)
+		if err1 != nil || blk_syn_v == nil {
+			log.Debug("not find the block of the corresponding height in the ledger")
+			return
+		}
+		blk_syn_f,err2 := actor_c.service_ababft.ledger.GetTxBlockByHeight(height_req+1)
+		if err2 != nil || blk_syn_f == nil {
+			log.Debug("not find the block of the corresponding height in the ledger")
+			return
+		}
+		// 3. send the found blocks
+		var blksyn_send Block_Syn
+		blksyn_send.Blksyn.BlksynV,err = blk_syn_v.Blk2BlkTx()
+		if err != nil {
+			log.Debug("block_v to blockTx transformation fails")
+			return
+		}
+		blksyn_send.Blksyn.BlksynF,err = blk_syn_f.Blk2BlkTx()
+		if err != nil {
+			log.Debug("block_f to blockTx transformation fails")
+		}
+		event.Send(event.ActorConsensus,event.ActorP2P,blksyn_send)
 
 	case Block_Syn:
-		height_syn := msg.Blksyn.Header.Height
+		/*
+				height_syn := msg.Blksyn.Header.Height
 		// 1. compare the height
 		if (current_height_num + 1) == int(height_syn) {
 			// 2. to check and save the block if it passes the verification
@@ -769,6 +795,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				// this may help to speed up the ababft
 			}
 		}
+		 */
+
 
 	case TimeoutMsg:
 		pubkey_in := msg.Toutmsg.PubKey
@@ -780,6 +808,9 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		for _, peer := range Peers_list {
 			if ok := bytes.Equal(peer.PublicKey, pubkey_in); ok == true {
 				// legal peer
+				if TimeoutMsgs[string(pubkey_in)] <= round_in {
+					return
+				}
 				TimeoutMsgs[string(pubkey_in)] = round_in
 				// to count the number is enough
 				var count_r []int
@@ -1034,3 +1065,4 @@ func (actor_c *Actor_ababft) verify_signatures(data_blks_received *types.AbaBftD
 	return  true,err
 	*/
 }
+

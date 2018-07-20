@@ -247,3 +247,11 @@ message ToutMsg {
     bytes       PubKey         = 2;
     bytes       SigData        = 3;
 }
+
+/**
+** Synchronization block
+*/
+message BlockSyn {
+    BlockTx    Blksyn_v                   = 1;
+    BlockTx    Blksyn_f                   = 2;
+}
