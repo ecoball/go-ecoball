@@ -132,6 +132,9 @@ func (a *Account) GetContract() (*types.DeployInfo, error) {
 	return &a.Contract, nil
 }
 func (a *Account) SetResourceLimits(ram, cpu, net float32) error {
+	a.Ram.Quota = ram
+	a.Cpu.Limit = cpu
+	a.Net.Limit = net
 	return nil
 }
 func (a *Account) PledgeCpu(token string, value *big.Int) error {

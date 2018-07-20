@@ -9,6 +9,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"encoding/json"
 	"github.com/ecoball/go-ecoball/core/state"
+	"strconv"
 )
 
 var log = elog.NewLogger("native", config.LogLevel)
@@ -29,6 +30,8 @@ func (ns *NativeService) Execute() ([]byte, error) {
 	switch ns.owner {
 	case common.NameToIndex("root"):
 		return ns.RootExecute()
+	case common.NameToIndex("worker1"):
+		return ns.SystemExecute()
 	default:
 		return nil, errors.New("unknown native contract's owner")
 	}
@@ -53,6 +56,25 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 		if err := ns.ledger.AddPermission(index, perm); err != nil {
 			return nil, err
 		}
+	default:
+		return nil, errors.New(fmt.Sprintf("unknown method:%s", ns.method))
+	}
+	return nil, nil
+}
+
+func (ns *NativeService) SystemExecute() ([]byte, error) {
+	switch ns.method {
+	case "pledge":
+		token := ns.params[0]
+		cpu, err := strconv.Atoi(ns.params[1])
+		if err != nil {
+			return nil, err
+		}
+		net, err := strconv.Atoi(ns.params[1])
+		if err != nil {
+			return nil, err
+		}
+
 	default:
 		return nil, errors.New(fmt.Sprintf("unknown method:%s", ns.method))
 	}

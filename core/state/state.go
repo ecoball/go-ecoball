@@ -102,6 +102,16 @@ func (s *State) CancelPledgeCpu(index common.AccountName, token string, value *b
 	}
 	return s.CommitAccount(acc)
 }
+func (s *State) SetResourceLimits(index common.AccountName, ram, cpu, net float32) error {
+	acc, err := s.GetAccountByName(index)
+	if err != nil {
+		return err
+	}
+	if err := acc.SetResourceLimits(ram, cpu, net); err != nil {
+		return err
+	}
+	return s.CommitAccount(acc)
+}
 func (s *State) SetContract(index common.AccountName, t types.VmType, des, code []byte) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
