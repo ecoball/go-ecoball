@@ -20,7 +20,6 @@ import (
 	"errors"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
-	"github.com/ecoball/go-ecoball/core/bloom"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/types"
 	"time"
@@ -28,17 +27,13 @@ import (
 	"fmt"
 	"encoding/json"
 	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
+	"github.com/ecoball/go-ecoball/core/bloom"
 )
 
-func GenesisBlockInit(ledger ledger.Ledger) (*types.Block, error) {
+func GenesisBlockInit(ledger ledger.Ledger, timeStamp int64) (*types.Block, error) {
 	if ledger == nil {
 		return nil, errors.New("ledger is nil")
 	}
-	tm, err := time.Parse("02/01/2006 15:04:05 PM", "21/02/1990 00:00:00 AM")
-	if err != nil {
-		return nil, err
-	}
-	timeStamp := tm.Unix()
 
 	//TODO start
 	SecondInMs := int64(1000)
@@ -53,12 +48,15 @@ func GenesisBlockInit(ledger ledger.Ledger) (*types.Block, error) {
 	if err != nil {
 		return nil, err
 	}
+
+
 	hashState := ledger.StateDB().GetHashRoot()
 	header, err := types.NewHeader(types.VersionHeader, 1, hash, hash, hashState, *conData, bloom.Bloom{}, timeStamp)
 	if err != nil {
 		return nil, err
 	}
 	block := types.Block{Header: header, CountTxs: uint32(len(txs)), Transactions: txs}
+
 	if err := block.SetSignature(&config.Root); err != nil {
 		return nil, err
 	}
@@ -76,6 +74,8 @@ func PresetContract(ledger ledger.Ledger, t int64) ([]*types.Transaction, error)
 	if acc, err := ledger.AccountAdd(index, addr); err != nil {
 		return nil, err
 	} else {
+		fmt.Println("set root account's resource to [ram-10, cpu-10, net-10]")
+		ledger.SetResourceLimits(index, 10, 10, 10)
 		acc.Show()
 	}
 

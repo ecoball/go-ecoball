@@ -26,6 +26,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/gogo/protobuf/proto"
 	"math/big"
+	"sort"
 )
 
 type Token struct {
@@ -39,13 +40,15 @@ type Resource struct {
 		Used  float32 `json:"used"`
 	}
 	Net struct {
-		Staked    float32 `json:"staked"`
+		Staked    float32 `json:"staked"`    //total stake delegated from account to self
+		Delegated float32 `json:"delegated"` //total stake delegated to account from others
 		Used      float32 `json:"used"`
 		Available float32 `json:"available"`
 		Limit     float32 `json:"limit"`
 	}
 	Cpu struct {
-		Staked    float32 `json:"staked"`
+		Staked    float32 `json:"staked"`    //total stake delegated from account to self
+		Delegated float32 `json:"delegated"` //total stake delegated to account from others
 		Used      float32 `json:"used"`
 		Available float32 `json:"available"`
 		Limit     float32 `json:"limit"`
@@ -132,9 +135,15 @@ func (a *Account) GetContract() (*types.DeployInfo, error) {
 	return &a.Contract, nil
 }
 func (a *Account) SetResourceLimits(ram, cpu, net float32) error {
-	a.Ram.Quota = ram
-	a.Cpu.Limit = cpu
-	a.Net.Limit = net
+	if ram != 0 {
+		a.Ram.Quota = ram
+	}
+	if cpu != 0 {
+		a.Cpu.Limit = cpu
+	}
+	if net != 0 {
+		a.Net.Limit = net
+	}
 	return nil
 }
 func (a *Account) PledgeCpu(token string, value *big.Int) error {
@@ -325,6 +334,7 @@ func (a *Account) Serialize() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+	log.Debug(p)
 	data, err := proto.Marshal(p)
 	if err != nil {
 		return nil, err
@@ -333,29 +343,56 @@ func (a *Account) Serialize() ([]byte, error) {
 }
 func (a *Account) ProtoBuf() (*pb.Account, error) {
 	var tokens []*pb.Token
+	var keysToken []string
 	for _, v := range a.Tokens {
+		keysToken = append(keysToken, v.Name)
+	}
+	sort.Strings(keysToken)
+	for _, k := range keysToken {
+		v := a.Tokens[k]
 		balance, err := v.Balance.GobEncode()
 		if err != nil {
 			return nil, err
 		}
 		ac := pb.Token{
-			Name:    []byte(v.Name),
+			Name:    v.Name,
 			Balance: balance,
 		}
 		tokens = append(tokens, &ac)
 	}
+
 	var perms []*pb.Permission
+	var keysPerm []string
 	for _, perm := range a.Permissions {
+		keysPerm = append(keysPerm, perm.PermName)
+	}
+	sort.Strings(keysPerm)
+	for _, k := range keysPerm {
+		perm := a.Permissions[k]
 		var pbKeys []*pb.KeyWeight
 		var pbAccounts []*pb.AccountWeight
+		var keysKeys []string
+		var keysAccount []string
 		for _, key := range perm.Keys {
+			keysKeys = append(keysKeys, key.Actor.HexString())
+		}
+		sort.Strings(keysKeys)
+		for _, k := range keysKeys {
+			key := perm.Keys[k]
 			pbKey := &pb.KeyWeight{Actor: key.Actor.Bytes(), Weight: key.Weight}
 			pbKeys = append(pbKeys, pbKey)
 		}
+
 		for _, acc := range perm.Accounts {
+			keysAccount = append(keysAccount, acc.Permission)
+		}
+		sort.Strings(keysAccount)
+		for _, k := range keysAccount {
+			acc := perm.Accounts[k]
 			pbAccount := &pb.AccountWeight{Actor: uint64(acc.Actor), Weight: acc.Weight, Permission: []byte(acc.Permission)}
 			pbAccounts = append(pbAccounts, pbAccount)
 		}
+
 		pbPerm := &pb.Permission{
 			PermName:  []byte(perm.PermName),
 			Parent:    []byte(perm.Parent),
@@ -381,12 +418,14 @@ func (a *Account) ProtoBuf() (*pb.Account, error) {
 		},
 		Cpu: &pb.Res{
 			Staked:    a.Cpu.Staked,
+			Delegated: a.Cpu.Delegated,
 			Used:      a.Cpu.Used,
 			Available: a.Cpu.Available,
 			Limit:     a.Cpu.Limit,
 		},
 		Net: &pb.Res{
 			Staked:    a.Net.Staked,
+			Delegated: a.Net.Delegated,
 			Used:      a.Net.Used,
 			Available: a.Net.Available,
 			Limit:     a.Net.Limit,
@@ -415,10 +454,12 @@ func (a *Account) Deserialize(data []byte) error {
 	a.Ram.Quota = pbAcc.Ram.Quota
 	a.Ram.Used = pbAcc.Ram.Used
 	a.Cpu.Staked = pbAcc.Cpu.Staked
+	a.Cpu.Delegated = pbAcc.Cpu.Delegated
 	a.Cpu.Used = pbAcc.Cpu.Used
 	a.Cpu.Available = pbAcc.Cpu.Available
 	a.Cpu.Limit = pbAcc.Cpu.Limit
 	a.Net.Staked = pbAcc.Net.Staked
+	a.Net.Delegated = pbAcc.Net.Delegated
 	a.Net.Used = pbAcc.Net.Used
 	a.Net.Available = pbAcc.Net.Available
 	a.Net.Limit = pbAcc.Net.Limit

@@ -145,14 +145,15 @@ message Permission {
     repeated    account_weight accounts = 3;
 }
 message Ram {
-    float Quota = 1;
-    float Used = 2;
+    float Quota     = 1;
+    float Used      = 2;
 }
 message Res {
-    float Staked = 1;
-    float Used = 2;
+    float Staked    = 1;
+    float Delegated = 5;
+    float Used      = 2;
     float Available = 3;
-    float Limit = 4;
+    float Limit     = 4;
 }
 /**
 ** Account Object
@@ -174,7 +175,7 @@ message Account {
 ** Account Info
 */
 message Token {
-    bytes       Name        = 4;
+    string      Name        = 4;
     bytes       Balance     = 2;
 }
 

@@ -18,22 +18,22 @@ package smartcontract
 
 import (
 	"errors"
-	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
-	"github.com/ecoball/go-ecoball/core/types"
-	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
 	"fmt"
+	"github.com/ecoball/go-ecoball/core/state"
+	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/smartcontract/nativeservice"
+	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
 )
 
 type ContractService interface {
 	Execute() ([]byte, error)
 }
 
-func NewContractService(ledger ledger.Ledger, tx *types.Transaction) (ContractService, error) {
-	if ledger == nil || tx == nil {
+func NewContractService(s *state.State, tx *types.Transaction) (ContractService, error) {
+	if s == nil || tx == nil {
 		return nil, errors.New("the contract service's ledger interface or tx is nil")
 	}
-	contract, err := ledger.GetContract(tx.Addr)
+	contract, err := s.GetContract(tx.Addr)
 	if err != nil {
 		return nil, err
 	}
@@ -45,13 +45,13 @@ func NewContractService(ledger ledger.Ledger, tx *types.Transaction) (ContractSe
 	fmt.Println("param:", invoke.Param)
 	switch contract.TypeVm {
 	case types.VmNative:
-		service, err := nativeservice.NewNativeService(ledger, tx.Addr, string(invoke.Method), invoke.Param)
+		service, err := nativeservice.NewNativeService(s, tx.Addr, string(invoke.Method), invoke.Param)
 		if err != nil {
 			return nil, err
 		}
 		return service, nil
 	case types.VmWasm:
-		service, err := wasmservice.NewWasmService(ledger, tx, contract, &invoke)
+		service, err := wasmservice.NewWasmService(s, tx, contract, &invoke)
 		if err != nil {
 			return nil, err
 		}
