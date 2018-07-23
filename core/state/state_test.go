@@ -169,7 +169,7 @@ func TestHashRoot(t *testing.T) {
 func TestStateDB(t *testing.T) {
 	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
 	indexAcc := common.NameToIndex("pct")
-	//indexToken := state.AbaToken
+	indexToken := state.AbaToken
 	s, err := state.NewState("/tmp/state_root", common.HexToHash(""))
 	if err != nil {
 		t.Fatal(err)
@@ -179,22 +179,21 @@ func TestStateDB(t *testing.T) {
 	if _, err := s.AddAccount(indexAcc, addr); err != nil {
 		t.Fatal(err)
 	}
-	//if err := s.AccountAddBalance(indexAcc, indexToken, new(big.Int).SetInt64(100)); err != nil {
-	//	t.Fatal(err)
-	//}
+	if err := s.AccountAddBalance(indexAcc, indexToken, new(big.Int).SetInt64(100)); err != nil {
+		t.Fatal(err)
+	}
 	s.CommitToDB()
-	//value, err := s.AccountGetBalance(indexAcc, indexToken)
-	//if err != nil {
-	//	t.Fatal(err)
-	//}
-	//fmt.Println("value:", value)
-/*
+	value, err := s.AccountGetBalance(indexAcc, indexToken)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println("value1[100]:", value)
+
 	acc, err := s.GetAccountByName(indexAcc)
 	if err != nil {
 		t.Fatal(err)
 	}
-	acc.AccountAddBalance(indexToken, new(big.Int).SetUint64(300))
-
+	acc.AddBalance(indexToken, new(big.Int).SetUint64(300))
 	//s.CommitAccount(acc)
 
 	d, err := acc.Serialize()
@@ -208,16 +207,16 @@ func TestStateDB(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println("value:", value)
+	fmt.Println("value2[400]:", value)
 
-	if err := s.Reset(common.HexToHash("0x7aacdf43f49a61ca524a80f81546f9a059ce9c877530dccd624e8895495a5015")); err != nil {
-		t.Fatal(err)
-	}
+	//if err := s.Reset(common.HexToHash("0x7aacdf43f49a61ca524a80f81546f9a059ce9c877530dccd624e8895495a5015")); err != nil {
+	//	t.Fatal(err)
+	//}
 	value, err = s.AccountGetBalance(indexAcc, indexToken)
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println("value:", value)*/
+	fmt.Println("value3[100]:", value)
 }
 
 func TestRootHash(t *testing.T) {
