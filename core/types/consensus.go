@@ -24,7 +24,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/core/pb"
 	"sort"
-	"github.com/ecoball/go-ecoball/consensus/ababft"
+	"github.com/ecoball/go-ecoball/account"
 )
 
 type ConType uint32
@@ -403,6 +403,7 @@ func (a *AbaBftData) Show() {
 
 func GenesisABABFTInit(timestamp int64)  *AbaBftData{
 	// array the peers list
+	/*
 	Num_peers_t := len(ababft.Peers_list)
 	var Peers_list_t []string
 	for i := 0; i < Num_peers_t; i++ {
@@ -418,6 +419,23 @@ func GenesisABABFTInit(timestamp int64)  *AbaBftData{
 	var sigs []common.Signature
 	for i := 0; i < Num_peers_t; i++ {
 		sigs = append(sigs,common.Signature{ababft.Peers_list[i].PublicKey, []byte("hello,ababft")})
+	}
+	*/
+	var Num_peers_t int
+	Num_peers_t = 3
+	var Peers_list_t []string
+	Peers_list_t[0] = string(config.Worker1.PublicKey)
+	Peers_list_t[1] = string(config.Worker2.PublicKey)
+	Peers_list_t[2] = string(config.Worker3.PublicKey)
+	log.Debug("generate the geneses")
+	sort.Strings(Peers_list_t)
+	var Peers_list []account.Account
+	for i := 0; i < Num_peers_t; i++ {
+		Peers_list[i].PublicKey = []byte(Peers_list_t[i])
+	}
+	var sigs []common.Signature
+	for i := 0; i < Num_peers_t; i++ {
+		sigs = append(sigs,common.Signature{Peers_list[i].PublicKey, []byte("hello,ababft")})
 	}
 	abaData := AbaBftData{0,sigs}
 	return &abaData
