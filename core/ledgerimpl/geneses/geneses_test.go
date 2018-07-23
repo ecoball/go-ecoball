@@ -30,11 +30,11 @@ func TestGenesesBlockInit(t *testing.T) {
 	}
 
 	ShowAccountInfo(l, t)
-	//con, err := types.InitConsensusData(time.Now().Unix())
+	con, err := types.InitConsensusData(time.Now().Unix())
 	//AddTokenAccount(l, con, t)
 	//ContractStore(l, con, t)
-	//PledgeContract(l, con, t)
-	//ShowAccountInfo(l, t)
+	PledgeContract(l, con, t)
+	ShowAccountInfo(l, t)
 }
 
 func CreateAccountBlock(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T) {

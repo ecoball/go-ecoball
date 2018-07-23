@@ -334,7 +334,6 @@ func (a *Account) Serialize() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	log.Debug(p)
 	data, err := proto.Marshal(p)
 	if err != nil {
 		return nil, err

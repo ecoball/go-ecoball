@@ -85,14 +85,14 @@ func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err err
 */
 func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData) (*types.Block, error) {
 	log.Warn("NewBlock")
-	//s := c.StateDB.CopyState()
+	s := c.StateDB.CopyState()
 	for i := 0; i < len(txs); i++ {
-		if _, err := c.HandleTransaction(c.StateDB, txs[i]); err != nil {
+		if _, err := c.HandleTransaction(s, txs[i]); err != nil {
 			log.Error("Handle Transaction Error:", err)
 			return nil, err
 		}
 	}
-	return types.NewBlock(c.CurrentHeader, c.StateDB.GetHashRoot(), consensusData, txs)
+	return types.NewBlock(c.CurrentHeader, s.GetHashRoot(), consensusData, txs)
 }
 /**
 *  @brief  if create a new block failed, then need to reset state DB
@@ -131,7 +131,12 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 		return errors.New("block is nil")
 	}
 
-
+	for i := 0; i < len(block.Transactions); i++ {
+		if _, err := c.HandleTransaction(c.StateDB, block.Transactions[i]); err != nil {
+			log.Error("Handle Transaction Error:", err)
+			return err
+		}
+	}
 	if err := event.Publish(event.ActorLedger, block, event.ActorTxPool, event.ActorP2P); err != nil {
 		log.Warn(err)
 	}
@@ -243,14 +248,15 @@ func (c *ChainTx) GenesesBlockInit() error {
 	conData := types.GenesesBlockInitConsensusData(timeStamp)
 
 	txs, err := geneses.PresetContract(c.ledger, timeStamp)
+	s := c.StateDB.CopyState()
 	for i := 0; i < len(txs); i++ {
-		if _, err := c.HandleTransaction(c.StateDB, txs[i]); err != nil {
+		if _, err := c.HandleTransaction(s, txs[i]); err != nil {
 			log.Error("Handle Transaction Error:", err)
 			return err
 		}
 	}
 
-	hashState := c.StateDB.GetHashRoot()
+	hashState := s.GetHashRoot()
 	header, err := types.NewHeader(types.VersionHeader, 1, hash, hash, hashState, *conData, bloom.Bloom{}, timeStamp)
 	if err != nil {
 		return err

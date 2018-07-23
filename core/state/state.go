@@ -85,8 +85,6 @@ func (s *State) AddAccount(index common.AccountName, addr common.Address) (*Acco
 		return nil, err
 	}
 	//save the mapping of addr and index
-	log.Debug(addr.Bytes())
-	log.Debug(common.IndexToBytes(obj.Index))
 	if err := s.trie.TryUpdate(addr.Bytes(), common.IndexToBytes(obj.Index)); err != nil {
 		return nil, err
 	}
@@ -253,8 +251,6 @@ func (s *State) CommitAccount(acc *Account) error {
 		return err
 	}
 	log.Debug(common.IndexToBytes(acc.Index))
-	log.Debug(d)
-	acc.Show()
 	if err := s.trie.TryUpdate(common.IndexToBytes(acc.Index), d); err != nil {
 		return err
 	}
