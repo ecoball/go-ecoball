@@ -22,11 +22,7 @@ import (
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/types"
-	"time"
-	"github.com/ecoball/go-ecoball/core/state"
 	"fmt"
-	"encoding/json"
-	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
 	"github.com/ecoball/go-ecoball/core/bloom"
 )
 
@@ -78,48 +74,6 @@ func PresetContract(ledger ledger.Ledger, t int64) ([]*types.Transaction, error)
 		ledger.SetResourceLimits(index, 10, 10)
 		acc.Show()
 	}
-
-	//TODO
-	if err := ledger.AccountAddBalance(index, state.AbaToken, 10000); err != nil {
-		return nil, err
-	}
-	code, err := wasmservice.ReadWasm("../../test/root/root.wasm")
-	if err != nil {
-		return nil, err
-	}
-	tokenContract, err := types.NewDeployContract(index, index, state.Active, types.VmWasm, "system control", code, 0, t)
-	if err != nil {
-		return nil, err
-	}
-	if err := tokenContract.SetSignature(&config.Root); err != nil {
-		return nil, err
-	}
-	txs = append(txs, tokenContract)
-
-	invoke, err := types.NewInvokeContract(index, index, state.Owner,"new_account",
-		[]string{"worker1", common.AddressFromPubKey(config.Worker1.PublicKey).HexString()}, 0, t)
-	invoke.SetSignature(&config.Root)
-	txs = append(txs, invoke)
-
-	invoke, err = types.NewInvokeContract(index, index, state.Owner, "new_account",
-		[]string{"worker2", common.AddressFromPubKey(config.Worker2.PublicKey).HexString()}, 1, t)
-	invoke.SetSignature(&config.Root)
-	txs = append(txs, invoke)
-
-	invoke, err = types.NewInvokeContract(index, index, state.Owner, "new_account",
-		[]string{"worker3", common.AddressFromPubKey(config.Worker3.PublicKey).HexString()}, 2, t)
-	invoke.SetSignature(&config.Root)
-	txs = append(txs, invoke)
-
-	perm := state.NewPermission(state.Active, state.Owner, 2, []state.KeyFactor{}, []state.AccFactor{{Actor: common.NameToIndex("worker1"), Weight: 1, Permission: "active"}, {Actor: common.NameToIndex("worker2"), Weight: 1, Permission: "active"}, {Actor: common.NameToIndex("worker3"), Weight: 1, Permission: "active"}})
-	param, err := json.Marshal(perm)
-	if err != nil {
-		return nil, err
-	}
-	invoke, err = types.NewInvokeContract(index, index, state.Active, "set_account", []string{"root", string(param)}, 0, time.Now().Unix())
-	invoke.SetSignature(&config.Root)
-	txs = append(txs, invoke)
-	//END
 
 	return txs, nil
 }

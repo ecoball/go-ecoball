@@ -28,31 +28,58 @@ func TestGenesesBlockInit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	ShowAccountInfo(l, t)
 	con, err := types.InitConsensusData(time.Now().Unix())
+	CreateAccountBlock(l, con, t)
+	ShowAccountInfo(l, t)
 	//AddTokenAccount(l, con, t)
 	//ContractStore(l, con, t)
 	PledgeContract(l, con, t)
 	ShowAccountInfo(l, t)
+	CancelPledgeContract(l, con, t)
+	ShowAccountInfo(l, t)
 }
 
 func CreateAccountBlock(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T) {
-	timeStamp := time.Now().Unix()
+	//TODO
 	var txs []*types.Transaction
+	index := common.NameToIndex("root")
+	if err := ledger.AccountAddBalance(index, state.AbaToken, 10000); err != nil {
+		t.Fatal(err)
+	}
+	code, err := wasmservice.ReadWasm("../../../test/root/root.wasm")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tokenContract, err := types.NewDeployContract(index, index, state.Active, types.VmWasm, "system control", code, 0, time.Now().Unix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := tokenContract.SetSignature(&config.Root); err != nil {
+		t.Fatal(err)
+	}
+	txs = append(txs, tokenContract)
 
-	invoke, err := types.NewInvokeContract(root, root, "owner", "new_account",
-		[]string{"worker1", common.AddressFromPubKey(common.FromHex("0x04e0c1852b110d1586bf6202abf6e519cc4161d00c3780c04cfde80fd66748cc189b6b0e2771baeb28189ec42a363461357422bf76b1e0724fc63fc97daf52769f")).HexString()}, 0, timeStamp)
+	invoke, err := types.NewInvokeContract(index, index, state.Owner,"new_account",
+		[]string{"worker1", common.AddressFromPubKey(config.Worker1.PublicKey).HexString()}, 0, time.Now().Unix())
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
-	invoke, err = types.NewInvokeContract(root, root, "owner", "new_account",
-		[]string{"worker2", common.AddressFromPubKey(common.FromHex("0x049e78e40b0dcca842b94cb2586d47ecc61888b52dce958b41aa38613c80f6607ee1de23eebb912431eccfe0fea81f8a38792ffecee38c490dde846c646ce1f0ee")).HexString()}, 0, timeStamp)
+	invoke, err = types.NewInvokeContract(index, index, state.Owner, "new_account",
+		[]string{"worker2", common.AddressFromPubKey(config.Worker2.PublicKey).HexString()}, 1, time.Now().Unix())
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
-	invoke, err = types.NewInvokeContract(root, root, "owner", "new_account",
-		[]string{"worker3", common.AddressFromPubKey(common.FromHex("0x0481bce0ad10bd3d8cdfd089ac5534379149ca5c3cdab28b5063f707d20f3a4a51f192ef7933e91e3fd0a8ea21d8dd735407780937c3c71753b486956fd481349f")).HexString()}, 0, timeStamp)
+	invoke, err = types.NewInvokeContract(index, index, state.Owner, "new_account",
+		[]string{"worker3", common.AddressFromPubKey(config.Worker3.PublicKey).HexString()}, 2, time.Now().Unix())
+	invoke.SetSignature(&config.Root)
+	txs = append(txs, invoke)
+
+	perm := state.NewPermission(state.Active, state.Owner, 2, []state.KeyFactor{}, []state.AccFactor{{Actor: common.NameToIndex("worker1"), Weight: 1, Permission: "active"}, {Actor: common.NameToIndex("worker2"), Weight: 1, Permission: "active"}, {Actor: common.NameToIndex("worker3"), Weight: 1, Permission: "active"}})
+	param, err := json.Marshal(perm)
+	if err != nil {
+		t.Fatal(err)
+	}
+	invoke, err = types.NewInvokeContract(index, index, state.Active, "set_account", []string{"root", string(param)}, 0, time.Now().Unix())
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
@@ -258,3 +285,25 @@ func PledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T
 		t.Fatal(err)
 	}
 }
+func CancelPledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T) {
+	var txs []*types.Transaction
+	invoke, err := types.NewInvokeContract(root, worker1, "owner", "cancel_pledge",
+		[]string{"root", "worker2", "10", "10"}, 0, time.Now().Unix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	invoke.SetSignature(&config.Root)
+	txs = append(txs, invoke)
+	block, err := ledger.NewTxBlock(txs, *con)
+	if err != nil {
+		t.Fatal(err)
+	}
+	block.SetSignature(&config.Root)
+	if err := ledger.VerifyTxBlock(block); err != nil {
+		t.Fatal(err)
+	}
+	if err := ledger.SaveTxBlock(block); err != nil {
+		t.Fatal(err)
+	}
+}
+

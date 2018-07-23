@@ -131,6 +131,23 @@ func (s *State) SetDelegateInfo(from, to common.AccountName, cpu, net float32) e
 	}
 	return s.CommitAccount(acc)
 }
+func (s *State) CancelDelegate(from, to common.AccountName, cpu, net float32) error {
+	acc, err := s.GetAccountByName(from)
+	if err != nil {
+		return err
+	}
+	accTo, err := s.GetAccountByName(to)
+	if err != nil {
+		return err
+	}
+	if err := acc.CancelDelegate(accTo, cpu, net); err != nil {
+		return err
+	}
+	if err := s.CommitAccount(acc); err != nil {
+		return err
+	}
+	return s.CommitAccount(accTo)
+}
 func (s *State) SetContract(index common.AccountName, t types.VmType, des, code []byte) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {

@@ -82,6 +82,24 @@ func (ns *NativeService) SystemExecute(index common.AccountName) ([]byte, error)
 			if err := ns.state.SetDelegateInfo(from, to, float32(cpu), float32(net)); err != nil {
 				return nil, err
 			}
+			if err := ns.state.SetResourceLimits(to, float32(cpu), float32(net)); err != nil {
+				return nil, err
+			}
+		}
+	case "cancel_pledge":
+		from := common.NameToIndex(ns.params[0])
+		to := common.NameToIndex(ns.params[1])
+		cpu, err := strconv.ParseFloat(ns.params[2], 32)
+		if err != nil {
+			return nil, err
+		}
+		net, err := strconv.ParseFloat(ns.params[3], 32)
+		if err != nil {
+			return nil, err
+		}
+		log.Debug(from, to, cpu, net)
+		if err := ns.state.CancelDelegate(from, to, float32(cpu), float32(net)); err != nil {
+			return nil, err
 		}
 	default:
 		return nil, errors.New(fmt.Sprintf("unknown method:%s", ns.method))

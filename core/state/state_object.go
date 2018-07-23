@@ -144,15 +144,42 @@ func (a *Account) GetContract() (*types.DeployInfo, error) {
 func (a *Account) SetResourceLimits(cpu, net float32) error {
 	if cpu != 0 {
 		a.Cpu.Limit = cpu
+		a.Cpu.Available = cpu
 	}
 	if net != 0 {
 		a.Net.Limit = net
+		a.Net.Available = net
 	}
 	return nil
 }
 func (a *Account) SetDelegateInfo(index common.AccountName, cpu, net float32) error {
 	d := Delegate{Index: index, Cpu: cpu, Net: net}
 	a.Delegates = append(a.Delegates, d)
+	return nil
+}
+func (a *Account) CancelDelegate(acc *Account, cpu, net float32) error {
+	done := false
+	for _, v := range a.Delegates {
+		if v.Index == acc.Index {
+			done = true
+			if acc.Cpu.Delegated < cpu {
+				return errors.New("cpu amount is not enough")
+			}
+			if acc.Net.Delegated < net {
+				return errors.New("net amount is not enough")
+			}
+			acc.Cpu.Limit -= cpu
+			acc.Cpu.Delegated -= cpu
+			acc.Cpu.Available = acc.Cpu.Limit - acc.Cpu.Used
+			acc.Net.Limit -= net
+			acc.Net.Delegated -= net
+			acc.Net.Available = acc.Net.Limit - acc.Net.Used
+		}
+	}
+	if done == false {
+		return errors.New(fmt.Sprintf("account:%s is not delegated for %s", common.IndexToName(a.Index), common.IndexToName(acc.Index)))
+	}
+
 	return nil
 }
 func (a *Account) PledgeCpu(token string, value *big.Int) error {
