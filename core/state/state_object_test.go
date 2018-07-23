@@ -6,7 +6,6 @@ import (
 	"github.com/ecoball/go-ecoball/core/state"
 	"math/big"
 	"testing"
-	"time"
 )
 
 func TestStateObject(t *testing.T) {
@@ -55,7 +54,7 @@ func TestNewAccount(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	for ; ;  {
+	//for ; ;  {
 		d, err := acc.Serialize()
 		if err != nil {
 			t.Fatal(err)
@@ -64,6 +63,6 @@ func TestNewAccount(t *testing.T) {
 		if d[1] != 43 {
 			t.Fatal("error")
 		}
-		time.Sleep(1 *time.Second)
-	}
+	//	time.Sleep(1 *time.Second)
+	//}
 }

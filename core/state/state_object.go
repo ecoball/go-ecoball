@@ -55,12 +55,19 @@ type Resource struct {
 	}
 }
 
+type Delegate struct {
+	Index common.AccountName `json:"index"`
+	Cpu   float32            `json:"cpu"`
+	Net   float32            `json:"net"`
+}
+
 type Account struct {
 	Index       common.AccountName    `json:"index"`
 	Nonce       uint64                `json:"nonce"`
 	Tokens      map[string]Token      `json:"token"`
 	Permissions map[string]Permission `json:"permissions"`
 	Contract    types.DeployInfo      `json:"contract"`
+	Delegates   []Delegate
 	Resource
 
 	Hash   common.Hash `json:"hash"`
@@ -134,16 +141,18 @@ func (a *Account) GetContract() (*types.DeployInfo, error) {
 	}
 	return &a.Contract, nil
 }
-func (a *Account) SetResourceLimits(ram, cpu, net float32) error {
-	if ram != 0 {
-		a.Ram.Quota = ram
-	}
+func (a *Account) SetResourceLimits(cpu, net float32) error {
 	if cpu != 0 {
 		a.Cpu.Limit = cpu
 	}
 	if net != 0 {
 		a.Net.Limit = net
 	}
+	return nil
+}
+func (a *Account) SetDelegateInfo(index common.AccountName, cpu, net float32) error {
+	d := Delegate{Index: index, Cpu: cpu, Net: net}
+	a.Delegates = append(a.Delegates, d)
 	return nil
 }
 func (a *Account) PledgeCpu(token string, value *big.Int) error {
@@ -401,6 +410,11 @@ func (a *Account) ProtoBuf() (*pb.Account, error) {
 		}
 		perms = append(perms, pbPerm)
 	}
+	var delegates []*pb.Delegate
+	for _, v := range a.Delegates {
+		d := pb.Delegate{Index: uint64(v.Index), Cpu: v.Cpu, Net: v.Net}
+		delegates = append(delegates, &d)
+	}
 	pbAcc := pb.Account{
 		Index:       uint64(a.Index),
 		Nonce:       a.Nonce,
@@ -411,6 +425,7 @@ func (a *Account) ProtoBuf() (*pb.Account, error) {
 			Describe: common.CopyBytes(a.Contract.Describe),
 			Code:     common.CopyBytes(a.Contract.Code),
 		},
+		Delegates: delegates,
 		Ram: &pb.Ram{
 			Quota: a.Ram.Quota,
 			Used:  a.Ram.Used,
@@ -480,6 +495,9 @@ func (a *Account) Deserialize(data []byte) error {
 			return err
 		}
 		a.Tokens[ac.Name] = ac
+	}
+	for _, v := range pbAcc.Delegates {
+		a.Delegates = append(a.Delegates, Delegate{Index: common.AccountName(v.Index), Cpu: v.Cpu, Net: v.Net})
 	}
 	for _, pbPerm := range pbAcc.Permissions {
 		keys := make(map[string]KeyFactor, 1)

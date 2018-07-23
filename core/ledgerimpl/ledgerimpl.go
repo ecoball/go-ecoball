@@ -120,8 +120,8 @@ func (l *LedgerImpl) AccountGet(index common.AccountName) (*state.Account, error
 func (l *LedgerImpl) AccountAdd(index common.AccountName, addr common.Address) (*state.Account, error) {
 	return l.ChainTx.StateDB.AddAccount(index, addr)
 }
-func (l *LedgerImpl) SetResourceLimits(index common.AccountName, ram, cpu, net float32) error {
-	return l.ChainTx.StateDB.SetResourceLimits(index, ram, cpu, net)
+func (l *LedgerImpl) SetResourceLimits(index common.AccountName, cpu, net float32) error {
+	return l.ChainTx.StateDB.SetResourceLimits(index, cpu, net)
 }
 func (l *LedgerImpl) StoreSet(index common.AccountName, key, value []byte) (err error) {
 	return l.ChainTx.StateDB.StoreSet(index, key, value)

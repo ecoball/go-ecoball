@@ -111,12 +111,22 @@ func (s *State) CancelPledgeCpu(index common.AccountName, token string, value *b
 	}
 	return s.CommitAccount(acc)
 }
-func (s *State) SetResourceLimits(index common.AccountName, ram, cpu, net float32) error {
+func (s *State) SetResourceLimits(index common.AccountName, cpu, net float32) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return err
 	}
-	if err := acc.SetResourceLimits(ram, cpu, net); err != nil {
+	if err := acc.SetResourceLimits(cpu, net); err != nil {
+		return err
+	}
+	return s.CommitAccount(acc)
+}
+func (s *State) SetDelegateInfo(from, to common.AccountName, cpu, net float32) error {
+	acc, err := s.GetAccountByName(from)
+	if err != nil {
+		return err
+	}
+	if err := acc.SetDelegateInfo(to, cpu, net); err != nil {
 		return err
 	}
 	return s.CommitAccount(acc)

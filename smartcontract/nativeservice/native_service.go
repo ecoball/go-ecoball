@@ -64,16 +64,24 @@ func (ns *NativeService) RootExecute() ([]byte, error) {
 func (ns *NativeService) SystemExecute(index common.AccountName) ([]byte, error) {
 	switch ns.method {
 	case "pledge":
-		cpu, err := strconv.ParseFloat(ns.params[0], 32)
+		from := common.NameToIndex(ns.params[0])
+		to := common.NameToIndex(ns.params[1])
+		cpu, err := strconv.ParseFloat(ns.params[2], 32)
 		if err != nil {
 			return nil, err
 		}
-		net, err := strconv.ParseFloat(ns.params[1], 32)
+		net, err := strconv.ParseFloat(ns.params[3], 32)
 		if err != nil {
 			return nil, err
 		}
-		if err := ns.state.SetResourceLimits(ns.owner, 0, float32(cpu), float32(net)); err != nil {
-			return nil, err
+		if from == to {
+			if err := ns.state.SetResourceLimits(from, float32(cpu), float32(net)); err != nil {
+				return nil, err
+			}
+		} else {
+			if err := ns.state.SetDelegateInfo(from, to, float32(cpu), float32(net)); err != nil {
+				return nil, err
+			}
 		}
 	default:
 		return nil, errors.New(fmt.Sprintf("unknown method:%s", ns.method))

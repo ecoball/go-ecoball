@@ -75,7 +75,7 @@ func PresetContract(ledger ledger.Ledger, t int64) ([]*types.Transaction, error)
 		return nil, err
 	} else {
 		fmt.Println("set root account's resource to [ram-10, cpu-10, net-10]")
-		ledger.SetResourceLimits(index, 10, 10, 10)
+		ledger.SetResourceLimits(index, 10, 10)
 		acc.Show()
 	}
 
