@@ -23,7 +23,6 @@ import (
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/account"
-	"github.com/ecoball/go-ecoball/common/config"
 	"sort"
 )
 
@@ -79,6 +78,7 @@ func (this *Service_ababft) Start() error {
 	// start the ababft service
 	// build the peers list
 
+	/*
 	// todo start
 	// the following code is just temporary, and will be replaced later
 	Num_peers = 3
@@ -99,6 +99,7 @@ func (this *Service_ababft) Start() error {
 	this.account.PublicKey = Peers_list[0].PublicKey
 	this.account.PrivateKey = config.Worker1.PrivateKey
 	// todo end
+	*/
 
 	/*
 	Num_peers = len(config.PeerIndex)
@@ -112,6 +113,18 @@ func (this *Service_ababft) Start() error {
 		}
 	}
 	*/
+	Num_peers = len(Peers_list)
+	var Peers_list_t []string
+	for i := 0; i < Num_peers; i++ {
+		Peers_list_t[i] = string(Peers_list[i].PublicKey)
+	}
+	// sort the peers as list
+	sort.Strings(Peers_list_t)
+	for i := 0; i < Num_peers; i++ {
+		Peers_list[i].PublicKey = []byte(Peers_list_t[i])
+		Peers_list[i].Index = i
+	}
+	log.Debug("service start")
 	return err
 }
 
