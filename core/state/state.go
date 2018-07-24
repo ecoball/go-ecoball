@@ -29,8 +29,7 @@ import (
 var log = elog.NewLogger("state", elog.DebugLog)
 var IndexAbaRoot = common.NameToIndex("root")
 var AbaToken = "ABA"
-var cpuAmount = []byte("cpu_amount")
-var netAmount = []byte("net_amount")
+
 
 type State struct {
 	path   string
@@ -60,8 +59,8 @@ func NewState(path string, root common.Hash) (st *State, err error) {
 }
 func (s *State) CopyState() *State {
 	return &State{
-		path:   s.path,
-		trie:   s.db.CopyTrie(s.trie),
+		path: s.path,
+		trie: s.db.CopyTrie(s.trie),
 	}
 }
 
@@ -93,173 +92,14 @@ func (s *State) AddAccount(index common.AccountName, addr common.Address) (*Acco
 	log.Debug(s.trie.Hash().HexString())
 	return obj, nil
 }
-func (s *State) PledgeCpu(index common.AccountName, token string, value *big.Int) error {
-	acc, err := s.GetAccountByName(index)
-	if err != nil {
-		return err
-	}
-	if err := acc.PledgeCpu(token, value); err != nil {
-		return err
-	}
-	return s.CommitAccount(acc)
-}
-func (s *State) CancelPledgeCpu(index common.AccountName, token string, value *big.Int) error {
-	acc, err := s.GetAccountByName(index)
-	if err != nil {
-		return err
-	}
-	if err := acc.CancelPledgeCpu(token, value); err != nil {
-		return err
-	}
-	return s.CommitAccount(acc)
-}
-func (s *State) SetResourceLimits(from, to common.AccountName, cpu, net float32) error {
-	acc, err := s.GetAccountByName(from)
-	if err != nil {
-		return err
-	}
-	if from == to {
-		if err := acc.SetResourceLimits(true, cpu, net); err != nil {
-			return err
-		}
-	} else {
-		if err := acc.SetDelegateInfo(to, cpu, net); err != nil {
-			return err
-		}
-		accTo, err := s.GetAccountByName(to)
-		if err != nil {
-			return err
-		}
-		if err := accTo.SetResourceLimits(false, cpu, net); err != nil {
-			return err
-		}
-		if err := s.CommitAccount(accTo); err != nil {
-			return err
-		}
-	}
-	balance, err := acc.Balance(AbaToken)
-	if err != nil {
-		return err
-	}
-	value := new(big.Int).Add(new(big.Int).SetUint64(uint64(cpu)), new(big.Int).SetUint64(uint64(net)))
-	if balance.Cmp(value) == -1 {
-		return errors.New("no enough balance")
-	}
-	if err := acc.SubBalance(AbaToken, value); err != nil {
-		return err
-	}
-	if err := s.AddResourceAmount(new(big.Int).SetUint64(uint64(cpu)), new(big.Int).SetUint64(uint64(net))); err != nil {
-		return err
-	}
-	return s.CommitAccount(acc)
-}
-func (s *State) SubResourceLimits(index common.AccountName, cpu, net float32) error {
-	acc, err := s.GetAccountByName(index)
-	if err != nil {
-		return err
-	}
-	if err := acc.SubResourceLimits(cpu, net); err != nil {
-		return err
-	}
-	return s.CommitAccount(acc)
-}
-func (s *State) CancelDelegate(from, to common.AccountName, cpu, net float32) error {
-	acc, err := s.GetAccountByName(from)
-	if err != nil {
-		return err
-	}
-	if from != to {
-		accTo, err := s.GetAccountByName(to)
-		if err != nil {
-			return err
-		}
-		if err := acc.CancelDelegateOther(accTo, cpu, net); err != nil {
-			return err
-		}
-		if err := s.CommitAccount(accTo); err != nil {
-			return err
-		}
-	} else {
-		if err := acc.CancelDelegateSelf(cpu, net); err != nil {
-			return err
-		}
-	}
-	value := new(big.Int).Add(new(big.Int).SetUint64(uint64(cpu)), new(big.Int).SetUint64(uint64(net)))
-	if err := acc.AddBalance(AbaToken, value); err != nil {
-		return err
-	}
-	if err := s.SubResourceAmount(new(big.Int).SetUint64(uint64(cpu)), new(big.Int).SetUint64(uint64(net))); err != nil {
-		return err
-	}
-	return s.CommitAccount(acc)
-}
-func (s *State) AddResourceAmount(cpu, net *big.Int) error {
-	c, n, err := s.GetResourceAmount()
-	if err != nil {
-		return err
-	}
-	value := new(big.Int).Add(cpu, c)
-	data, err := value.GobEncode()
-	if err != nil {
-		return err
-	}
-	if err := s.trie.TryUpdate(cpuAmount, data); err != nil {
-		return err
-	}
-	log.Debug("cpu amount:", value)
-	value = new(big.Int).Add(net, n)
-	data, err = value.GobEncode()
-	if err != nil {
-		return err
-	}
-	if err := s.trie.TryUpdate(netAmount, data); err != nil {
-		return err
-	}
-	log.Debug("net amount:", value)
-	return nil
-}
-func (s *State) SubResourceAmount(cpu, net *big.Int) error {
-	c, n, err := s.GetResourceAmount()
-	if err != nil {
-		return err
-	}
-	value := new(big.Int).Sub(c, cpu)
-	if value.Sign() < 0 {
-		return errors.New("the cpu amount < 0")
-	}
-	data, err := value.GobEncode()
-	if err != nil {
-		return err
-	}
-	if err := s.trie.TryUpdate(cpuAmount, data); err != nil {
-		return err
-	}
-	value = new(big.Int).Sub(net, n)
-	if value.Sign() < 0 {
-		return errors.New("the net amount < 0")
-	}
-	data, err = value.GobEncode()
-	if err != nil {
-		return err
-	}
-	if err := s.trie.TryUpdate(netAmount, data); err != nil {
-		return err
-	}
-	return nil
-}
-func (s *State) GetResourceAmount() (*big.Int, *big.Int, error) {
-	data, _ := s.trie.TryGet(cpuAmount)
-	cpu := new(big.Int)
-	if err := cpu.GobDecode(data); err != nil {
-		return nil, nil, err
-	}
-	data, _ = s.trie.TryGet(netAmount)
-	net := new(big.Int)
-	if err := net.GobDecode(data); err != nil {
-		return nil, nil, err
-	}
-	return cpu, net, nil
-}
+
+/**
+ *  @brief store the smart contract of account, every account only has one contract
+ *  @param index - account's index
+ *  @param t - the virtual machine type
+ *  @param des - the description of contract
+ *  @param code - the code of contract
+ */
 func (s *State) SetContract(index common.AccountName, t types.VmType, des, code []byte) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
@@ -270,6 +110,11 @@ func (s *State) SetContract(index common.AccountName, t types.VmType, des, code 
 	}
 	return s.CommitAccount(acc)
 }
+
+/**
+ *  @brief get the code of account
+ *  @param index - account's index
+ */
 func (s *State) GetContract(index common.AccountName) (*types.DeployInfo, error) {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
