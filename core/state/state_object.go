@@ -67,8 +67,8 @@ type Account struct {
 	Tokens      map[string]Token      `json:"token"`
 	Permissions map[string]Permission `json:"permissions"`
 	Contract    types.DeployInfo      `json:"contract"`
-	Delegates   []Delegate
-	Resource
+	Delegates   []Delegate            `json:"delegate"`
+	Resource    `json:"resource"`
 
 	Hash   common.Hash `json:"hash"`
 	trie   Trie
@@ -144,10 +144,12 @@ func (a *Account) GetContract() (*types.DeployInfo, error) {
 func (a *Account) SetResourceLimits(self bool, cpu, net float32) error {
 	if !self {
 		if cpu != 0 {
+			a.Cpu.Limit = cpu
 			a.Cpu.Delegated = cpu
 			a.Cpu.Available = cpu
 		}
 		if net != 0 {
+			a.Net.Limit = net
 			a.Net.Delegated = net
 			a.Net.Available = net
 		}
@@ -163,6 +165,19 @@ func (a *Account) SetResourceLimits(self bool, cpu, net float32) error {
 	}
 	return nil
 }
+func (a *Account) SubResourceLimits(cpu, net float32) error {
+	if a.Cpu.Available < cpu {
+		return errors.New("cpu is not enough")
+	}
+	if a.Net.Available < net {
+		return errors.New("net is not enough")
+	}
+	a.Cpu.Available -= cpu
+	a.Cpu.Used += cpu
+	a.Net.Available -= net
+	a.Net.Used += net
+	return nil
+}
 func (a *Account) SetDelegateInfo(index common.AccountName, cpu, net float32) error {
 	d := Delegate{Index: index, Cpu: cpu, Net: net}
 	a.Delegates = append(a.Delegates, d)
@@ -170,7 +185,7 @@ func (a *Account) SetDelegateInfo(index common.AccountName, cpu, net float32) er
 }
 func (a *Account) CancelDelegate(acc *Account, cpu, net float32) error {
 	done := false
-	for i := 0; i < len(a.Delegates); i++{
+	for i := 0; i < len(a.Delegates); i++ {
 		if a.Delegates[i].Index == acc.Index {
 			done = true
 			if acc.Cpu.Delegated < cpu {

@@ -111,22 +111,38 @@ func (s *State) CancelPledgeCpu(index common.AccountName, token string, value *b
 	}
 	return s.CommitAccount(acc)
 }
-func (s *State) SetResourceLimits(index common.AccountName, self bool, cpu, net float32) error {
-	acc, err := s.GetAccountByName(index)
-	if err != nil {
-		return err
-	}
-	if err := acc.SetResourceLimits(self, cpu, net); err != nil {
-		return err
-	}
-	return s.CommitAccount(acc)
-}
-func (s *State) SetDelegateInfo(from, to common.AccountName, cpu, net float32) error {
+func (s *State) SetResourceLimits(from, to common.AccountName, cpu, net float32) error {
 	acc, err := s.GetAccountByName(from)
 	if err != nil {
 		return err
 	}
-	if err := acc.SetDelegateInfo(to, cpu, net); err != nil {
+	if from == to {
+		if err := acc.SetResourceLimits(true, cpu, net); err != nil {
+			return err
+		}
+	} else {
+		if err := acc.SetDelegateInfo(to, cpu, net); err != nil {
+			return err
+		}
+		accTo, err := s.GetAccountByName(to)
+		if err != nil {
+			return err
+		}
+		if err := accTo.SetResourceLimits(false, cpu, net); err != nil {
+			return err
+		}
+		if err := s.CommitAccount(accTo); err != nil {
+			return err
+		}
+	}
+	return s.CommitAccount(acc)
+}
+func (s *State) SubResourceLimits(index common.AccountName, cpu, net float32) error {
+	acc, err := s.GetAccountByName(index)
+	if err != nil {
+		return err
+	}
+	if err := acc.SubResourceLimits(cpu, net); err != nil {
 		return err
 	}
 	return s.CommitAccount(acc)

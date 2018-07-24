@@ -74,18 +74,11 @@ func (ns *NativeService) SystemExecute(index common.AccountName) ([]byte, error)
 		if err != nil {
 			return nil, err
 		}
-		if from == to {
-			if err := ns.state.SetResourceLimits(from, true, float32(cpu), float32(net)); err != nil {
-				return nil, err
-			}
-		} else {
-			if err := ns.state.SetDelegateInfo(from, to, float32(cpu), float32(net)); err != nil {
-				return nil, err
-			}
-			if err := ns.state.SetResourceLimits(to, false, float32(cpu), float32(net)); err != nil {
-				return nil, err
-			}
+
+		if err := ns.state.SetResourceLimits(from, to, float32(cpu), float32(net)); err != nil {
+			return nil, err
 		}
+		return nil, nil
 	case "cancel_pledge":
 		from := common.NameToIndex(ns.params[0])
 		to := common.NameToIndex(ns.params[1])
