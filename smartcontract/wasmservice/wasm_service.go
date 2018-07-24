@@ -18,12 +18,13 @@ package wasmservice
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
-	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
+	"github.com/ecoball/go-ecoball/core/state"
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/vm/wasmvm/exec"
 	"github.com/ecoball/go-ecoball/vm/wasmvm/util"
@@ -31,21 +32,19 @@ import (
 	"github.com/ecoball/go-ecoball/vm/wasmvm/wasm"
 	"io/ioutil"
 	"os"
-	"github.com/ecoball/go-ecoball/core/state"
-	"encoding/json"
 )
 
 var log = elog.NewLogger("wasm", config.LogLevel)
 
 type WasmService struct {
-	ledger ledger.Ledger
+	state  *state.State
 	tx     *types.Transaction
 	Code   []byte
 	Args   []uint64
 	Method string
 }
 
-func NewWasmService(ledger ledger.Ledger, tx *types.Transaction, contract *types.DeployInfo, invoke *types.InvokeInfo) (*WasmService, error) {
+func NewWasmService(s *state.State, tx *types.Transaction, contract *types.DeployInfo, invoke *types.InvokeInfo) (*WasmService, error) {
 	if contract == nil {
 		return nil, errors.New("contract is nil")
 	}
@@ -55,8 +54,8 @@ func NewWasmService(ledger ledger.Ledger, tx *types.Transaction, contract *types
 		return nil, err
 	}
 	ws := &WasmService{
-		ledger: ledger,
-		tx:tx,
+		state:  s,
+		tx:     tx,
 		Code:   contract.Code,
 		Args:   params,
 		Method: string(invoke.Method),
@@ -172,7 +171,7 @@ func (ws *WasmService) AbaAccountAdd(user, addr uint64) int32 {
 	name := common.PointerToString(user)
 	log.Debug("AbaAccountAdd:", name)
 	address := common.FormHexString(common.PointerToString(addr))
-	_, err := ws.ledger.AccountAdd(common.NameToIndex(name), address)
+	_, err := ws.state.AddAccount(common.NameToIndex(name), address)
 	if err != nil {
 		log.Error(err)
 		return -1
@@ -183,7 +182,7 @@ func (ws *WasmService) AbaStoreSet(key, value uint64) int32 {
 	keyStr := common.PointerToString(key)
 	valueStr := common.PointerToString(value)
 	log.Debug("AbaStoreSet:", keyStr, valueStr)
-	if err := ws.ledger.StoreSet(common.NameToIndex("root"), []byte(keyStr), []byte(valueStr)); err != nil {
+	if err := ws.state.StoreSet(common.NameToIndex("root"), []byte(keyStr), []byte(valueStr)); err != nil {
 		log.Error("AbaStoreSet error:", err)
 		return 1
 	}
@@ -191,7 +190,7 @@ func (ws *WasmService) AbaStoreSet(key, value uint64) int32 {
 }
 func (ws *WasmService) AbaStoreGet(key uint64) int32 {
 	keyStr := common.PointerToString(key)
-	value, err := ws.ledger.StoreGet(common.NameToIndex("root"), []byte(keyStr))
+	value, err := ws.state.StoreGet(common.NameToIndex("root"), []byte(keyStr))
 	if err != nil {
 		return 0
 	}
@@ -200,12 +199,12 @@ func (ws *WasmService) AbaStoreGet(key uint64) int32 {
 }
 func (ws *WasmService) AddPermission(user, perm uint64) int32 {
 	name := common.PointerToString(user)
-	permission := state.Permission{Keys:make(map[string]state.KeyFactor, 1), Accounts:make(map[string]state.AccFactor, 1)}
+	permission := state.Permission{Keys: make(map[string]state.KeyFactor, 1), Accounts: make(map[string]state.AccFactor, 1)}
 	if err := json.Unmarshal([]byte(common.PointerToString(perm)), &permission); err != nil {
 		log.Error(err)
 		return -1
 	}
-	if err := ws.ledger.AddPermission(common.NameToIndex(name), permission); err != nil {
+	if err := ws.state.AddPermission(common.NameToIndex(name), permission); err != nil {
 		log.Error(err)
 		return -1
 	}
@@ -213,7 +212,7 @@ func (ws *WasmService) AddPermission(user, perm uint64) int32 {
 }
 func (ws *WasmService) RequirePermission(perm string) int32 {
 	log.Debug("RequirePermission:", perm)
-	if err := ws.ledger.CheckPermission(ws.tx.Addr, perm, ws.tx.Signatures); err != nil {
+	if err := ws.state.CheckPermission(ws.tx.Addr, perm, ws.tx.Signatures); err != nil {
 		log.Error(err)
 		return -1
 	}

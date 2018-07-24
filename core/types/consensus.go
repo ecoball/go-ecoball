@@ -23,6 +23,8 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/core/pb"
+	"sort"
+	"github.com/ecoball/go-ecoball/account"
 )
 
 type ConType uint32
@@ -60,6 +62,10 @@ func InitConsensusData(timestamp int64) (*ConsensusData, error) {
 	case "DPOS":
 		conType := CondPos
 		conPayload := GenesisStateInit(timestamp)
+		return NewConsensusPayload(conType, conPayload), nil
+	case "ABABFT":
+		conType := ConABFT
+		conPayload := GenesisABABFTInit(timestamp)
 		return NewConsensusPayload(conType, conPayload), nil
 		//TODO
 	default:
@@ -393,4 +399,44 @@ func (a *AbaBftData) Show() {
 		fmt.Println("\tPublicKey      :", common.ToHex(a.PerBlockSignatures[i].PubKey))
 		fmt.Println("\tSigData        :", common.ToHex(a.PerBlockSignatures[i].SigData))
 	}
+}
+
+func GenesisABABFTInit(timestamp int64)  *AbaBftData{
+	// array the peers list
+	/*
+	Num_peers_t := len(ababft.Peers_list)
+	var Peers_list_t []string
+	for i := 0; i < Num_peers_t; i++ {
+		Peers_list_t[i] = string(ababft.Peers_list[i].PublicKey)
+	}
+	// sort the peers as list
+	sort.Strings(Peers_list_t)
+	for i := 0; i < Num_peers_t; i++ {
+		ababft.Peers_list[i].PublicKey = []byte(Peers_list_t[i])
+		ababft.Peers_list[i].Index = i
+	}
+	log.Debug("generate the geneses")
+	var sigs []common.Signature
+	for i := 0; i < Num_peers_t; i++ {
+		sigs = append(sigs,common.Signature{ababft.Peers_list[i].PublicKey, []byte("hello,ababft")})
+	}
+	*/
+	var Num_peers_t int
+	Num_peers_t = 3
+	var Peers_list_t []string
+	Peers_list_t[0] = string(config.Worker1.PublicKey)
+	Peers_list_t[1] = string(config.Worker2.PublicKey)
+	Peers_list_t[2] = string(config.Worker3.PublicKey)
+	log.Debug("generate the geneses")
+	sort.Strings(Peers_list_t)
+	var Peers_list []account.Account
+	for i := 0; i < Num_peers_t; i++ {
+		Peers_list[i].PublicKey = []byte(Peers_list_t[i])
+	}
+	var sigs []common.Signature
+	for i := 0; i < Num_peers_t; i++ {
+		sigs = append(sigs,common.Signature{Peers_list[i].PublicKey, []byte("hello,ababft")})
+	}
+	abaData := AbaBftData{0,sigs}
+	return &abaData
 }

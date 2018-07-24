@@ -26,6 +26,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/gogo/protobuf/proto"
 	"math/big"
+	"sort"
 )
 
 type Token struct {
@@ -39,17 +40,25 @@ type Resource struct {
 		Used  float32 `json:"used"`
 	}
 	Net struct {
-		Staked    float32 `json:"staked"`
+		Staked    float32 `json:"staked"`    //total stake delegated from account to self
+		Delegated float32 `json:"delegated"` //total stake delegated to account from others
 		Used      float32 `json:"used"`
 		Available float32 `json:"available"`
 		Limit     float32 `json:"limit"`
 	}
 	Cpu struct {
-		Staked    float32 `json:"staked"`
+		Staked    float32 `json:"staked"`    //total stake delegated from account to self
+		Delegated float32 `json:"delegated"` //total stake delegated to account from others
 		Used      float32 `json:"used"`
 		Available float32 `json:"available"`
 		Limit     float32 `json:"limit"`
 	}
+}
+
+type Delegate struct {
+	Index common.AccountName `json:"index"`
+	Cpu   float32            `json:"cpu"`
+	Net   float32            `json:"net"`
 }
 
 type Account struct {
@@ -58,7 +67,8 @@ type Account struct {
 	Tokens      map[string]Token      `json:"token"`
 	Permissions map[string]Permission `json:"permissions"`
 	Contract    types.DeployInfo      `json:"contract"`
-	Resource
+	Delegates   []Delegate            `json:"delegate"`
+	Resource    `json:"resource"`
 
 	Hash   common.Hash `json:"hash"`
 	trie   Trie
@@ -131,7 +141,77 @@ func (a *Account) GetContract() (*types.DeployInfo, error) {
 	}
 	return &a.Contract, nil
 }
-func (a *Account) SetResourceLimits(ram, cpu, net float32) error {
+func (a *Account) SetResourceLimits(self bool, cpu, net float32) error {
+	if !self {
+		if cpu != 0 {
+			a.Cpu.Limit = cpu
+			a.Cpu.Delegated = cpu
+			a.Cpu.Available = cpu
+		}
+		if net != 0 {
+			a.Net.Limit = net
+			a.Net.Delegated = net
+			a.Net.Available = net
+		}
+	} else {
+		if cpu != 0 {
+			a.Cpu.Limit = cpu
+			a.Cpu.Available = cpu
+		}
+		if net != 0 {
+			a.Net.Limit = net
+			a.Net.Available = net
+		}
+	}
+	return nil
+}
+func (a *Account) SubResourceLimits(cpu, net float32) error {
+	if a.Cpu.Available < cpu {
+		return errors.New("cpu is not enough")
+	}
+	if a.Net.Available < net {
+		return errors.New("net is not enough")
+	}
+	a.Cpu.Available -= cpu
+	a.Cpu.Used += cpu
+	a.Net.Available -= net
+	a.Net.Used += net
+	return nil
+}
+func (a *Account) SetDelegateInfo(index common.AccountName, cpu, net float32) error {
+	d := Delegate{Index: index, Cpu: cpu, Net: net}
+	a.Delegates = append(a.Delegates, d)
+	return nil
+}
+func (a *Account) CancelDelegate(acc *Account, cpu, net float32) error {
+	done := false
+	for i := 0; i < len(a.Delegates); i++ {
+		if a.Delegates[i].Index == acc.Index {
+			done = true
+			if acc.Cpu.Delegated < cpu {
+				return errors.New("cpu amount is not enough")
+			}
+			if acc.Net.Delegated < net {
+				return errors.New("net amount is not enough")
+			}
+			acc.Cpu.Limit -= cpu
+			acc.Cpu.Delegated -= cpu
+			acc.Cpu.Available = acc.Cpu.Limit - acc.Cpu.Used
+			acc.Net.Limit -= net
+			acc.Net.Delegated -= net
+			acc.Net.Available = acc.Net.Limit - acc.Net.Used
+
+			a.Delegates[i].Cpu -= cpu
+			a.Delegates[i].Net -= net
+			if a.Delegates[i].Cpu == 0 && a.Delegates[i].Net == 0 {
+				a.Delegates = append(a.Delegates[:i], a.Delegates[i+1:]...)
+			}
+		}
+	}
+	if done == false {
+		return errors.New(fmt.Sprintf("account:%s is not delegated for %s", common.IndexToName(a.Index), common.IndexToName(acc.Index)))
+	}
+
 	return nil
 }
 func (a *Account) PledgeCpu(token string, value *big.Int) error {
@@ -330,29 +410,56 @@ func (a *Account) Serialize() ([]byte, error) {
 }
 func (a *Account) ProtoBuf() (*pb.Account, error) {
 	var tokens []*pb.Token
+	var keysToken []string
 	for _, v := range a.Tokens {
+		keysToken = append(keysToken, v.Name)
+	}
+	sort.Strings(keysToken)
+	for _, k := range keysToken {
+		v := a.Tokens[k]
 		balance, err := v.Balance.GobEncode()
 		if err != nil {
 			return nil, err
 		}
 		ac := pb.Token{
-			Name:    []byte(v.Name),
+			Name:    v.Name,
 			Balance: balance,
 		}
 		tokens = append(tokens, &ac)
 	}
+
 	var perms []*pb.Permission
+	var keysPerm []string
 	for _, perm := range a.Permissions {
+		keysPerm = append(keysPerm, perm.PermName)
+	}
+	sort.Strings(keysPerm)
+	for _, k := range keysPerm {
+		perm := a.Permissions[k]
 		var pbKeys []*pb.KeyWeight
 		var pbAccounts []*pb.AccountWeight
+		var keysKeys []string
+		var keysAccount []string
 		for _, key := range perm.Keys {
+			keysKeys = append(keysKeys, key.Actor.HexString())
+		}
+		sort.Strings(keysKeys)
+		for _, k := range keysKeys {
+			key := perm.Keys[k]
 			pbKey := &pb.KeyWeight{Actor: key.Actor.Bytes(), Weight: key.Weight}
 			pbKeys = append(pbKeys, pbKey)
 		}
+
 		for _, acc := range perm.Accounts {
+			keysAccount = append(keysAccount, acc.Permission)
+		}
+		sort.Strings(keysAccount)
+		for _, k := range keysAccount {
+			acc := perm.Accounts[k]
 			pbAccount := &pb.AccountWeight{Actor: uint64(acc.Actor), Weight: acc.Weight, Permission: []byte(acc.Permission)}
 			pbAccounts = append(pbAccounts, pbAccount)
 		}
+
 		pbPerm := &pb.Permission{
 			PermName:  []byte(perm.PermName),
 			Parent:    []byte(perm.Parent),
@@ -361,6 +468,11 @@ func (a *Account) ProtoBuf() (*pb.Account, error) {
 			Accounts:  pbAccounts,
 		}
 		perms = append(perms, pbPerm)
+	}
+	var delegates []*pb.Delegate
+	for _, v := range a.Delegates {
+		d := pb.Delegate{Index: uint64(v.Index), Cpu: v.Cpu, Net: v.Net}
+		delegates = append(delegates, &d)
 	}
 	pbAcc := pb.Account{
 		Index:       uint64(a.Index),
@@ -372,18 +484,21 @@ func (a *Account) ProtoBuf() (*pb.Account, error) {
 			Describe: common.CopyBytes(a.Contract.Describe),
 			Code:     common.CopyBytes(a.Contract.Code),
 		},
+		Delegates: delegates,
 		Ram: &pb.Ram{
 			Quota: a.Ram.Quota,
 			Used:  a.Ram.Used,
 		},
 		Cpu: &pb.Res{
 			Staked:    a.Cpu.Staked,
+			Delegated: a.Cpu.Delegated,
 			Used:      a.Cpu.Used,
 			Available: a.Cpu.Available,
 			Limit:     a.Cpu.Limit,
 		},
 		Net: &pb.Res{
 			Staked:    a.Net.Staked,
+			Delegated: a.Net.Delegated,
 			Used:      a.Net.Used,
 			Available: a.Net.Available,
 			Limit:     a.Net.Limit,
@@ -412,10 +527,12 @@ func (a *Account) Deserialize(data []byte) error {
 	a.Ram.Quota = pbAcc.Ram.Quota
 	a.Ram.Used = pbAcc.Ram.Used
 	a.Cpu.Staked = pbAcc.Cpu.Staked
+	a.Cpu.Delegated = pbAcc.Cpu.Delegated
 	a.Cpu.Used = pbAcc.Cpu.Used
 	a.Cpu.Available = pbAcc.Cpu.Available
 	a.Cpu.Limit = pbAcc.Cpu.Limit
 	a.Net.Staked = pbAcc.Net.Staked
+	a.Net.Delegated = pbAcc.Net.Delegated
 	a.Net.Used = pbAcc.Net.Used
 	a.Net.Available = pbAcc.Net.Available
 	a.Net.Limit = pbAcc.Net.Limit
@@ -437,6 +554,9 @@ func (a *Account) Deserialize(data []byte) error {
 			return err
 		}
 		a.Tokens[ac.Name] = ac
+	}
+	for _, v := range pbAcc.Delegates {
+		a.Delegates = append(a.Delegates, Delegate{Index: common.AccountName(v.Index), Cpu: v.Cpu, Net: v.Net})
 	}
 	for _, pbPerm := range pbAcc.Permissions {
 		keys := make(map[string]KeyFactor, 1)

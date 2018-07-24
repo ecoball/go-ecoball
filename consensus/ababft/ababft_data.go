@@ -126,5 +126,24 @@ func (sign *Signature_BlkF) Deserialize(data []byte) error {
 }
 
 type Block_Syn struct {
-	Blksyn *types.Block
+	Blksyn *pb.BlockSyn
+}
+
+func (bls *Block_Syn) Serialize() ([]byte, error) {
+	b, err := bls.Blksyn.Marshal()
+	if err != nil {
+		return nil, err
+	}
+	return b, nil
+}
+
+func (bls *Block_Syn) Deserialize(data []byte) error {
+	if len(data) == 0 {
+		return errors.New("input data's length is zero")
+	}
+
+	if err := bls.Blksyn.Unmarshal(data); err != nil {
+		return err
+	}
+	return nil
 }

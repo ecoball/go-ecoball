@@ -22,8 +22,8 @@ import (
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/store"
-	"math/big"
 	"github.com/ecoball/go-ecoball/core/types"
+	"math/big"
 )
 
 var log = elog.NewLogger("state", elog.DebugLog)
@@ -36,6 +36,7 @@ type State struct {
 	db     Database
 	diskDb *store.LevelDBStore
 }
+
 /**
  *  @brief create a new mpt trie and a levelDB
  *  @param path - the levelDB store path
@@ -55,6 +56,13 @@ func NewState(path string, root common.Hash) (st *State, err error) {
 	}
 	return st, nil
 }
+func (s *State) CopyState() *State {
+	return &State{
+		path:   s.path,
+		trie:   s.db.CopyTrie(s.trie),
+	}
+}
+
 /**
  *  @brief create a new account and store into mpt trie, meanwhile store the mapping of addr and index
  *  @param index - account's index
@@ -80,6 +88,7 @@ func (s *State) AddAccount(index common.AccountName, addr common.Address) (*Acco
 	if err := s.trie.TryUpdate(addr.Bytes(), common.IndexToBytes(obj.Index)); err != nil {
 		return nil, err
 	}
+	log.Debug(s.trie.Hash().HexString())
 	return obj, nil
 }
 func (s *State) PledgeCpu(index common.AccountName, token string, value *big.Int) error {
@@ -101,6 +110,59 @@ func (s *State) CancelPledgeCpu(index common.AccountName, token string, value *b
 		return err
 	}
 	return s.CommitAccount(acc)
+}
+func (s *State) SetResourceLimits(from, to common.AccountName, cpu, net float32) error {
+	acc, err := s.GetAccountByName(from)
+	if err != nil {
+		return err
+	}
+	if from == to {
+		if err := acc.SetResourceLimits(true, cpu, net); err != nil {
+			return err
+		}
+	} else {
+		if err := acc.SetDelegateInfo(to, cpu, net); err != nil {
+			return err
+		}
+		accTo, err := s.GetAccountByName(to)
+		if err != nil {
+			return err
+		}
+		if err := accTo.SetResourceLimits(false, cpu, net); err != nil {
+			return err
+		}
+		if err := s.CommitAccount(accTo); err != nil {
+			return err
+		}
+	}
+	return s.CommitAccount(acc)
+}
+func (s *State) SubResourceLimits(index common.AccountName, cpu, net float32) error {
+	acc, err := s.GetAccountByName(index)
+	if err != nil {
+		return err
+	}
+	if err := acc.SubResourceLimits(cpu, net); err != nil {
+		return err
+	}
+	return s.CommitAccount(acc)
+}
+func (s *State) CancelDelegate(from, to common.AccountName, cpu, net float32) error {
+	acc, err := s.GetAccountByName(from)
+	if err != nil {
+		return err
+	}
+	accTo, err := s.GetAccountByName(to)
+	if err != nil {
+		return err
+	}
+	if err := acc.CancelDelegate(accTo, cpu, net); err != nil {
+		return err
+	}
+	if err := s.CommitAccount(acc); err != nil {
+		return err
+	}
+	return s.CommitAccount(accTo)
 }
 func (s *State) SetContract(index common.AccountName, t types.VmType, des, code []byte) error {
 	acc, err := s.GetAccountByName(index)
@@ -136,6 +198,7 @@ func (s *State) StoreGet(index common.AccountName, key []byte) (value []byte, er
 	}
 	return acc.StoreGet(s.path, key)
 }
+
 /**
  *  @brief add a permission object into account, then update to mpt trie
  *  @param perm - the permission object
@@ -148,6 +211,7 @@ func (s *State) AddPermission(index common.AccountName, perm Permission) error {
 	acc.AddPermission(perm)
 	return s.CommitAccount(acc)
 }
+
 /**
  *  @brief check the permission's validity, this method will not modified mpt trie
  *  @param index - the account index
@@ -162,6 +226,7 @@ func (s *State) CheckPermission(index common.AccountName, name string, signature
 	}
 	return acc.CheckPermission(s, name, signatures)
 }
+
 /**
  *  @brief search the permission by name, return json array string
  *  @param index - the account index
@@ -178,6 +243,7 @@ func (s *State) FindPermission(index common.AccountName, name string) (string, e
 		return "[" + str + "]", nil
 	}
 }
+
 /**
  *  @brief search the account by name index
  *  @param index - the account index
@@ -197,6 +263,7 @@ func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
 	}
 	return acc, nil
 }
+
 /**
  *  @brief search the account by address
  *  @param addr - the account address
@@ -216,6 +283,7 @@ func (s *State) GetAccountByAddr(addr common.Address) (*Account, error) {
 		}
 	}
 }
+
 /**
  *  @brief update the account's information into trie
  *  @param acc - account object
@@ -225,13 +293,14 @@ func (s *State) CommitAccount(acc *Account) error {
 	if err != nil {
 		return err
 	}
+	log.Debug(common.IndexToBytes(acc.Index))
 	if err := s.trie.TryUpdate(common.IndexToBytes(acc.Index), d); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *State) GetBalance(index common.AccountName, token string) (*big.Int, error) {
+func (s *State) AccountGetBalance(index common.AccountName, token string) (*big.Int, error) {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return nil, err
@@ -239,7 +308,7 @@ func (s *State) GetBalance(index common.AccountName, token string) (*big.Int, er
 
 	return acc.Balance(token)
 }
-func (s *State) SubBalance(index common.AccountName, token string, value *big.Int) error {
+func (s *State) AccountSubBalance(index common.AccountName, token string, value *big.Int) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return err
@@ -258,7 +327,7 @@ func (s *State) SubBalance(index common.AccountName, token string, value *big.In
 	}
 	return nil
 }
-func (s *State) AddBalance(index common.AccountName, token string, value *big.Int) error {
+func (s *State) AccountAddBalance(index common.AccountName, token string, value *big.Int) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return err
@@ -310,9 +379,10 @@ func (s *State) CommitToMemory() error {
 	if err != nil {
 		return err
 	}
-	log.Debug("Commit State DB:", root.HexString())
+	log.Debug("commit state db to memory:", root.HexString())
 	return nil
 }
+
 /**
  *  @brief save the information of mpt trie into levelDB
  */
@@ -322,6 +392,7 @@ func (s *State) CommitToDB() error {
 	}
 	return s.db.TrieDB().Commit(s.trie.Hash(), false)
 }
+
 /**
  *  @brief reset the mpt state by root hash
  *  @param hash - the hash of mpt witch state will be reset
@@ -345,4 +416,10 @@ func (s *State) Reset(hash common.Hash) error {
 }
 func (s *State) Close() {
 	s.diskDb.Close()
+}
+func (s *State) Trie() Trie {
+	return s.trie
+}
+func (s State) DataBase() Database {
+	return s.db
 }

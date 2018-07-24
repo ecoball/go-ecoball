@@ -150,6 +150,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			var signaturepre_send Signature_Preblock
 			signaturepre_send.Signature_preblock.PubKey = signature_preblock.PubKey
 			signaturepre_send.Signature_preblock.SigData = signature_preblock.SigData
+			// todo
+			// for the signature of previous block, maybe the round number is not needed
 			signaturepre_send.Signature_preblock.Round = uint32(current_round_num)
 			signaturepre_send.Signature_preblock.Height = uint32(currentheader.Height)
 			// broadcast
@@ -180,6 +182,9 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		if primary_tag == 1 && (actor_c.status == 2 || actor_c.status == 3){
 			// verify the signature
 			// first check the round number and height
+
+			// todo
+			// maybe round number is not needed for preblock signature
 			if round_in >= (current_round_num-1) && height_in >= current_height_num {
 				if round_in > (current_round_num - 1) && height_in > current_height_num {
 					// require synchronization, the longest chain is ok
@@ -187,7 +192,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					var requestsyn REQSyn
 					requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
 					requestsyn.Reqsyn.SigData = []byte("none")
-					requestsyn.Reqsyn.RequestHeight = uint64(current_height_num+1)
+					requestsyn.Reqsyn.RequestHeight = uint64(current_height_num)
 					event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
 					// todo
 					// attention
@@ -370,7 +375,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 						var requestsyn REQSyn
 						requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
 						requestsyn.Reqsyn.SigData = []byte("none")
-						requestsyn.Reqsyn.RequestHeight = uint64(current_height_num+1)
+						requestsyn.Reqsyn.RequestHeight = uint64(current_height_num)
 						event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
 						// todo
 						// attention:
@@ -394,7 +399,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					}
 					// 1c. check the block header, except the consensus data
 					var valid_blk bool
-					valid_blk,err = actor_c.verify_header(&blockfirst_received, current_round_num)
+					valid_blk,err = actor_c.verify_header(&blockfirst_received, current_round_num,*currentheader)
 					if valid_blk==false {
 						println("header check fail")
 						return
@@ -614,7 +619,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					var requestsyn REQSyn
 					requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
 					requestsyn.Reqsyn.SigData = []byte("none")
-					requestsyn.Reqsyn.RequestHeight = uint64(current_height_num+1)
+					requestsyn.Reqsyn.RequestHeight = uint64(current_height_num)
 					event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
 
 					// todo
@@ -639,7 +644,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					}
 					// 1c. check the block header, except the consensus data
 					var valid_blk bool
-					valid_blk,err = actor_c.verify_header(blocksecond_received, int(data_blks_received.NumberRound))
+					valid_blk,err = actor_c.verify_header(blocksecond_received, int(data_blks_received.NumberRound), *currentheader)
 					// todo
 					// can check the hash and statdb and merker root instead of the total head to speed up
 					if valid_blk==false {
@@ -698,77 +703,112 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 	case REQSyn:
 		// receive the shronization request
 		height_req := msg.Reqsyn.RequestHeight
-		// 1. get the response block from the ledger
-		blk_syn,err := actor_c.service_ababft.ledger.GetTxBlockByHeight(height_req)
-		if err== nil && blk_syn!=nil {
-			// find the corresponding block
-			var blksyn_send Block_Syn
-			blksyn_send.Blksyn = blk_syn
-			// 2. send the required block to
-			event.Send(event.ActorConsensus,event.ActorP2P,blksyn_send)
+		// modify the synchronization code
+		// only the verified block will be send back
+		// 1. check the height of the verified chain
+		if height_req > uint64(current_height_num - 1) {
+			return
 		}
+		// 2. get the response blocks from the ledger
+		blk_syn_v,err1 := actor_c.service_ababft.ledger.GetTxBlockByHeight(height_req)
+		if err1 != nil || blk_syn_v == nil {
+			log.Debug("not find the block of the corresponding height in the ledger")
+			return
+		}
+		blk_syn_f,err2 := actor_c.service_ababft.ledger.GetTxBlockByHeight(height_req+1)
+		if err2 != nil || blk_syn_f == nil {
+			log.Debug("not find the block of the corresponding height in the ledger")
+			return
+		}
+		// 3. send the found blocks
+		var blksyn_send Block_Syn
+		blksyn_send.Blksyn.BlksynV,err = blk_syn_v.Blk2BlkTx()
+		if err != nil {
+			log.Debug("block_v to blockTx transformation fails")
+			return
+		}
+		blksyn_send.Blksyn.BlksynF,err = blk_syn_f.Blk2BlkTx()
+		if err != nil {
+			log.Debug("block_f to blockTx transformation fails")
+		}
+		event.Send(event.ActorConsensus,event.ActorP2P,blksyn_send)
 
 	case Block_Syn:
-		height_syn := msg.Blksyn.Header.Height
-		// 1. compare the height
-		if (current_height_num + 1) == int(height_syn) {
-			// 2. to check and save the block if it passes the verification
-			// to verify the first round block
-			blocksecond_received := msg.Blksyn
-			// check the protocal type is ababft
-			if blocksecond_received.ConsensusData.Type == types.ConABFT {
-				data_blks_received := blocksecond_received.ConsensusData.Payload.(*types.AbaBftData)
-				// 1. no need to check the round number, maybe the peer misses one block in the previous round.
-				// Only the height is important
-				round_num_in := int(data_blks_received.NumberRound)
-				index_g := (int(data_blks_received.NumberRound)-1) % Num_peers + 1
-				pukey_g_in := blocksecond_received.Signatures[0].PubKey
-				var index_g_in int
-				index_g_in = -1
-				for _, peer := range Peers_list {
-					if ok := bytes.Equal(peer.PublicKey, pukey_g_in); ok == true {
-						index_g_in = int(peer.Index)
-						break
-					}
-				}
-				if index_g != index_g_in {
-					// illegal block generator
-					return
-				}
-				// 1c. check the block header, except the consensus data
-				var valid_blk bool
-				valid_blk,err = actor_c.verify_header(blocksecond_received, round_num_in)
-				if valid_blk==false {
-					println("header check fail")
-					return
-				}
-				// 2. check the signatures ( for both previous and current blocks) in ConsensusData
-				preblkhash := currentheader.Hash
-				valid_blk, err = actor_c.verify_signatures(data_blks_received, preblkhash, blocksecond_received.Header)
-				if valid_blk==false {
-					println("previous and first-round blocks signatures check fail")
-					return
-				}
-				// 3.save the second-round block into the ledger
-				if err = actor_c.service_ababft.ledger.SaveTxBlock(blocksecond_received); err != nil {
-					// log.Error("save block error:", err)
-					println("save block error:", err)
-					return
-				}
-				// 4. only the block is sucessfully saved, then change the status
-				actor_c.status = 8
-				primary_tag = 0
-				// update the current_round_num
-				current_round_num = int(data_blks_received.NumberRound)
-				// start/enter the next turn
-				event.Send(event.ActorConsensus, event.ActorConsensus, ABABFTStart{})
-				return
-
-				// todo
-				// only need to check the hash and signature is enough?
-				// this may help to speed up the ababft
-			}
+		var blks_v types.Block
+		var blks_f types.Block
+		err = blks_v.BlkTx2Blk(*msg.Blksyn.BlksynV)
+		if err != nil {
+			log.Debug("blockTx to block_v transformation fails")
 		}
+		err = blks_f.BlkTx2Blk(*msg.Blksyn.BlksynF)
+		if err != nil {
+			log.Debug("blockTx to block_f transformation fails")
+		}
+		height_syn_v := blks_v.Header.Height
+		if height_syn_v == uint64(current_height_num) {
+			// the current_height_num has been verified
+			// 1. verify the verified block blks_v
+			var result_v bool
+			var blk_pre *types.Block
+			blk_pre,err = actor_c.service_ababft.ledger.GetTxBlockByHeight(blks_v.Header.Height-1)
+			if err != nil {
+				log.Debug("get previous block error")
+				return
+			}
+			result_v,err = actor_c.Blk_syn_verify(blks_v,current_height_num,currentheader.PrevHash, *blk_pre)
+			if result_v == false {
+				log.Debug("verification of blks_v fails")
+				return
+			}
+			// 2. verify the verified block blks_f
+			var result_f bool
+			result_f,err = actor_c.Blk_syn_verify(blks_f,current_height_num+1,blks_v.Header.Hash, blks_v)
+			if result_f == false {
+				log.Debug("verification of blks_f fails")
+				return
+			}
+			// 3. save the blocks
+			// 3.1 save blks_v
+			if ok := bytes.Equal(blks_v.Hash.Bytes(), currentheader.Hash.Bytes()); ok != true {
+				// the blks_v is not in the ledger,then save blks_v
+				// here need one reset DB
+				err = actor_c.service_ababft.ledger.ResetStateDB(blk_pre.Header.Hash)
+				if err = actor_c.service_ababft.ledger.SaveTxBlock(&blks_v); err != nil {
+					log.Debug("save block error:", err)
+					return
+				}
+			}  else {
+				// the blks_v has been in the ledger
+			}
+			// 3.2 save blks_f
+			if err = actor_c.service_ababft.ledger.SaveTxBlock(&blks_f); err != nil {
+				log.Debug("save block error:", err)
+				return
+			}
+			// 4. only the block is sucessfully saved, then change the status
+			actor_c.status = 8
+			primary_tag = 0
+			// update the current_round_num
+			current_round_num = int(blks_v.ConsensusData.Payload.(*types.AbaBftData).NumberRound)
+			// start/enter the next turn
+			event.Send(event.ActorConsensus, event.ActorConsensus, ABABFTStart{})
+
+			// todo
+			// take care of save and reset
+
+		} else if height_syn_v >uint64(current_height_num) {
+			// the verified block has bigger height
+			// send synchronization message
+			var requestsyn REQSyn
+			requestsyn.Reqsyn.PubKey = actor_c.service_ababft.account.PublicKey
+			requestsyn.Reqsyn.SigData = []byte("none")
+			requestsyn.Reqsyn.RequestHeight = uint64(current_height_num)
+			event.Send(event.ActorConsensus,event.ActorP2P,requestsyn)
+		}
+		// todo
+		// only need to check the hash and signature is enough?
+		// this may help to speed up the ababft
+		return
 
 	case TimeoutMsg:
 		pubkey_in := msg.Toutmsg.PubKey
@@ -780,6 +820,9 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		for _, peer := range Peers_list {
 			if ok := bytes.Equal(peer.PublicKey, pubkey_in); ok == true {
 				// legal peer
+				if TimeoutMsgs[string(pubkey_in)] <= round_in {
+					return
+				}
 				TimeoutMsgs[string(pubkey_in)] = round_in
 				// to count the number is enough
 				var count_r []int
@@ -819,7 +862,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 	}
 }
 
-func (actor_c *Actor_ababft) verify_header(block_in *types.Block, current_round_num_in int) (bool,error){
+func (actor_c *Actor_ababft) verify_header(block_in *types.Block, current_round_num_in int, cur_header types.Header) (bool,error){
 	var err error
 	header_in := block_in.Header
 	txs := block_in.Transactions
@@ -829,7 +872,7 @@ func (actor_c *Actor_ababft) verify_header(block_in *types.Block, current_round_
 
 	fmt.Println("before reset")
 	// reset the stateDB
-	err = actor_c.service_ababft.ledger.ResetStateDB(currentheader.Hash)
+	err = actor_c.service_ababft.ledger.ResetStateDB(cur_header.Hash)
 	// fmt.Println("after reset",err)
 
 	// generate the block_first_cal for comparison
@@ -851,7 +894,7 @@ func (actor_c *Actor_ababft) verify_header(block_in *types.Block, current_round_
 	// ConsensusData is checked in the Receive function
 
 	// check PrevHash      common.Hash
-	if ok :=bytes.Equal(block_in.PrevHash.Bytes(),currentheader.Hash.Bytes()); ok != true {
+	if ok :=bytes.Equal(block_in.PrevHash.Bytes(),cur_header.Hash.Bytes()); ok != true {
 		println("prehash is wrong")
 		return false,nil
 	}
@@ -1033,4 +1076,45 @@ func (actor_c *Actor_ababft) verify_signatures(data_blks_received *types.AbaBftD
 	}
 	return  true,err
 	*/
+}
+
+func (actor_c *Actor_ababft) Blk_syn_verify(block_in types.Block,cur_height int, preblkhash common.Hash,blk_pre types.Block) (bool,error) {
+	var err error
+	// 1. check the protocal type is ababft
+	if block_in.ConsensusData.Type != types.ConABFT {
+		log.Debug("protocal error")
+		return false,nil
+	}
+	// 2. check the block generator
+	data_blks_received := block_in.ConsensusData.Payload.(*types.AbaBftData)
+	round_num_in := int(data_blks_received.NumberRound)
+	index_g := (int(data_blks_received.NumberRound)-1) % Num_peers + 1
+	pukey_g_in := block_in.Signatures[0].PubKey
+	var index_g_in int
+	index_g_in = -1
+	for _, peer := range Peers_list {
+		if ok := bytes.Equal(peer.PublicKey, pukey_g_in); ok == true {
+			index_g_in = int(peer.Index)
+			break
+		}
+	}
+	if index_g != index_g_in {
+		log.Debug("illegal block generator")
+		return false,nil
+	}
+	// 3. check the block header, except the consensus data
+	var valid_blk bool
+	valid_blk,err = actor_c.verify_header(&block_in, round_num_in, *blk_pre.Header)
+	if valid_blk==false {
+		println("header check fail")
+		return valid_blk,err
+	}
+	// 4. check the signatures ( for both previous and current blocks) in ConsensusData
+	valid_blk, err = actor_c.verify_signatures(data_blks_received, preblkhash, block_in.Header)
+	if valid_blk==false {
+		println("previous and first-round blocks signatures check fail")
+		return false,nil
+	}
+
+	return true,nil
 }

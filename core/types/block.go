@@ -182,3 +182,38 @@ func (b *Block) JsonString() string {
 	data, _ := json.Marshal(b)
 	return string(data)
 }
+
+func (b *Block) Blk2BlkTx() (*pb.BlockTx, error) {
+	block,err := b.protoBuf()
+	if err != nil {
+		return nil, err
+	}
+	return block, nil
+}
+
+func (b *Block) BlkTx2Blk(blktx pb.BlockTx) (error) {
+	dataHeader, err := blktx.Header.Marshal()
+	if err != nil {
+		return err
+	}
+	b.Header = new(Header)
+	err = b.Header.Deserialize(dataHeader)
+	if err != nil {
+		return err
+	}
+	var txs []*Transaction
+	for _, tx := range blktx.Transactions {
+		b, err := tx.Marshal()
+		if err != nil {
+			return err
+		}
+		t := new(Transaction)
+		if err := t.Deserialize(b); err != nil {
+			return err
+		}
+		txs = append(txs, t)
+	}
+	b.CountTxs = uint32(len(txs))
+	b.Transactions = txs
+	return nil
+}

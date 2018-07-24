@@ -45,3 +45,24 @@ func TestStateObject(t *testing.T) {
 		t.Fatal("mismatch")
 	}
 }
+
+func TestNewAccount(t *testing.T) {
+	addr := common.NewAddress(common.FromHex("01ca5cdd56d99a0023166b337ffc7fd0d2c42330"))
+	indexAcc := common.NameToIndex("pct")
+	acc, err := state.NewAccount("/tmp/acc", indexAcc, addr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	//for ; ;  {
+		d, err := acc.Serialize()
+		if err != nil {
+			t.Fatal(err)
+		}
+		fmt.Println(d)
+		if d[1] != 43 {
+			t.Fatal("error")
+		}
+	//	time.Sleep(1 *time.Second)
+	//}
+}

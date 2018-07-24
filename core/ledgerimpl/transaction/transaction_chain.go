@@ -31,6 +31,8 @@ import (
 	"github.com/ecoball/go-ecoball/core/types"
 	"github.com/ecoball/go-ecoball/smartcontract"
 	"math/big"
+	"time"
+	"github.com/ecoball/go-ecoball/core/bloom"
 )
 
 var log = elog.NewLogger("Chain Tx", elog.NoticeLog)
@@ -82,14 +84,15 @@ func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err err
 *  @param  consensusData - the data of consensus module set
 */
 func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData) (*types.Block, error) {
+	log.Warn("NewBlock")
+	s := c.StateDB.CopyState()
 	for i := 0; i < len(txs); i++ {
-		if _, err := c.HandleTransaction(ledger, txs[i]); err != nil {
+		if _, err := c.HandleTransaction(s, txs[i]); err != nil {
 			log.Error("Handle Transaction Error:", err)
 			return nil, err
 		}
-		//event.Send(event.ActorLedger, event.ActorP2P, txs[i]) //send result to p2p actor
 	}
-	return types.NewBlock(c.CurrentHeader, c.StateDB.GetHashRoot(), consensusData, txs)
+	return types.NewBlock(c.CurrentHeader, s.GetHashRoot(), consensusData, txs)
 }
 /**
 *  @brief  if create a new block failed, then need to reset state DB
@@ -127,7 +130,13 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	if block == nil {
 		return errors.New("block is nil")
 	}
-	//block.Show()
+
+	for i := 0; i < len(block.Transactions); i++ {
+		if _, err := c.HandleTransaction(c.StateDB, block.Transactions[i]); err != nil {
+			log.Error("Handle Transaction Error:", err)
+			return err
+		}
+	}
 	if err := event.Publish(event.ActorLedger, block, event.ActorTxPool, event.ActorP2P); err != nil {
 		log.Warn(err)
 	}
@@ -155,7 +164,10 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	if err := c.BlockStore.BatchCommit(); err != nil {
 		return err
 	}
-	c.StateDB.CommitToDB()
+	//c.StateDB.CommitToDB()
+	log.Debug("block state:", block.Height, block.StateHash.HexString())
+	log.Debug("state hash:", c.StateDB.GetHashRoot().HexString())
+
 	c.CurrentHeader = block.Header
 	return nil
 }
@@ -218,25 +230,68 @@ func (c *ChainTx) GenesesBlockInit() error {
 		c.CurrentHeader.Show()
 		return nil
 	}
-	//geneses, err := types.GenesesBlockInit()
-	block, err := geneses.GenesisBlockInit(c.ledger)
+
+	tm, err := time.Parse("02/01/2006 15:04:05 PM", "21/02/1990 00:00:00 AM")
 	if err != nil {
 		return err
 	}
+	timeStamp := tm.Unix()
+
+	//TODO start
+	SecondInMs := int64(1000)
+	BlockIntervalInMs := int64(15000)
+	timeStamp = int64((timeStamp*SecondInMs-SecondInMs)/BlockIntervalInMs) * BlockIntervalInMs
+	timeStamp = timeStamp / SecondInMs
+	//TODO end
+
+	hash := common.NewHash([]byte("EcoBall Geneses Block"))
+	conData := types.GenesesBlockInitConsensusData(timeStamp)
+
+	txs, err := geneses.PresetContract(c.ledger, timeStamp)
+	s := c.StateDB.CopyState()
+	for i := 0; i < len(txs); i++ {
+		if _, err := c.HandleTransaction(s, txs[i]); err != nil {
+			log.Error("Handle Transaction Error:", err)
+			return err
+		}
+	}
+
+	hashState := s.GetHashRoot()
+	header, err := types.NewHeader(types.VersionHeader, 1, hash, hash, hashState, *conData, bloom.Bloom{}, timeStamp)
+	if err != nil {
+		return err
+	}
+	block := &types.Block{Header: header, CountTxs: uint32(len(txs)), Transactions: txs}
+
+	if err := block.SetSignature(&config.Root); err != nil {
+		return err
+	}
+
+
+
+	//block, err := geneses.GenesisBlockInit(c.ledger, timeStamp)
+	//if err != nil {
+	//	return err
+	//}
 	if err := c.VerifyTxBlock(block); err != nil {
 		return err
 	}
 	c.CurrentHeader = block.Header
+	//for i := 0; i < len(block.Transactions); i++ {
+	//	if _, err := c.HandleTransaction(c.StateDB, block.Transactions[i]); err != nil {
+	//		log.Error("Handle Transaction Error:", err)
+	//		return err
+	//	}
+	//}
+	//for i := 0; i < len(block.Transactions); i++ {
+	//	if _, err := c.HandleTransaction(c.StateDB, block.Transactions[i]); err != nil {
+	//		log.Error("Handle Transaction Error:", err)
+	//		return err
+	//	}
+	//}
 	if err := c.SaveBlock(block); err != nil {
 		log.Error("Save geneses block error:", err)
 		return err
-	}
-	for i := 0; i < len(block.Transactions); i++ {
-		if _, err := c.HandleTransaction(c.ledger, block.Transactions[i]); err != nil {
-			log.Error("Handle Transaction Error:", err)
-			return err
-		}
-		//event.Send(event.ActorLedger, event.ActorP2P, txs[i]) //send result to p2p actor
 	}
 	c.CurrentHeader = block.Header
 	return nil
@@ -343,6 +398,9 @@ func (c *ChainTx) StoreSet(index common.AccountName, key, value []byte) (err err
 func (c *ChainTx) StoreGet(index common.AccountName, key []byte) (value []byte, err error) {
 	return c.StateDB.StoreGet(index, key)
 }
+func (c *ChainTx) SetResourceLimits(from, to common.AccountName, cpu, net float32) error {
+	return c.StateDB.SetResourceLimits(from, to, cpu, net)
+}
 func (c *ChainTx) SetContract(index common.AccountName, t types.VmType, des, code []byte) error {
 	return c.StateDB.SetContract(index, t, des, code)
 }
@@ -361,7 +419,7 @@ func (c *ChainTx) FindPermission(index common.AccountName, name string) (string,
 *  @param  indexToken - the uuid of token
 */
 func (c *ChainTx) AccountGetBalance(index common.AccountName, token string) (*big.Int, error) {
-	return c.StateDB.GetBalance(index, token)
+	return c.StateDB.AccountGetBalance(index, token)
 }
 /**
 *  @brief  add a account's balance
@@ -369,7 +427,7 @@ func (c *ChainTx) AccountGetBalance(index common.AccountName, token string) (*bi
 *  @param  indexToken - the uuid of token
 */
 func (c *ChainTx) AccountAddBalance(index common.AccountName, token string, value uint64) error {
-	return c.StateDB.AddBalance(index, token, new(big.Int).SetUint64(value))
+	return c.StateDB.AccountAddBalance(index, token, new(big.Int).SetUint64(value))
 }
 /**
 *  @brief  sub a account's balance
@@ -377,14 +435,14 @@ func (c *ChainTx) AccountAddBalance(index common.AccountName, token string, valu
 *  @param  indexToken - the uuid of token
 */
 func (c *ChainTx) AccountSubBalance(index common.AccountName, token string, value uint64) error {
-	return c.StateDB.SubBalance(index, token, new(big.Int).SetUint64(value))
+	return c.StateDB.AccountSubBalance(index, token, new(big.Int).SetUint64(value))
 }
 /**
 *  @brief  handle transaction with transaction's type
 *  @param  ledger - the interface of ledger impl
 *  @param  tx - a transaction
 */
-func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction) ([]byte, error) {
+func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction) ([]byte, error) {
 	switch tx.Type {
 	case types.TxTransfer:
 		log.Info("Transfer Execute")
@@ -392,14 +450,15 @@ func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction)
 		if !ok {
 			return nil, errors.New("transaction type error[transfer]")
 		}
-		if err := c.AccountSubBalance(tx.From, state.AbaToken, payload.Value.Uint64()); err != nil {
+		if err := s.AccountSubBalance(tx.From, state.AbaToken, payload.Value); err != nil {
 			return nil, err
 		}
-		if err := c.AccountAddBalance(tx.Addr, state.AbaToken, payload.Value.Uint64()); err != nil {
+		if err := s.AccountAddBalance(tx.Addr, state.AbaToken, payload.Value); err != nil {
 			return nil, err
 		}
+		s.SubResourceLimits(tx.From, 1, 1)
 	case types.TxDeploy:
-		if err := c.CheckPermission(tx.From, state.Active, tx.Signatures); err != nil {
+		if err := s.CheckPermission(tx.From, state.Active, tx.Signatures); err != nil {
 			return nil, err
 		}
 		payload, ok := tx.Payload.GetObject().(types.DeployInfo)
@@ -407,16 +466,22 @@ func (c *ChainTx) HandleTransaction(ledger ledger.Ledger, tx *types.Transaction)
 			return nil, errors.New("transaction type error[deploy]")
 		}
 		log.Info("Deploy Execute:", common.ToHex(payload.Code))
-		if err := ledger.SetContract(tx.From, payload.TypeVm, payload.Describe, payload.Code); err != nil {
+		if err := s.SetContract(tx.From, payload.TypeVm, payload.Describe, payload.Code); err != nil {
 			return nil, err
 		}
+		s.SubResourceLimits(tx.From, 1, 1)
 	case types.TxInvoke:
 		log.Info("Invoke Execute")
-		service, err := smartcontract.NewContractService(ledger, tx)
+		service, err := smartcontract.NewContractService(s, tx)
 		if err != nil {
 			return nil, err
 		}
-		return service.Execute()
+		ret, err := service.Execute()
+		if err != nil {
+			return nil, err
+		}
+		s.SubResourceLimits(tx.From, 1, 1)
+		return ret, nil
 	default:
 		return nil, errors.New("the transaction's type error")
 	}
@@ -429,7 +494,7 @@ func (c *ChainTx) TokenExisted(token string) bool {
 }
 
 func (c *ChainTx) TokenAllocation() error {
-	if err := c.StateDB.AddBalance(state.IndexAbaRoot, state.AbaToken, new(big.Int).SetUint64(2100000)); err != nil {
+	if err := c.StateDB.AccountAddBalance(state.IndexAbaRoot, state.AbaToken, new(big.Int).SetUint64(2100000)); err != nil {
 		return err
 	}
 	return nil
