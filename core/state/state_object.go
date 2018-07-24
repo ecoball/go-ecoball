@@ -142,13 +142,24 @@ func (a *Account) GetContract() (*types.DeployInfo, error) {
 	return &a.Contract, nil
 }
 func (a *Account) SetResourceLimits(self bool, cpu, net float32) error {
-	if cpu != 0 {
-		a.Cpu.Limit = cpu
-		a.Cpu.Available = cpu
-	}
-	if net != 0 {
-		a.Net.Limit = net
-		a.Net.Available = net
+	if !self {
+		if cpu != 0 {
+			a.Cpu.Delegated = cpu
+			a.Cpu.Available = cpu
+		}
+		if net != 0 {
+			a.Net.Delegated = net
+			a.Net.Available = net
+		}
+	} else {
+		if cpu != 0 {
+			a.Cpu.Limit = cpu
+			a.Cpu.Available = cpu
+		}
+		if net != 0 {
+			a.Net.Limit = net
+			a.Net.Available = net
+		}
 	}
 	return nil
 }
@@ -159,8 +170,8 @@ func (a *Account) SetDelegateInfo(index common.AccountName, cpu, net float32) er
 }
 func (a *Account) CancelDelegate(acc *Account, cpu, net float32) error {
 	done := false
-	for _, v := range a.Delegates {
-		if v.Index == acc.Index {
+	for i := 0; i < len(a.Delegates); i++{
+		if a.Delegates[i].Index == acc.Index {
 			done = true
 			if acc.Cpu.Delegated < cpu {
 				return errors.New("cpu amount is not enough")
@@ -174,6 +185,12 @@ func (a *Account) CancelDelegate(acc *Account, cpu, net float32) error {
 			acc.Net.Limit -= net
 			acc.Net.Delegated -= net
 			acc.Net.Available = acc.Net.Limit - acc.Net.Used
+
+			a.Delegates[i].Cpu -= cpu
+			a.Delegates[i].Net -= net
+			if a.Delegates[i].Cpu == 0 && a.Delegates[i].Net == 0 {
+				a.Delegates = append(a.Delegates[:i], a.Delegates[i+1:]...)
+			}
 		}
 	}
 	if done == false {

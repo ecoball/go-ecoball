@@ -75,14 +75,14 @@ func (ns *NativeService) SystemExecute(index common.AccountName) ([]byte, error)
 			return nil, err
 		}
 		if from == to {
-			if err := ns.state.SetResourceLimits(from, float32(cpu), float32(net)); err != nil {
+			if err := ns.state.SetResourceLimits(from, true, float32(cpu), float32(net)); err != nil {
 				return nil, err
 			}
 		} else {
 			if err := ns.state.SetDelegateInfo(from, to, float32(cpu), float32(net)); err != nil {
 				return nil, err
 			}
-			if err := ns.state.SetResourceLimits(to, float32(cpu), float32(net)); err != nil {
+			if err := ns.state.SetResourceLimits(to, false, float32(cpu), float32(net)); err != nil {
 				return nil, err
 			}
 		}
