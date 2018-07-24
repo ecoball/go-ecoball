@@ -398,8 +398,8 @@ func (c *ChainTx) StoreSet(index common.AccountName, key, value []byte) (err err
 func (c *ChainTx) StoreGet(index common.AccountName, key []byte) (value []byte, err error) {
 	return c.StateDB.StoreGet(index, key)
 }
-func (c *ChainTx) SetResourceLimits(index common.AccountName, cpu, net float32) error {
-	return c.StateDB.SetResourceLimits(index, cpu, net)
+func (c *ChainTx) SetResourceLimits(index common.AccountName, self bool, cpu, net float32) error {
+	return c.StateDB.SetResourceLimits(index, self, cpu, net)
 }
 func (c *ChainTx) SetContract(index common.AccountName, t types.VmType, des, code []byte) error {
 	return c.StateDB.SetContract(index, t, des, code)

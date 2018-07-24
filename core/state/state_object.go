@@ -141,7 +141,7 @@ func (a *Account) GetContract() (*types.DeployInfo, error) {
 	}
 	return &a.Contract, nil
 }
-func (a *Account) SetResourceLimits(cpu, net float32) error {
+func (a *Account) SetResourceLimits(self bool, cpu, net float32) error {
 	if cpu != 0 {
 		a.Cpu.Limit = cpu
 		a.Cpu.Available = cpu
