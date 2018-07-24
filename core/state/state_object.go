@@ -144,24 +144,71 @@ func (a *Account) GetContract() (*types.DeployInfo, error) {
 func (a *Account) SetResourceLimits(self bool, cpu, net float32) error {
 	if !self {
 		if cpu != 0 {
-			a.Cpu.Limit = cpu
-			a.Cpu.Delegated = cpu
-			a.Cpu.Available = cpu
+			a.Cpu.Limit += cpu
+			a.Cpu.Delegated += cpu
+			a.Cpu.Available += cpu
 		}
 		if net != 0 {
-			a.Net.Limit = net
-			a.Net.Delegated = net
-			a.Net.Available = net
+			a.Net.Limit += net
+			a.Net.Delegated += net
+			a.Net.Available += net
 		}
 	} else {
 		if cpu != 0 {
-			a.Cpu.Limit = cpu
-			a.Cpu.Available = cpu
+			a.Cpu.Staked += cpu
+			a.Cpu.Limit += cpu
+			a.Cpu.Available += cpu
 		}
 		if net != 0 {
-			a.Net.Limit = net
-			a.Net.Available = net
+			a.Net.Staked += net
+			a.Net.Limit += net
+			a.Net.Available += net
 		}
+	}
+	return nil
+}
+func (a *Account) CancelDelegateSelf(cpu, net float32) error {
+	if cpu != 0 {
+		a.Cpu.Staked -= cpu
+		a.Cpu.Limit -= cpu
+		a.Cpu.Available -= cpu
+	}
+	if net != 0 {
+		a.Net.Staked -= net
+		a.Net.Limit -= net
+		a.Net.Available -= net
+	}
+	return nil
+}
+func (a *Account) CancelDelegateOther(acc *Account, cpu, net float32) error {
+	done := false
+	for i := 0; i < len(a.Delegates); i++ {
+		if a.Delegates[i].Index == acc.Index {
+			done = true
+			if acc.Cpu.Delegated < cpu {
+				return errors.New("cpu amount is not enough")
+			}
+			if acc.Net.Delegated < net {
+				return errors.New("net amount is not enough")
+			}
+			acc.Cpu.Limit -= cpu
+			acc.Cpu.Delegated -= cpu
+			acc.Cpu.Available = acc.Cpu.Limit - acc.Cpu.Used
+			acc.Net.Limit -= net
+			acc.Net.Delegated -= net
+			acc.Net.Available = acc.Net.Limit - acc.Net.Used
+
+			a.Cpu.Staked -= cpu
+			a.Net.Staked -= net
+			a.Delegates[i].Cpu -= cpu
+			a.Delegates[i].Net -= net
+			if a.Delegates[i].Cpu == 0 && a.Delegates[i].Net == 0 {
+				a.Delegates = append(a.Delegates[:i], a.Delegates[i+1:]...)
+			}
+		}
+	}
+	if done == false {
+		return errors.New(fmt.Sprintf("account:%s is not delegated for %s", common.IndexToName(a.Index), common.IndexToName(acc.Index)))
 	}
 	return nil
 }
@@ -181,39 +228,11 @@ func (a *Account) SubResourceLimits(cpu, net float32) error {
 func (a *Account) SetDelegateInfo(index common.AccountName, cpu, net float32) error {
 	d := Delegate{Index: index, Cpu: cpu, Net: net}
 	a.Delegates = append(a.Delegates, d)
+	a.Cpu.Staked += cpu
+	a.Net.Staked += net
 	return nil
 }
-func (a *Account) CancelDelegate(acc *Account, cpu, net float32) error {
-	done := false
-	for i := 0; i < len(a.Delegates); i++ {
-		if a.Delegates[i].Index == acc.Index {
-			done = true
-			if acc.Cpu.Delegated < cpu {
-				return errors.New("cpu amount is not enough")
-			}
-			if acc.Net.Delegated < net {
-				return errors.New("net amount is not enough")
-			}
-			acc.Cpu.Limit -= cpu
-			acc.Cpu.Delegated -= cpu
-			acc.Cpu.Available = acc.Cpu.Limit - acc.Cpu.Used
-			acc.Net.Limit -= net
-			acc.Net.Delegated -= net
-			acc.Net.Available = acc.Net.Limit - acc.Net.Used
 
-			a.Delegates[i].Cpu -= cpu
-			a.Delegates[i].Net -= net
-			if a.Delegates[i].Cpu == 0 && a.Delegates[i].Net == 0 {
-				a.Delegates = append(a.Delegates[:i], a.Delegates[i+1:]...)
-			}
-		}
-	}
-	if done == false {
-		return errors.New(fmt.Sprintf("account:%s is not delegated for %s", common.IndexToName(a.Index), common.IndexToName(acc.Index)))
-	}
-
-	return nil
-}
 func (a *Account) PledgeCpu(token string, value *big.Int) error {
 	if err := a.SubBalance(token, value); err != nil {
 		return err

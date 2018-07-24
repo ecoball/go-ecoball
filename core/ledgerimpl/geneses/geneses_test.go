@@ -265,8 +265,7 @@ func PledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T
 	tokenContract.SetSignature(&config.Worker1)
 	txs = append(txs, tokenContract)
 
-	invoke, err := types.NewInvokeContract(root, worker1, "owner", "pledge",
-		[]string{"root", "worker2", "10", "10"}, 0, time.Now().Unix())
+	invoke, err := types.NewInvokeContract(root, worker1, "owner", "pledge", []string{"root", "worker2", "10", "10"}, 0, time.Now().Unix())
 	if err != nil {
 		t.Fatal(err)
 	}
