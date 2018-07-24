@@ -26,41 +26,41 @@ This project used CGO, so set the CGO_ENABLED="1"
 ## ecoclient
 create wallet file
 ```
-$./ecoclient wallet --create --name $WALLETFILE --password $PASSWORD
+$./ecoclient wallet create --name $WALLETFILE --password $PASSWORD
 ```
 create account
 ```
-$./ecoclient wallet --createaccount --name $WALLETFILE --password $PASSWORD
+$./ecoclient wallet createaccount --account $ACCOUNTNAME --password $PASSWORD
 ```
 list account
 ```
-$./ecoclient wallet --list --name $WALLETFILE --password $PASSWORD
+$./ecoclient wallet list --password $PASSWORD
 ```
 transfer aba  to another person
 ```
-$ ./ecoclient transfer  --from=$ADDRESS --to=$ADDRESS --value=$AMOUNT
+$ ./ecoclient transfer  --from $ADDRESS --to $ADDRESS --value $AMOUNT
 ```
 
 query account balance
 ```
-$ ./ecoclient query balance --address=$ADDRESS
+$ ./ecoclient query balance --address $ADDRESS
 ```
 
 deploy contract,you will get contract address
 ```
-$ ./ecoclient contract deploy --p=$CONTRACTFILE --n=$CONTRACTNAME --d=$DESCRIPTION --a=$AUTHOR --e=$EMAIL
+$ ./ecoclient contract deploy -p $CONTRACTFILE -n $CONTRACTNAME --d $DESCRIPTION
 success!
 0x0133ac14c0633a2a5e09e7109dcb560f6f5270e1
 ```
 
 invoke contract
 ```
-$ ./ecoclient contract invoke -a=$CONTRACTADDRESS -m=$METHORD -p="$PARA1 $PARA2 $PARA3 ..."
+$ ./ecoclient contract invoke -n $CONTRACTNAME -m $METHORD -p $PARA1 $PARA2 $PARA3 ...
 ```
 
 ecoclient console
 ```
-$ ./ecoclient --console $COMMAND
+$ ./ecoclient $COMMAND
 ecoclient: \> $COMMAND
 ...
 ```
