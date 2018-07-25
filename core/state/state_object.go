@@ -254,13 +254,18 @@ func (a *Account) SubBalance(token string, amount *big.Int) error {
 	if amount.Sign() == 0 {
 		return errors.New("amount is zero")
 	}
-	ac, ok := a.Tokens[token]
+	t, ok := a.Tokens[token]
 	if !ok {
 		return errors.New("not sufficient funds")
 	}
-	ac.SetBalance(new(big.Int).Sub(ac.GetBalance(), amount))
+	balance := t.GetBalance()
+	value := new(big.Int).Sub(balance, amount)
+	if value.Sign() < 0 {
+		return errors.New("the balance is not enough")
+	}
+	t.SetBalance(value)
 	a.Nonce++
-	a.Tokens[token] = ac
+	a.Tokens[token] = t
 	return nil
 }
 

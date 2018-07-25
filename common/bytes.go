@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strconv"
 	"unsafe"
+	"encoding/binary"
 )
 
 func ToHex(b []byte) string {
@@ -132,4 +133,15 @@ func PointerToString(pointer uint64) string {
 	str := *(*string)(unsafe.Pointer(s))
 	b := CopyBytes([]byte(str))
 	return string(b)
+}
+
+func Uint64ToBytes(value uint64) []byte {
+	b := make([]byte, 8)
+	binary.BigEndian.PutUint64(b, value)
+	return b
+}
+
+func Uint64SetBytes(data []byte) uint64 {
+	index := binary.BigEndian.Uint64(data)
+	return index
 }

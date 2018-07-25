@@ -85,7 +85,10 @@ func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err err
 */
 func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData) (*types.Block, error) {
 	log.Warn("NewBlock")
-	s := c.StateDB.CopyState()
+	s, err := c.StateDB.CopyState()
+	if err != nil {
+		return nil, err
+	}
 	for i := 0; i < len(txs); i++ {
 		if _, err := c.HandleTransaction(s, txs[i]); err != nil {
 			log.Error("Handle Transaction Error:", err)
@@ -252,7 +255,10 @@ func (c *ChainTx) GenesesBlockInit() error {
 	if err != nil {
 		return err
 	}
-	s := c.StateDB.CopyState()
+	s, err := c.StateDB.CopyState()
+	if err != nil {
+		return err
+	}
 	for i := 0; i < len(txs); i++ {
 		if _, err := c.HandleTransaction(s, txs[i]); err != nil {
 			log.Error("Handle Transaction Error:", err)

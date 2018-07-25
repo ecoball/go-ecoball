@@ -17,6 +17,7 @@
 package state
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/ecoball/go-ecoball/common"
@@ -29,7 +30,6 @@ import (
 var log = elog.NewLogger("state", elog.DebugLog)
 var IndexAbaRoot = common.NameToIndex("root")
 var AbaToken = "ABA"
-
 
 type State struct {
 	path   string
@@ -57,13 +57,25 @@ func NewState(path string, root common.Hash) (st *State, err error) {
 	if err != nil {
 		st.trie, _ = st.db.OpenTrie(common.Hash{})
 	}
+	st.Params = make(map[string]uint64, 1)
 	return st, nil
 }
-func (s *State) CopyState() *State {
-	return &State{
-		path: s.path,
-		trie: s.db.CopyTrie(s.trie),
+func (s *State) CopyState() (*State, error) {
+	str, err := json.Marshal(s.Params)
+	if err != nil {
+		log.Error(err)
+		return nil, err
 	}
+	params := make(map[string]uint64, 1)
+	if err := json.Unmarshal(str, &params); err != nil {
+		log.Error(err)
+		return nil, err
+	}
+	return &State{
+		path:   s.path,
+		trie:   s.db.CopyTrie(s.trie),
+		Params: params,
+	}, nil
 }
 
 /**
@@ -242,7 +254,30 @@ func (s *State) CommitAccount(acc *Account) error {
 	}
 	return nil
 }
-
+func (s *State) CommitParam(key string, value uint64) error {
+	if err := s.trie.TryUpdate([]byte(key), common.Uint64ToBytes(value)); err != nil {
+		return err
+	}
+	s.Params[key] = value
+	return nil
+}
+func (s *State) GetParam(key string) (uint64, error) {
+	value, ok := s.Params[key]
+	if ok {
+		return value, nil
+	}
+	data, err := s.trie.TryGet([]byte(key))
+	log.Warn(data, err)
+	if err != nil {
+		return 0, err
+	}
+	if len(data) == 0 {
+		return 0, nil
+	}
+	value = common.Uint64SetBytes(data)
+	s.Params[key] = value
+	return value, nil
+}
 func (s *State) AccountGetBalance(index common.AccountName, token string) (*big.Int, error) {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
@@ -367,6 +402,6 @@ func (s *State) Close() {
 func (s *State) Trie() Trie {
 	return s.trie
 }
-func (s State) DataBase() Database {
+func (s *State) DataBase() Database {
 	return s.db
 }
