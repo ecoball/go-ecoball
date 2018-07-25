@@ -21,7 +21,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
-	"github.com/ecoball/go-ecoball/consensus/ababft"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/transaction"
 	"github.com/ecoball/go-ecoball/core/state"
@@ -36,9 +35,6 @@ type LedgerImpl struct {
 	ChainTx *transaction.ChainTx
 	//ChainCt *ChainContract
 	//ChainAc *account.ChainAccount
-
-	// ababft
-	Service_ABA *ababft.Service_ababft
 }
 
 func NewLedger(path string) (l ledger.Ledger, err error) {
