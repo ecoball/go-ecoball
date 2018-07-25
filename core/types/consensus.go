@@ -424,14 +424,16 @@ func GenesisABABFTInit(timestamp int64)  *AbaBftData{
 	var Num_peers_t int
 	Num_peers_t = 3
 	var Peers_list_t []string
-	Peers_list_t[0] = string(config.Worker1.PublicKey)
-	Peers_list_t[1] = string(config.Worker2.PublicKey)
-	Peers_list_t[2] = string(config.Worker3.PublicKey)
-	log.Debug("generate the geneses")
+	Peers_list_t = append(Peers_list_t,string(config.Worker1.PublicKey))
+	Peers_list_t = append(Peers_list_t,string(config.Worker2.PublicKey))
+	Peers_list_t = append(Peers_list_t,string(config.Worker3.PublicKey))
+
 	sort.Strings(Peers_list_t)
 	var Peers_list []account.Account
 	for i := 0; i < Num_peers_t; i++ {
-		Peers_list[i].PublicKey = []byte(Peers_list_t[i])
+		var peer account.Account
+		peer.PublicKey = []byte(Peers_list_t[i])
+		Peers_list = append(Peers_list,peer)
 	}
 	var sigs []common.Signature
 	for i := 0; i < Num_peers_t; i++ {
