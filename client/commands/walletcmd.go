@@ -391,6 +391,7 @@ func createAccount(c *cli.Context) error {
 	//whether the wallet open
 	if nil == account.Wallet {
 		fmt.Println("The wallet has not been opened!")
+		return errors.New("The wallet has not been opened!")
 	}
 
 	//whether the wallet locked
