@@ -23,9 +23,9 @@ type Resource struct {
 	Net struct {
 		Staked    uint64  `json:"staked_aba"`    //total stake delegated from account to self, uint ABA
 		Delegated uint64  `json:"delegated_aba"` //total stake delegated to account from others, uint ABA
-		Used      float32 `json:"used_kib"`      //uint Kib
-		Available float32 `json:"available_kib"` //uint Kib
-		Limit     float32 `json:"limit_kib"`     //uint Kib
+		Used      float32 `json:"used_byte"`      //uint Byte
+		Available float32 `json:"available_byte"` //uint Byte
+		Limit     float32 `json:"limit_byte"`     //uint Byte
 	}
 	Cpu struct {
 		Staked    uint64  `json:"staked_aba"`    //total stake delegated from account to self, uint ABA
