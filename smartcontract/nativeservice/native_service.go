@@ -66,32 +66,32 @@ func (ns *NativeService) SystemExecute(index common.AccountName) ([]byte, error)
 	case "pledge":
 		from := common.NameToIndex(ns.params[0])
 		to := common.NameToIndex(ns.params[1])
-		cpu, err := strconv.ParseFloat(ns.params[2], 32)
+		cpu, err := strconv.ParseUint(ns.params[2], 10, 64)
 		if err != nil {
 			return nil, err
 		}
-		net, err := strconv.ParseFloat(ns.params[3], 32)
+		net, err := strconv.ParseUint(ns.params[3], 10, 64)
 		if err != nil {
 			return nil, err
 		}
 
-		if err := ns.state.SetResourceLimits(from, to, float32(cpu), float32(net)); err != nil {
+		if err := ns.state.SetResourceLimits(from, to, cpu, net); err != nil {
 			return nil, err
 		}
 		return nil, nil
 	case "cancel_pledge":
 		from := common.NameToIndex(ns.params[0])
 		to := common.NameToIndex(ns.params[1])
-		cpu, err := strconv.ParseFloat(ns.params[2], 32)
+		cpu, err := strconv.ParseUint(ns.params[2], 10, 64)
 		if err != nil {
 			return nil, err
 		}
-		net, err := strconv.ParseFloat(ns.params[3], 32)
+		net, err := strconv.ParseUint(ns.params[3], 10, 64)
 		if err != nil {
 			return nil, err
 		}
 		log.Debug(from, to, cpu, net)
-		if err := ns.state.CancelDelegate(from, to, float32(cpu), float32(net)); err != nil {
+		if err := ns.state.CancelDelegate(from, to, cpu, net); err != nil {
 			return nil, err
 		}
 	default:

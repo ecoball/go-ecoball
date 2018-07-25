@@ -1,27 +1,55 @@
 package state
 
 import (
-	"math/big"
-	"github.com/ecoball/go-ecoball/common"
 	"errors"
 	"fmt"
+	"github.com/ecoball/go-ecoball/common"
+	"math/big"
 )
 
 var cpuAmount = []byte("cpu_amount")
 var netAmount = []byte("net_amount")
+
 //var VirtualBlockCpuLimit = 200000000
 //var VirtualBlockNetLimit = 1048576000
-var BlockCpuLimit = 200000
-var BlockNetLimit = 1048576
+const BlockCpuLimit = 200000
+const BlockNetLimit = 1048576
+
+type Resource struct {
+	Ram struct {
+		Quota float32 `json:"quota"`
+		Used  float32 `json:"used"`
+	}
+	Net struct {
+		Staked    uint64  `json:"staked"`    //total stake delegated from account to self, uint ABA
+		Delegated uint64  `json:"delegated"` //total stake delegated to account from others, uint ABA
+		Used      float32 `json:"used"`      //uint Mib
+		Available float32 `json:"available"` //uint Mib
+		Limit     float32 `json:"limit"`     //uint Mib
+	}
+	Cpu struct {
+		Staked    uint64  `json:"staked"`    //total stake delegated from account to self, uint ABA
+		Delegated uint64  `json:"delegated"` //total stake delegated to account from others, uint ABA
+		Used      float32 `json:"used"`      //uint ms
+		Available float32 `json:"available"` //uint ms
+		Limit     float32 `json:"limit"`     //uint ms
+	}
+}
+
+type Delegate struct {
+	Index common.AccountName `json:"index"`
+	CpuStaked   uint64             `json:"cpu"`
+	NetStaked   uint64             `json:"net"`
+}
 
 type BlockLimit struct {
 	VirtualBlockCpuLimit uint64
 	VirtualBlockNetLimit uint64
-	BlockCpuLimit uint64
-	BlockNetLimit uint64
+	BlockCpuLimit        uint64
+	BlockNetLimit        uint64
 }
 
-func (s *State) SetResourceLimits(from, to common.AccountName, cpu, net float32) error {
+func (s *State) SetResourceLimits(from, to common.AccountName, cpu, net uint64) error {
 	acc, err := s.GetAccountByName(from)
 	if err != nil {
 		return err
@@ -61,7 +89,7 @@ func (s *State) SetResourceLimits(from, to common.AccountName, cpu, net float32)
 	}
 	return s.CommitAccount(acc)
 }
-func (s *State) SubResourceLimits(index common.AccountName, cpu, net float32) error {
+func (s *State) SubResourceLimits(index common.AccountName, cpu, net uint64) error {
 	acc, err := s.GetAccountByName(index)
 	if err != nil {
 		return err
@@ -71,7 +99,7 @@ func (s *State) SubResourceLimits(index common.AccountName, cpu, net float32) er
 	}
 	return s.CommitAccount(acc)
 }
-func (s *State) CancelDelegate(from, to common.AccountName, cpu, net float32) error {
+func (s *State) CancelDelegate(from, to common.AccountName, cpu, net uint64) error {
 	acc, err := s.GetAccountByName(from)
 	if err != nil {
 		return err
@@ -169,46 +197,46 @@ func (s *State) GetResourceAmount() (*big.Int, *big.Int, error) {
 	return cpu, net, nil
 }
 
-func (a *Account) SetResourceLimits(self bool, cpu, net float32) error {
+func (a *Account) SetResourceLimits(self bool, cpu, net uint64) error {
 	if !self {
 		if cpu != 0 {
-			a.Cpu.Limit += cpu
+			a.Cpu.Limit += float32(cpu)
 			a.Cpu.Delegated += cpu
-			a.Cpu.Available += cpu
+			a.Cpu.Available += float32(cpu)
 		}
 		if net != 0 {
-			a.Net.Limit += net
+			a.Net.Limit += float32(net)
 			a.Net.Delegated += net
-			a.Net.Available += net
+			a.Net.Available += float32(net)
 		}
 	} else {
 		if cpu != 0 {
 			a.Cpu.Staked += cpu
-			a.Cpu.Limit += cpu
-			a.Cpu.Available += cpu
+			a.Cpu.Limit += float32(cpu)
+			a.Cpu.Available += float32(cpu)
 		}
 		if net != 0 {
 			a.Net.Staked += net
-			a.Net.Limit += net
-			a.Net.Available += net
+			a.Net.Limit += float32(net)
+			a.Net.Available += float32(net)
 		}
 	}
 	return nil
 }
-func (a *Account) CancelDelegateSelf(cpu, net float32) error {
+func (a *Account) CancelDelegateSelf(cpu, net uint64) error {
 	if cpu != 0 {
 		a.Cpu.Staked -= cpu
-		a.Cpu.Limit -= cpu
-		a.Cpu.Available -= cpu
+		a.Cpu.Limit -= float32(cpu)
+		a.Cpu.Available -= float32(cpu)
 	}
 	if net != 0 {
 		a.Net.Staked -= net
-		a.Net.Limit -= net
-		a.Net.Available -= net
+		a.Net.Limit -= float32(net)
+		a.Net.Available -= float32(net)
 	}
 	return nil
 }
-func (a *Account) CancelDelegateOther(acc *Account, cpu, net float32) error {
+func (a *Account) CancelDelegateOther(acc *Account, cpu, net uint64) error {
 	done := false
 	for i := 0; i < len(a.Delegates); i++ {
 		if a.Delegates[i].Index == acc.Index {
@@ -219,18 +247,18 @@ func (a *Account) CancelDelegateOther(acc *Account, cpu, net float32) error {
 			if acc.Net.Delegated < net {
 				return errors.New("net amount is not enough")
 			}
-			acc.Cpu.Limit -= cpu
+			acc.Cpu.Limit -= float32(cpu)
 			acc.Cpu.Delegated -= cpu
 			acc.Cpu.Available = acc.Cpu.Limit - acc.Cpu.Used
-			acc.Net.Limit -= net
+			acc.Net.Limit -= float32(net)
 			acc.Net.Delegated -= net
 			acc.Net.Available = acc.Net.Limit - acc.Net.Used
 
 			a.Cpu.Staked -= cpu
 			a.Net.Staked -= net
-			a.Delegates[i].Cpu -= cpu
-			a.Delegates[i].Net -= net
-			if a.Delegates[i].Cpu == 0 && a.Delegates[i].Net == 0 {
+			a.Delegates[i].CpuStaked -= cpu
+			a.Delegates[i].NetStaked -= net
+			if a.Delegates[i].CpuStaked == 0 && a.Delegates[i].NetStaked == 0 {
 				a.Delegates = append(a.Delegates[:i], a.Delegates[i+1:]...)
 			}
 		}
@@ -240,42 +268,23 @@ func (a *Account) CancelDelegateOther(acc *Account, cpu, net float32) error {
 	}
 	return nil
 }
-func (a *Account) SubResourceLimits(cpu, net float32) error {
-	if a.Cpu.Available < cpu {
+func (a *Account) SubResourceLimits(cpu, net uint64) error {
+	if a.Cpu.Available < float32(cpu) {
 		return errors.New("cpu is not enough")
 	}
-	if a.Net.Available < net {
+	if a.Net.Available < float32(net) {
 		return errors.New("net is not enough")
 	}
-	a.Cpu.Available -= cpu
-	a.Cpu.Used += cpu
-	a.Net.Available -= net
-	a.Net.Used += net
+	a.Cpu.Available -= float32(cpu)
+	a.Cpu.Used += float32(cpu)
+	a.Net.Available -= float32(net)
+	a.Net.Used += float32(net)
 	return nil
 }
-func (a *Account) SetDelegateInfo(index common.AccountName, cpu, net float32) error {
-	d := Delegate{Index: index, Cpu: cpu, Net: net}
+func (a *Account) SetDelegateInfo(index common.AccountName, cpu, net uint64) error {
+	d := Delegate{Index: index, CpuStaked: cpu, NetStaked: net}
 	a.Delegates = append(a.Delegates, d)
 	a.Cpu.Staked += cpu
 	a.Net.Staked += net
-	return nil
-}
-
-func (a *Account) PledgeCpu(token string, value *big.Int) error {
-	if err := a.SubBalance(token, value); err != nil {
-		return err
-	}
-	a.Cpu.Available = 100
-	a.Cpu.Limit = 100
-	a.Cpu.Used = 0
-	return nil
-}
-func (a *Account) CancelPledgeCpu(token string, value *big.Int) error {
-	if err := a.AddBalance(token, value); err != nil {
-		return err
-	}
-	a.Cpu.Available = 0
-	a.Cpu.Limit = 100
-	a.Cpu.Used = 100
 	return nil
 }

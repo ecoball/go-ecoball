@@ -220,7 +220,7 @@ func TestStateDB(t *testing.T) {
 }
 
 func TestRootHash(t *testing.T) {
-	s, err := state.NewState("/tmp/state_root", common.HexToHash(""))
+	s, err := state.NewState("/tmp/state_hash", common.HexToHash(""))
 	if err != nil {
 		t.Fatal(err)
 	}

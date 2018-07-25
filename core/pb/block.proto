@@ -149,16 +149,16 @@ message Ram {
     float Used      = 2;
 }
 message Res {
-    float Staked    = 1;
-    float Delegated = 5;
-    float Used      = 2;
-    float Available = 3;
-    float Limit     = 4;
+    uint64 Staked    = 1;
+    uint64 Delegated = 5;
+    float  Used      = 2;
+    float  Available = 3;
+    float  Limit     = 4;
 }
 message Delegate {
     uint64 index    = 1;
-    float  cpu      = 2;
-    float  net      = 3;
+    uint64 cpu      = 2;
+    uint64 net      = 3;
 }
 /**
 ** Account Object

@@ -34,32 +34,6 @@ type Token struct {
 	Balance *big.Int `json:"balance"`
 }
 
-type Resource struct {
-	Ram struct {
-		Quota float32 `json:"quota"`
-		Used  float32 `json:"used"`
-	}
-	Net struct {
-		Staked    float32 `json:"staked"`    //total stake delegated from account to self, uint ABA
-		Delegated float32 `json:"delegated"` //total stake delegated to account from others, uint ABA
-		Used      float32 `json:"used"`      //uint Mib
-		Available float32 `json:"available"` //uint Mib
-		Limit     float32 `json:"limit"`     //uint Mib
-	}
-	Cpu struct {
-		Staked    float32 `json:"staked"`    //total stake delegated from account to self, uint ABA
-		Delegated float32 `json:"delegated"` //total stake delegated to account from others, uint ABA
-		Used      float32 `json:"used"`      //uint ms
-		Available float32 `json:"available"` //uint ms
-		Limit     float32 `json:"limit"`     //uint ms
-	}
-}
-
-type Delegate struct {
-	Index common.AccountName `json:"index"`
-	Cpu   float32            `json:"cpu"`
-	Net   float32            `json:"net"`
-}
 
 type Account struct {
 	Index       common.AccountName    `json:"index"`
@@ -381,7 +355,7 @@ func (a *Account) ProtoBuf() (*pb.Account, error) {
 	}
 	var delegates []*pb.Delegate
 	for _, v := range a.Delegates {
-		d := pb.Delegate{Index: uint64(v.Index), Cpu: v.Cpu, Net: v.Net}
+		d := pb.Delegate{Index: uint64(v.Index), Cpu: v.CpuStaked, Net: v.NetStaked}
 		delegates = append(delegates, &d)
 	}
 	pbAcc := pb.Account{
@@ -466,7 +440,7 @@ func (a *Account) Deserialize(data []byte) error {
 		a.Tokens[ac.Name] = ac
 	}
 	for _, v := range pbAcc.Delegates {
-		a.Delegates = append(a.Delegates, Delegate{Index: common.AccountName(v.Index), Cpu: v.Cpu, Net: v.Net})
+		a.Delegates = append(a.Delegates, Delegate{Index: common.AccountName(v.Index), CpuStaked: v.Cpu, NetStaked: v.Net})
 	}
 	for _, pbPerm := range pbAcc.Permissions {
 		keys := make(map[string]KeyFactor, 1)

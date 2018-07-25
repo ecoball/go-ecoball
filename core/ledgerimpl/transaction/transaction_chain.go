@@ -398,9 +398,9 @@ func (c *ChainTx) StoreSet(index common.AccountName, key, value []byte) (err err
 func (c *ChainTx) StoreGet(index common.AccountName, key []byte) (value []byte, err error) {
 	return c.StateDB.StoreGet(index, key)
 }
-func (c *ChainTx) SetResourceLimits(from, to common.AccountName, cpu, net float32) error {
-	return c.StateDB.SetResourceLimits(from, to, cpu, net)
-}
+//func (c *ChainTx) SetResourceLimits(from, to common.AccountName, cpu, net float32) error {
+//	return c.StateDB.SetResourceLimits(from, to, cpu, net)
+//}
 func (c *ChainTx) SetContract(index common.AccountName, t types.VmType, des, code []byte) error {
 	return c.StateDB.SetContract(index, t, des, code)
 }
@@ -456,7 +456,9 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction) ([]by
 		if err := s.AccountAddBalance(tx.Addr, state.AbaToken, payload.Value); err != nil {
 			return nil, err
 		}
-		s.SubResourceLimits(tx.From, 1, 1)
+		if err := s.SubResourceLimits(tx.From, 1, 1); err != nil {
+			return nil, err
+		}
 	case types.TxDeploy:
 		if err := s.CheckPermission(tx.From, state.Active, tx.Signatures); err != nil {
 			return nil, err
@@ -469,7 +471,9 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction) ([]by
 		if err := s.SetContract(tx.From, payload.TypeVm, payload.Describe, payload.Code); err != nil {
 			return nil, err
 		}
-		s.SubResourceLimits(tx.From, 1, 1)
+		if err := s.SubResourceLimits(tx.From, 1, 1); err != nil {
+			return nil, err
+		}
 	case types.TxInvoke:
 		log.Info("Invoke Execute")
 		service, err := smartcontract.NewContractService(s, tx)
@@ -480,7 +484,9 @@ func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction) ([]by
 		if err != nil {
 			return nil, err
 		}
-		s.SubResourceLimits(tx.From, 1, 1)
+		if err := s.SubResourceLimits(tx.From, 1, 1); err != nil {
+			return nil, err
+		}
 		return ret, nil
 	default:
 		return nil, errors.New("the transaction's type error")
