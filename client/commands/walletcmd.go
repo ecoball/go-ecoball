@@ -197,6 +197,7 @@ func createKey(c *cli.Context) error {
 	//whether the wallet open
 	if nil == account.Wallet {
 		fmt.Println("The wallet has not been opened!")
+		return errors.New("The wallet has not been opened!")
 	}
 
 	//whether the wallet locked
@@ -435,6 +436,7 @@ func importKey(c *cli.Context) error {
 	//whether the wallet open
 	if nil == account.Wallet {
 		fmt.Println("The wallet has not been opened!")
+		return errors.New("The wallet has not been opened!")
 	}
 
 	//whether the wallet locked
