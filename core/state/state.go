@@ -36,6 +36,8 @@ type State struct {
 	trie   Trie
 	db     Database
 	diskDb *store.LevelDBStore
+
+	Params map[string]uint64
 }
 
 /**
