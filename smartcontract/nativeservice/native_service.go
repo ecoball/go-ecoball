@@ -29,7 +29,7 @@ func (ns *NativeService) Execute() ([]byte, error) {
 	switch ns.owner {
 	case common.NameToIndex("root"):
 		return ns.RootExecute()
-	case common.NameToIndex("worker1"):
+	case common.NameToIndex("delegate"):
 		return ns.SystemExecute(ns.owner)
 	default:
 		return nil, errors.New("unknown native contract's owner")
@@ -75,6 +75,7 @@ func (ns *NativeService) SystemExecute(index common.AccountName) ([]byte, error)
 			return nil, err
 		}
 
+		log.Debug(from, to, cpu, net)
 		if err := ns.state.SetResourceLimits(from, to, cpu, net); err != nil {
 			return nil, err
 		}

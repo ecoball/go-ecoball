@@ -89,6 +89,7 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 	for i := 0; i < len(txs); i++ {
 		if _, err := c.HandleTransaction(s, txs[i]); err != nil {
 			log.Error("Handle Transaction Error:", err)
+			txs[i].Show()
 			return nil, err
 		}
 	}
@@ -247,7 +248,10 @@ func (c *ChainTx) GenesesBlockInit() error {
 	hash := common.NewHash([]byte("EcoBall Geneses Block"))
 	conData := types.GenesesBlockInitConsensusData(timeStamp)
 
-	txs, err := geneses.PresetContract(c.ledger, timeStamp)
+	txs, err := geneses.PresetContract(c.StateDB, timeStamp)
+	if err != nil {
+		return err
+	}
 	s := c.StateDB.CopyState()
 	for i := 0; i < len(txs); i++ {
 		if _, err := c.HandleTransaction(s, txs[i]); err != nil {

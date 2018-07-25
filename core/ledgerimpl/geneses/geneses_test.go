@@ -22,6 +22,7 @@ var token = common.NameToIndex("token")
 var worker1 = common.NameToIndex("worker1")
 var worker2 = common.NameToIndex("worker2")
 var worker3 = common.NameToIndex("worker3")
+var delegate = common.NameToIndex("delegate")
 
 func TestGenesesBlockInit(t *testing.T) {
 	l, err := ledgerimpl.NewLedger("/tmp/geneses")
@@ -43,9 +44,9 @@ func CreateAccountBlock(ledger ledger.Ledger, con *types.ConsensusData, t *testi
 	//TODO
 	var txs []*types.Transaction
 	index := common.NameToIndex("root")
-	if err := ledger.AccountAddBalance(index, state.AbaToken, 10000); err != nil {
-		t.Fatal(err)
-	}
+	//if err := ledger.AccountAddBalance(index, state.AbaToken, 10000); err != nil {
+	//	t.Fatal(err)
+	//}
 	code, err := wasmservice.ReadWasm("../../../test/root/root.wasm")
 	if err != nil {
 		t.Fatal(err)
@@ -170,6 +171,12 @@ func ShowAccountInfo(l ledger.Ledger, t *testing.T) {
 		t.Fatal(err)
 	}
 	acc.Show()
+
+	acc, err = l.AccountGet(delegate)
+	if err != nil {
+		t.Fatal(err)
+	}
+	acc.Show()
 }
 
 func AddTokenAccount(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T) {
@@ -258,14 +265,14 @@ func ContractStore(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T)
 
 func PledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T) {
 	var txs []*types.Transaction
-	tokenContract, err := types.NewDeployContract(worker1, worker1, "active", types.VmNative, "system control", nil, 0, time.Now().Unix())
+	tokenContract, err := types.NewDeployContract(delegate, delegate, "active", types.VmNative, "system control", nil, 0, time.Now().Unix())
 	if err != nil {
 		t.Fatal(err)
 	}
-	tokenContract.SetSignature(&config.Worker1)
+	tokenContract.SetSignature(&config.Delegate)
 	txs = append(txs, tokenContract)
 
-	invoke, err := types.NewInvokeContract(root, worker1, "owner", "pledge", []string{"root", "worker2", "10", "10"}, 0, time.Now().Unix())
+	invoke, err := types.NewInvokeContract(root, delegate, "owner", "pledge", []string{"root", "worker2", "10", "10"}, 0, time.Now().Unix())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -286,7 +293,7 @@ func PledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T
 }
 func CancelPledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T) {
 	var txs []*types.Transaction
-	invoke, err := types.NewInvokeContract(root, worker1, "owner", "cancel_pledge",
+	invoke, err := types.NewInvokeContract(root, delegate, "owner", "cancel_pledge",
 		[]string{"root", "worker2", "10", "10"}, 0, time.Now().Unix())
 	if err != nil {
 		t.Fatal(err)

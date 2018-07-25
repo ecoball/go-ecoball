@@ -18,14 +18,16 @@ package geneses
 
 import (
 	"errors"
+	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
-	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/core/types"
-	"fmt"
-	"github.com/ecoball/go-ecoball/core/bloom"
+	//"github.com/ecoball/go-ecoball/core/bloom"
+	"github.com/ecoball/go-ecoball/core/state"
+	"math/big"
 )
 
+/*
 func GenesisBlockInit(ledger ledger.Ledger, timeStamp int64) (*types.Block, error) {
 	if ledger == nil {
 		return nil, errors.New("ledger is nil")
@@ -57,23 +59,41 @@ func GenesisBlockInit(ledger ledger.Ledger, timeStamp int64) (*types.Block, erro
 		return nil, err
 	}
 	return &block, nil
-}
+}*/
 
-func PresetContract(ledger ledger.Ledger, t int64) ([]*types.Transaction, error) {
+func PresetContract(s *state.State, t int64) ([]*types.Transaction, error) {
 	var txs []*types.Transaction
-	if ledger == nil {
-		return nil, errors.New("ledger is nil")
+	if s == nil {
+		return nil, errors.New("state is nil")
 	}
-	index := common.NameToIndex("root")
-	addr := common.AddressFromPubKey(common.FromHex(config.RootPubkey))
+	root := common.NameToIndex("root")
+	delegate := common.NameToIndex("delegate")
+	addr := common.AddressFromPubKey(config.Root.PublicKey)
 	fmt.Println("preset insert a root account:", addr.HexString())
-	if acc, err := ledger.AccountAdd(index, addr); err != nil {
+	if _, err := s.AddAccount(root, addr); err != nil {
 		return nil, err
-	} else {
-		fmt.Println("set root account's resource to [ram-10, cpu-10, net-10]")
-		//ledger.SetResourceLimits(index, index, 100, 100)
-		acc.Show()
 	}
+	if err := s.AccountAddBalance(root, state.AbaToken, new(big.Int).SetUint64(1000)); err != nil {
+		return nil, err
+	}
+	fmt.Println("set root account's resource to [cpu:100, net:100]")
+	if err := s.SetResourceLimits(root, root, 100, 100); err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
+	if _, err := s.AddAccount(delegate, common.AddressFromPubKey(config.Delegate.PublicKey)); err != nil {
+		return nil, err
+	}
+	if err := s.AccountAddBalance(delegate, state.AbaToken, new(big.Int).SetUint64(1000)); err != nil {
+		return nil, err
+	}
+	fmt.Println("set root account's resource to [cpu:100, net:100]")
+	if err := s.SetResourceLimits(delegate, delegate, 100, 100); err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
 
 	return txs, nil
 }

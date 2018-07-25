@@ -64,6 +64,18 @@ worker2_pubkey = "0x049e78e40b0dcca842b94cb2586d47ecc61888b52dce958b41aa38613c80
 worker3_privkey = "0x105cb8f936eec87d35e42fc0f656ab4b7fc9a007cbf4554f829c44e528df6ce4"
 worker3_pubkey = "0x0481bce0ad10bd3d8cdfd089ac5534379149ca5c3cdab28b5063f707d20f3a4a51f192ef7933e91e3fd0a8ea21d8dd735407780937c3c71753b486956fd481349f"
 
+delegate_privkey = "0x29f56d8c1b2af3dc1bb711bc9d94bfd60964ffa9162caa6ec919fdd6774fd79e"
+delegate_pubkey  = "0x04945b2581d8f912688a9a9aad151660211ac1828b611631f14a837aeac85f6727b2459b93e49c9bf02e5b9b785e404909e730a4007fb3bdc6fc6965ba4c98dd87"
+
+#"0x68f2dcd39856206fa610546cc4f4611e5d4c3eb5e3f6bae3982348f949810745"
+#"0x04b15d8efb9dcf3a086a69a0f6c334ebcb47d21293e36e1f22440185f1b7411a2cb3bcda2a91bf8ddeb71224ebd9233896766b355334b2c98b07f9ce9154c9dec9"
+#"0x1eec266c518c0c5adfd3bbf0e4a40b22cad482a0eedfa836e90b5dcc4a643878"
+#"0x045a8d217b04abc5fc44a724041eb5adeb8aff6f8559f759b6797026a638b2136e2e8ddb8eee52ef4f431a5af02b44732475648da1f9ddc7265e70a64f8ec24c17"
+#"0x40b866f2e0186ed3551ba59d17eda326a4f69b27f73e3a02666df39e8236d300"
+#"0x0430ebe5152caa9ea49bdc569faac380a0bcbb906d7e18911761a1f9d1d843dc26d172de4b429addbcfff06282c3767d21a35a25dddd26c1dd6cac9f9ac9ecef78"
+#"0x14f2f3205afc492c13181c956906b7f0729b3d46684fac00db55ddc066d3bd0d"
+#"0x04d3d4a5dbaed772257ac33aca8150a40ac3e68077247dda4f605bd429218cb9f9202d768885dffd278e847902fdf4962e157b5f68c268af5acbab2cc4470e9bc8"
+
 peer_list = [ "120202c924ed1a67fd1719020ce599d723d09d48362376836e04b0be72dfe825e24d810000", 
               "120202935fb8d28b70706de6014a937402a30ae74a56987ed951abbe1ac9eeda56f0160000" ]
 peer_index = [ "1", "2" ]
@@ -76,9 +88,8 @@ var (
 	OutputToTerminal   bool
 	LogLevel           int
 	ConsensusAlgorithm string
-	RootPrivkey        string
-	RootPubkey         string
 	Root               account.Account
+	Delegate           account.Account
 	Worker1            account.Account
 	Worker2            account.Account
 	Worker3            account.Account
@@ -157,12 +168,11 @@ func initVariable() {
 	OutputToTerminal = viper.GetBool("output_to_terminal")
 	LogLevel = viper.GetInt("log_level")
 	ConsensusAlgorithm = viper.GetString("consensus_algorithm")
-	RootPrivkey = viper.GetString("root_privkey")
-	RootPubkey = viper.GetString("root_pubkey")
-	Root = account.Account{PrivateKey: common.FromHex(RootPrivkey), PublicKey: common.FromHex(RootPubkey), Alg: 0}
+	Root = account.Account{PrivateKey: common.FromHex(viper.GetString("root_privkey")), PublicKey: common.FromHex(viper.GetString("root_pubkey")), Alg: 0}
 	Worker1 = account.Account{PrivateKey: common.FromHex(viper.GetString("worker1_privkey")), PublicKey: common.FromHex(viper.GetString("worker1_pubkey")), Alg: 0}
 	Worker2 = account.Account{PrivateKey: common.FromHex(viper.GetString("worker2_privkey")), PublicKey: common.FromHex(viper.GetString("worker2_pubkey")), Alg: 0}
 	Worker3 = account.Account{PrivateKey: common.FromHex(viper.GetString("worker3_privkey")), PublicKey: common.FromHex(viper.GetString("worker3_pubkey")), Alg: 0}
+	Delegate = account.Account{PrivateKey: common.FromHex(viper.GetString("delegate_privkey")), PublicKey: common.FromHex(viper.GetString("delegate_pubkey")), Alg: 0}
 	PeerList = viper.GetStringSlice(ListPeers)
 	PeerIndex = viper.GetStringSlice(IndexPeers)
 }

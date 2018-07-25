@@ -79,7 +79,7 @@ func (s *State) SetResourceLimits(from, to common.AccountName, cpu, net uint64) 
 	}
 	value := new(big.Int).Add(new(big.Int).SetUint64(uint64(cpu)), new(big.Int).SetUint64(uint64(net)))
 	if balance.Cmp(value) == -1 {
-		return errors.New("no enough balance")
+		return errors.New(fmt.Sprintf("the account:%s no enough balance", common.IndexToName(acc.Index)))
 	}
 	if err := acc.SubBalance(AbaToken, value); err != nil {
 		return err
@@ -161,7 +161,7 @@ func (s *State) SubResourceAmount(cpu, net *big.Int) error {
 	}
 	value := new(big.Int).Sub(c, cpu)
 	if value.Sign() < 0 {
-		return errors.New("the cpu amount < 0")
+		return errors.New(fmt.Sprintf("the cpu amount[%d] < 0", c))
 	}
 	data, err := value.GobEncode()
 	if err != nil {
@@ -170,9 +170,9 @@ func (s *State) SubResourceAmount(cpu, net *big.Int) error {
 	if err := s.trie.TryUpdate(cpuAmount, data); err != nil {
 		return err
 	}
-	value = new(big.Int).Sub(net, n)
+	value = new(big.Int).Sub(n, net)
 	if value.Sign() < 0 {
-		return errors.New("the net amount < 0")
+		return errors.New(fmt.Sprintf("the net amount[%d] < 0", n))
 	}
 	data, err = value.GobEncode()
 	if err != nil {
@@ -242,10 +242,10 @@ func (a *Account) CancelDelegateOther(acc *Account, cpu, net uint64) error {
 		if a.Delegates[i].Index == acc.Index {
 			done = true
 			if acc.Cpu.Delegated < cpu {
-				return errors.New("cpu amount is not enough")
+				return errors.New(fmt.Sprintf("the account:%s cpu amount is not enough", common.IndexToName(acc.Index)))
 			}
 			if acc.Net.Delegated < net {
-				return errors.New("net amount is not enough")
+				return errors.New(fmt.Sprintf("the account:%s net amount is not enough", common.IndexToName(acc.Index)))
 			}
 			acc.Cpu.Limit -= float32(cpu)
 			acc.Cpu.Delegated -= cpu
@@ -270,10 +270,10 @@ func (a *Account) CancelDelegateOther(acc *Account, cpu, net uint64) error {
 }
 func (a *Account) SubResourceLimits(cpu, net uint64) error {
 	if a.Cpu.Available < float32(cpu) {
-		return errors.New("cpu is not enough")
+		return errors.New(fmt.Sprintf("the account:%s cpu amount is not enough", common.IndexToName(a.Index)))
 	}
 	if a.Net.Available < float32(net) {
-		return errors.New("net is not enough")
+		return errors.New(fmt.Sprintf("the account:%s net amount is not enough", common.IndexToName(a.Index)))
 	}
 	a.Cpu.Available -= float32(cpu)
 	a.Cpu.Used += float32(cpu)
