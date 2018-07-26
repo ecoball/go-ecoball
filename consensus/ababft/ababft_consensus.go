@@ -24,6 +24,7 @@ import (
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/account"
 	"sort"
+	"bytes"
 )
 
 // in this version, the peers take turns to generate the block
@@ -116,13 +117,16 @@ func (this *Service_ababft) Start() error {
 	Num_peers = len(Peers_list)
 	var Peers_list_t []string
 	for i := 0; i < Num_peers; i++ {
-		Peers_list_t[i] = string(Peers_list[i].PublicKey)
+		Peers_list_t = append(Peers_list_t,string(Peers_list[i].PublicKey))
 	}
 	// sort the peers as list
 	sort.Strings(Peers_list_t)
 	for i := 0; i < Num_peers; i++ {
 		Peers_list[i].PublicKey = []byte(Peers_list_t[i])
-		Peers_list[i].Index = i
+		Peers_list[i].Index = i + 1
+		if ok := bytes.Equal(Peers_list[i].PublicKey,this.account.PublicKey); ok== true {
+			Self_index = i + 1
+		}
 	}
 	log.Debug("service start")
 	return err

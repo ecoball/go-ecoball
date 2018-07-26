@@ -99,7 +99,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		signature_BlkF_list = make([][]byte, len(Peers_list))
 		block_firstround = Block_FirstRound{}
 		block_secondround = Block_SecondRound{}
-
+		// log.Debug("current_round_num:",current_round_num,Num_peers,Self_index)
 		// get the current round number of the block
 		currentheader = current_ledger.GetCurrentHeader()
 		if currentheader.ConsensusData.Type != types.ConABFT {
@@ -124,6 +124,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		if err != nil {
 			return
 		}
+
 		// check whether self is the prime or peer
 		if current_round_num % Num_peers == (Self_index-1) {
 			// if is prime
@@ -132,6 +133,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			received_signpre_num = 0
 			// increase the round index
 			current_round_num ++
+			// log.Debug("primary")
 			// set up a timer to wait for the signature_preblock from other peera
 			t0 := time.NewTimer(time.Second * WAIT_RESPONSE_TIME * 2)
 			go func() {
@@ -158,6 +160,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			event.Send(event.ActorConsensus, event.ActorP2P, signaturepre_send)
 			// increase the round index
 			current_round_num ++
+			// log.Debug("non primary")
+			// log.Debug("signaturepre_send:",current_round_num,currentheader.Height,signaturepre_send)
 			// set up a timer for receiving the data
 			t1 := time.NewTimer(time.Second * WAIT_RESPONSE_TIME * 2)
 			go func() {
@@ -175,6 +179,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		// the prime will verify the signature for the previous block
 		round_in := int(msg.Signature_preblock.Round)
 		height_in := int(msg.Signature_preblock.Height)
+		// log.Debug("current_round_num:",current_round_num,round_in)
 		if round_in >= current_round_num {
 			// cache the Signature_Preblock
 			cache_signature_preblk = append(cache_signature_preblk,msg.Signature_preblock)
@@ -232,6 +237,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					} else {
 						return
 					}
+					// log.Debug("signature_preblock_list",signature_preblock_list)
 				}
 			} else {
 				// the message is old
@@ -305,6 +311,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				fmt.Println("conData for blk firstround",conData)
 				// prepare the tx list
 				value, err := event.SendSync(event.ActorTxPool, message.GetTxs{}, time.Second*1)
+				log.Debug("tx value:",value)
 				if err != nil {
 					log.Error("AbaBFT Consensus error:", err)
 					return
@@ -314,10 +321,12 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					// log.Error("The format of value error [solo]")
 					return
 				}
+
 				var txs []*types.Transaction
 				for _, v := range txList.Txs {
 					txs = append(txs, v)
 				}
+				log.Debug("obtained tx list", txs)
 				// generate the first-round block
 				var block_first *types.Block
 				block_first,err = actor_c.service_ababft.ledger.NewTxBlock(txs,conData)
