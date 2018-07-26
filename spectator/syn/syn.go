@@ -27,7 +27,7 @@ import (
 
 var (
 	CoreLedger ledger.Ledger
-	log        = elog.NewLogger("spectator", elog.DebugLog)
+	log        = elog.NewLogger("syn", elog.DebugLog)
 )
 
 func Dispatch(conn net.Conn, notify info.OneNotify) {

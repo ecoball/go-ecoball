@@ -22,11 +22,12 @@ import (
 	"net"
 	"sync"
 
-	"github.com/ethereum/go-ethereum/log"
+	"github.com/ecoball/go-ecoball/common/elog"
 )
 
 var (
 	Onlookers = onlooker{connects: make([]net.Conn, 0, 10)}
+	log       = elog.NewLogger("info", elog.DebugLog)
 )
 
 type NotifyInfo interface {
