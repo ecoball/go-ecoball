@@ -202,7 +202,6 @@ func (s *State) CommitAccount(acc *Account) error {
 	if err != nil {
 		return err
 	}
-	log.Debug(common.IndexToBytes(acc.Index))
 	if err := s.trie.TryUpdate(common.IndexToBytes(acc.Index), d); err != nil {
 		return err
 	}

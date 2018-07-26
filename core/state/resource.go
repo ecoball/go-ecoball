@@ -11,10 +11,12 @@ import (
 var cpuAmount = "cpu_amount"
 var netAmount = "net_amount"
 
-//var VirtualBlockCpuLimit = 200000000
-//var VirtualBlockNetLimit = 1048576000
-const BlockCpuLimit = 200000.0
-const BlockNetLimit = 1048576.0
+const VirtualBlockCpuLimit float32 = 200000000.0
+const VirtualBlockNetLimit float32 = 1048576000.0
+const BlockCpuLimit float32 = 200000.0
+const BlockNetLimit float32 = 1048576.0
+var BlockCpu = BlockCpuLimit
+var BlockNet = BlockNetLimit
 
 type Resource struct {
 	Ram struct {
@@ -201,6 +203,31 @@ func (s *State) RequireResources(index common.AccountName) (float32, float32, er
 	log.Debug("net:", acc.Net.Used, acc.Net.Available, acc.Net.Limit)
 	return acc.Cpu.Available, acc.Net.Available, nil
 }
+func (s *State) SetBlockLimits(cpu, net bool) {
+	if cpu {
+		BlockCpu += BlockCpu * 0.01
+		if BlockCpu > VirtualBlockCpuLimit {
+			BlockCpu = VirtualBlockCpuLimit
+		}
+	} else {
+		BlockCpu -= BlockCpu * 0.01
+		if BlockCpu > BlockCpuLimit {
+			BlockCpu = BlockCpuLimit
+		}
+	}
+	if net {
+		BlockNet += BlockNet * 0.01
+		if BlockNet > VirtualBlockNetLimit {
+			BlockNet = VirtualBlockNetLimit
+		}
+	} else {
+		BlockNet -= BlockNet * 0.01
+		if BlockNet < BlockNetLimit {
+			BlockNet = BlockNetLimit
+		}
+	}
+	log.Debug("SetBlockLimits:", BlockCpu, BlockNet)
+}
 
 func (a *Account) SetResourceLimits(self bool, cpuStaked, netStaked, cpuStakedSum, netStakedSum uint64) error {
 	if self {
@@ -259,9 +286,9 @@ func (a *Account) SetDelegateInfo(index common.AccountName, cpuStaked, netStaked
 	return nil
 }
 func (a *Account) UpdateResource(cpuStakedSum, netStakedSum uint64) error {
-	a.Cpu.Limit = float32(a.Cpu.Staked + a.Cpu.Delegated) / float32(cpuStakedSum) * BlockCpuLimit
+	a.Cpu.Limit = float32(a.Cpu.Staked + a.Cpu.Delegated) / float32(cpuStakedSum) * BlockCpu
 	a.Cpu.Available = a.Cpu.Limit - a.Cpu.Used
-	a.Net.Limit = float32(a.Cpu.Staked + a.Net.Delegated) / float32(netStakedSum) * BlockNetLimit
+	a.Net.Limit = float32(a.Cpu.Staked + a.Net.Delegated) / float32(netStakedSum) * BlockNet
 	a.Net.Available = a.Net.Limit - a.Net.Used
 	return nil
 }

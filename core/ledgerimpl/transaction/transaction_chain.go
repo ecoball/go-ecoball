@@ -85,18 +85,36 @@ func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err err
 *  @param  consensusData - the data of consensus module set
  */
 func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData) (*types.Block, error) {
-	log.Warn("NewBlock")
+	var cpu float32
+	cpuFlag := true
+	var net float32
+	netFlag := true
 	s, err := c.StateDB.CopyState()
 	if err != nil {
 		return nil, err
 	}
 	for i := 0; i < len(txs); i++ {
-		if _, err := c.HandleTransaction(s, txs[i]); err != nil {
+		if ret, c, n, err := c.HandleTransaction(s, txs[i]); err != nil {
 			log.Error("Handle Transaction Error:", err)
 			txs[i].Show()
 			return nil, err
+		} else {
+			cpu += c
+			net += n
+			log.Debug("Handle Transaction Result:", ret)
 		}
 	}
+	if cpu < (state.BlockCpuLimit / 10) {
+		cpuFlag = true
+	} else {
+		cpuFlag = false
+	}
+	if net < (state.BlockNetLimit / 10) {
+		netFlag = true
+	} else {
+		netFlag = false
+	}
+	c.StateDB.SetBlockLimits(cpuFlag, netFlag)
 	return types.NewBlock(c.CurrentHeader, s.GetHashRoot(), consensusData, txs)
 }
 
@@ -140,7 +158,7 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	}
 
 	for i := 0; i < len(block.Transactions); i++ {
-		if _, err := c.HandleTransaction(c.StateDB, block.Transactions[i]); err != nil {
+		if _, _, _, err := c.HandleTransaction(c.StateDB, block.Transactions[i]); err != nil {
 			log.Error("Handle Transaction Error:", err)
 			return err
 		}
@@ -268,7 +286,7 @@ func (c *ChainTx) GenesesBlockInit() error {
 		return err
 	}
 	for i := 0; i < len(txs); i++ {
-		if _, err := c.HandleTransaction(s, txs[i]); err != nil {
+		if _, _, _, err := c.HandleTransaction(s, txs[i]); err != nil {
 			log.Error("Handle Transaction Error:", err)
 			return err
 		}
@@ -385,6 +403,7 @@ func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
 func (c *ChainTx) CheckPermission(index common.AccountName, name string, sig []common.Signature) error {
 	return c.StateDB.CheckPermission(index, name, sig)
 }
+
 /**
 *  @brief  create a new account in mpt tree
 *  @param  index - the uuid of account
@@ -448,57 +467,54 @@ func (c *ChainTx) AccountSubBalance(index common.AccountName, token string, valu
 *  @param  ledger - the interface of ledger impl
 *  @param  tx - a transaction
  */
-func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction) (ret []byte, err error) {
+func (c *ChainTx) HandleTransaction(s *state.State, tx *types.Transaction) (ret []byte, cpu, net float32, err error) {
 	start := time.Now().UnixNano()
 	switch tx.Type {
 	case types.TxTransfer:
-		log.Info("Transfer Execute")
 		payload, ok := tx.Payload.GetObject().(types.TransferInfo)
 		if !ok {
-			return nil, errors.New("transaction type error[transfer]")
+			return nil, 0, 0, errors.New("transaction type error[transfer]")
 		}
 		if err := s.AccountSubBalance(tx.From, state.AbaToken, payload.Value); err != nil {
-			return nil, err
+			return nil, 0, 0, err
 		}
 		if err := s.AccountAddBalance(tx.Addr, state.AbaToken, payload.Value); err != nil {
-			return nil, err
+			return nil, 0, 0, err
 		}
 	case types.TxDeploy:
 		if err := s.CheckPermission(tx.From, state.Active, tx.Signatures); err != nil {
-			return nil, err
+			return nil, 0, 0, err
 		}
 		payload, ok := tx.Payload.GetObject().(types.DeployInfo)
 		if !ok {
-			return nil, errors.New("transaction type error[deploy]")
+			return nil, 0, 0, errors.New("transaction type error[deploy]")
 		}
-		log.Info("Deploy Execute:", common.ToHex(payload.Code))
 		if err := s.SetContract(tx.From, payload.TypeVm, payload.Describe, payload.Code); err != nil {
-			return nil, err
+			return nil, 0, 0, err
 		}
 	case types.TxInvoke:
-		log.Info("Invoke Execute")
 		service, err := smartcontract.NewContractService(s, tx)
 		if err != nil {
-			return nil, err
+			return nil, 0, 0, err
 		}
 		ret, err = service.Execute()
 		if err != nil {
-			return nil, err
+			return nil, 0, 0, err
 		}
 	default:
-		return nil, errors.New("the transaction's type error")
+		return nil, 0, 0, errors.New("the transaction's type error")
 	}
 	end := time.Now().UnixNano()
-	cpu := float32(end-start) / 1000000
+	cpu = float32(end-start) / 1000000
 	data, err := tx.Serialize()
 	if err != nil {
-		return nil, err
+		return nil, 0, 0, err
 	}
-	net := float32(len(data))
+	net = float32(len(data))
 	if err := s.SubResourceLimits(tx.From, cpu, net); err != nil {
-		return nil, err
+		return nil, 0, 0, err
 	}
-	return ret, nil
+	return ret, cpu, net, nil
 }
 
 func (c *ChainTx) TokenExisted(token string) bool {
