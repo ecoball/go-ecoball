@@ -18,6 +18,7 @@ package txpool
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"time"
 
@@ -26,7 +27,6 @@ import (
 	"github.com/ecoball/go-ecoball/crypto/secp256k1"
 
 	"github.com/AsynkronIT/protoactor-go/actor"
-	innerError "github.com/ecoball/go-ecoball/common/errors"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/core/types"
 )
@@ -98,9 +98,13 @@ func (this *PoolActor) handleTransaction(tx *types.Transaction) error {
 	if nil != err {
 		log.Warn("send message to ledger actor error: ", tx.Hash.HexString())
 		return errors.New("send message to ledger actor error: " + tx.Hash.HexString())
-	} else if v := res.(innerError.ErrCode); v != innerError.ErrNoError {
-		log.Warn(tx.Hash.HexString(), " Check legitimacy failed: ", v.ErrorInfo())
-		return errors.New(tx.Hash.HexString() + " Check legitimacy failed: " + v.ErrorInfo())
+	} else if nil != res {
+		if err, ok := res.(error); ok {
+			log.Warn(tx.Hash.HexString(), " Check legitimacy failed: ", err)
+			return errors.New(tx.Hash.HexString() + " Check legitimacy failed: " + fmt.Sprintf("%v", err))
+		} else {
+			return errors.New("unidentified message")
+		}
 	}
 
 	//Verify by adding to the transaction pool
