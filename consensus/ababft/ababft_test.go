@@ -14,6 +14,10 @@ import (
 	"encoding/json"
 	"github.com/ecoball/go-ecoball/smartcontract/wasmservice"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl"
+	"math/big"
+	"github.com/ecoball/go-ecoball/common/event"
+	"os"
+	"github.com/ecoball/go-ecoball/txpool"
 )
 
 
@@ -22,6 +26,7 @@ var token = common.NameToIndex("token")
 var worker1 = common.NameToIndex("worker1")
 var worker2 = common.NameToIndex("worker2")
 var worker3 = common.NameToIndex("worker3")
+var delegate = common.NameToIndex("delegate")
 
 var accounts []account.Account
 func TestABABFTPros(t *testing.T) {
@@ -33,6 +38,13 @@ func TestABABFTPros(t *testing.T) {
 	}
 	log.Debug("ledger build ok")
 	fmt.Println("config:",config.ConsensusAlgorithm)
+
+	//start transaction pool
+	if _, err := txpool.Start(); err != nil {
+		log.Fatal("start txpool error, ", err.Error())
+		os.Exit(1)
+	}
+	fmt.Println("start txpool ok")
 
 	// 1. set up parameters
 	// 1.1 set the consensus algorithm
@@ -74,7 +86,42 @@ func TestABABFTPros(t *testing.T) {
 	// 3. genesis block, to create accounts and bind them with permissions
 	CreateAccountBlock(l, con, t)
 
-	/*
+	ShowAccountInfo(l, t)
+
+	// 4.create ababft service and start it
+	abas,err := Service_ababft_gen(l, &accounts[2])
+	abas.Start()
+
+	// 5. test ABABFTStart in actor
+	event.Send(event.ActorConsensus,event.ActorConsensus,ABABFTStart{})
+	// 5a. create a tx for the block generation later
+	// add 1000ABA to worker1 from worker2
+	transfer_t, err := types.NewTransfer(worker2, worker1, "owner", new(big.Int).SetUint64(800), 400, time.Now().Unix())
+	transfer_t.SetSignature(&config.Worker2)
+	event.Send(event.ActorNil, event.ActorTxPool,transfer_t)
+	log.Debug("create one tx for tx pool",transfer_t)
+
+	// 6. test Signature_Preblock
+	// generate the signature for previous block
+	curheader := l.GetCurrentHeader()
+	log.Debug("current height:", curheader.Height)
+	hash_t := curheader.Hash
+	for i:=0;i<Num_peers;i++{
+		var signaturepre_send Signature_Preblock
+		signaturepre_send.Signature_preblock.PubKey = accounts[i].PublicKey
+		signaturepre_send.Signature_preblock.SigData,_ = accounts[i].Sign(hash_t.Bytes())
+		signaturepre_send.Signature_preblock.Round = uint32(0)
+		signaturepre_send.Signature_preblock.Height = uint32(curheader.Height)
+		// fmt.Println("Signature_preblock:",signaturepre_send)
+		// broadcast
+		event.Send(event.ActorNil, event.ActorConsensus, signaturepre_send)
+	}
+
+
+
+	// AddTokenAccount(l, con, t)
+	// PledgeContract(l, con, t)
+
 
 
 
@@ -82,9 +129,19 @@ func TestABABFTPros(t *testing.T) {
 
 
 	ShowAccountInfo(l, t)
-	//AddTokenAccount(l, con, t)
+
+
+	time.Sleep(time.Second * 100)
+	/*
+
+
+
+
+
+
+
 	//ContractStore(l, con, t)
-	// PledgeContract(l, con, t)
+	//
 	ShowAccountInfo(l, t)
 	*/
 }
@@ -161,6 +218,19 @@ func CreateAccountBlock(ledger ledger.Ledger, con *types.ConsensusData, t *testi
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
 
+	// add 1000ABA to worker1 from root
+	transfer1, err := types.NewTransfer(root, worker1, "owner", new(big.Int).SetUint64(1000), 100, time.Now().Unix())
+	transfer1.SetSignature(&config.Root)
+	txs = append(txs,transfer1)
+	// add 2000ABA to worker2 from root
+	transfer2, err := types.NewTransfer(root, worker2, "owner", new(big.Int).SetUint64(2000), 200, time.Now().Unix())
+	transfer2.SetSignature(&config.Root)
+	txs = append(txs,transfer2)
+	// add 3000ABA to worker3 from root
+	transfer3, err := types.NewTransfer(root, worker3, "owner", new(big.Int).SetUint64(3000), 300, time.Now().Unix())
+	transfer3.SetSignature(&config.Root)
+	txs = append(txs,transfer3)
+
 	block, err := ledger.NewTxBlock(txs, *con)
 	if err != nil {
 		t.Fatal(err)
@@ -173,20 +243,58 @@ func CreateAccountBlock(ledger ledger.Ledger, con *types.ConsensusData, t *testi
 		t.Fatal(err)
 	}
 }
-/*
 
-
-func PledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T) {
+func AddTokenAccount(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T) {
 	var txs []*types.Transaction
-	tokenContract, err := types.NewDeployContract(worker1, worker1, "active", types.VmNative, "system control", nil, 0, time.Now().Unix())
+	invoke, err := types.NewInvokeContract(root, root, "owner", "new_account",
+		[]string{"token", common.AddressFromPubKey(config.Worker1.PublicKey).HexString()}, 0, time.Now().Unix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	invoke.SetSignature(&config.Root)
+	txs = append(txs, invoke)
+
+	code, err := wasmservice.ReadWasm("../../test/token/token.wasm")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tokenContract, err := types.NewDeployContract(token, token, "active", types.VmWasm, "system control", code, 0, time.Now().Unix())
 	if err != nil {
 		t.Fatal(err)
 	}
 	tokenContract.SetSignature(&config.Worker1)
 	txs = append(txs, tokenContract)
 
-	invoke, err := types.NewInvokeContract(root, worker1, "owner", "pledge",
-		[]string{"root", "worker2", "10", "10"}, 0, time.Now().Unix())
+	invoke, err = types.NewInvokeContract(token, token, "owner", "create",
+		[]string{"token", "aba", "10000"}, 0, time.Now().Unix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	invoke.SetSignature(&config.Worker1)
+	txs = append(txs, invoke)
+
+	block, err := ledger.NewTxBlock(txs, *con)
+	if err != nil {
+		t.Fatal(err)
+	}
+	block.SetSignature(&config.Root)
+	if err := ledger.VerifyTxBlock(block); err != nil {
+		t.Fatal(err)
+	}
+	if err := ledger.SaveTxBlock(block); err != nil {
+		t.Fatal(err)
+	}
+}
+func PledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T) {
+	var txs []*types.Transaction
+	tokenContract, err := types.NewDeployContract(delegate, delegate, "active", types.VmNative, "system control", nil, 0, time.Now().Unix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	tokenContract.SetSignature(&config.Delegate)
+	txs = append(txs, tokenContract)
+
+	invoke, err := types.NewInvokeContract(root, delegate, "owner", "pledge", []string{"root", "worker2", "10", "10"}, 0, time.Now().Unix())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -205,5 +313,24 @@ func PledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T
 		t.Fatal(err)
 	}
 }
-
-*/
+func CancelPledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T) {
+	var txs []*types.Transaction
+	invoke, err := types.NewInvokeContract(root, delegate, "owner", "cancel_pledge",
+		[]string{"root", "worker2", "10", "10"}, 0, time.Now().Unix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	invoke.SetSignature(&config.Root)
+	txs = append(txs, invoke)
+	block, err := ledger.NewTxBlock(txs, *con)
+	if err != nil {
+		t.Fatal(err)
+	}
+	block.SetSignature(&config.Root)
+	if err := ledger.VerifyTxBlock(block); err != nil {
+		t.Fatal(err)
+	}
+	if err := ledger.SaveTxBlock(block); err != nil {
+		t.Fatal(err)
+	}
+}
