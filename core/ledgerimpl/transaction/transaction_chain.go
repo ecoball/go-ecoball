@@ -385,7 +385,6 @@ func (c *ChainTx) CheckTransaction(tx *types.Transaction) (err error) {
 func (c *ChainTx) CheckPermission(index common.AccountName, name string, sig []common.Signature) error {
 	return c.StateDB.CheckPermission(index, name, sig)
 }
-
 /**
 *  @brief  create a new account in mpt tree
 *  @param  index - the uuid of account

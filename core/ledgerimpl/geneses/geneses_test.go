@@ -13,6 +13,7 @@ import (
 	"math/big"
 	"testing"
 	"time"
+	"fmt"
 )
 
 var log = elog.NewLogger("worker2", elog.InfoLog)
@@ -38,6 +39,14 @@ func TestGenesesBlockInit(t *testing.T) {
 	ShowAccountInfo(l, t)
 	CancelPledgeContract(l, con, t)
 	ShowAccountInfo(l, t)
+	time.Sleep(10 * time.Second)
+	fmt.Println(l.RequireResources(root))
+	time.Sleep(10 * time.Second)
+	fmt.Println(l.RequireResources(root))
+	time.Sleep(10 * time.Second)
+	fmt.Println(l.RequireResources(root))
+	time.Sleep(10 * time.Second)
+	fmt.Println(l.RequireResources(root))
 }
 
 func CreateAccountBlock(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T) {

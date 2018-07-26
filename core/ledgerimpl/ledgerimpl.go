@@ -140,6 +140,9 @@ func (l *LedgerImpl) FindPermission(index common.AccountName, name string) (stri
 func (l *LedgerImpl) CheckPermission(index common.AccountName, name string, sig []common.Signature) error {
 	return l.ChainTx.StateDB.CheckPermission(index, name, sig)
 }
+func (l *LedgerImpl) RequireResources(index common.AccountName) (float32, float32, error) {
+	return l.ChainTx.StateDB.RequireResources(index)
+}
 func (l *LedgerImpl) AccountGetBalance(index common.AccountName, token string) (uint64, error) {
 	value, err := l.ChainTx.StateDB.AccountGetBalance(index, token)
 	if err != nil {

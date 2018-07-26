@@ -197,6 +197,8 @@ func (s *State) RequireResources(index common.AccountName) (float32, float32, er
 		return 0, 0, err
 	}
 	acc.RecoverResources(cpuStakedSum, netStakedSum)
+	log.Debug("cpu:", acc.Cpu.Used, acc.Cpu.Available, acc.Cpu.Limit)
+	log.Debug("net:", acc.Net.Used, acc.Net.Available, acc.Net.Limit)
 	return acc.Cpu.Available, acc.Net.Available, nil
 }
 
@@ -265,16 +267,21 @@ func (a *Account) UpdateResource(cpuStakedSum, netStakedSum uint64) error {
 }
 func (a *Account) RecoverResources(cpuStakedSum, netStakedSum uint64) error {
 	t := time.Now().Unix()
-	interval := 100.0 * float32(t - a.TimeStamp) / 24.0 * 60.0 * 60.0
-	if a.Cpu.Used != 0 && a.Net.Used != 0 {
+	interval := 100.0 * float32(t - a.TimeStamp) / (24.0 * 60.0 * 60.0 * 1000)
+	if a.Cpu.Used != 0{
 		a.Cpu.Used -= a.Cpu.Used * interval
 		if a.Cpu.Used < 0 {
 			a.Cpu.Used = 0
 		}
+
+	}
+	if a.Net.Used != 0 {
 		a.Net.Used -= a.Net.Used * interval
 		if a.Net.Used < 0 {
 			a.Net.Used = 0
 		}
+	}
+	if a.Cpu.Used != 0 || a.Net.Used != 0 {
 		a.UpdateResource(cpuStakedSum, netStakedSum)
 	}
 	a.TimeStamp = t
