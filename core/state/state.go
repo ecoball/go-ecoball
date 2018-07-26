@@ -24,7 +24,6 @@ import (
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/store"
 	"github.com/ecoball/go-ecoball/core/types"
-	"math/big"
 )
 
 var log = elog.NewLogger("state", elog.DebugLog)
