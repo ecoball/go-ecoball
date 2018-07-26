@@ -19,9 +19,9 @@ package syn
 import (
 	"net"
 
+	"github.com/ecoball/eballscan/database"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
-	"github.com/ecoball/go-ecoball/explorer/database"
 	"github.com/ecoball/go-ecoball/spectator/info"
 )
 
