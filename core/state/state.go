@@ -36,7 +36,8 @@ type State struct {
 	db     Database
 	diskDb *store.LevelDBStore
 
-	Params map[string]uint64
+	Accounts map[string]Account
+	Params   map[string]uint64
 }
 
 /**
@@ -56,24 +57,33 @@ func NewState(path string, root common.Hash) (st *State, err error) {
 	if err != nil {
 		st.trie, _ = st.db.OpenTrie(common.Hash{})
 	}
+	st.Accounts = make(map[string]Account, 1)
 	st.Params = make(map[string]uint64, 1)
 	return st, nil
 }
 func (s *State) CopyState() (*State, error) {
-	str, err := json.Marshal(s.Params)
-	if err != nil {
-		log.Error(err)
-		return nil, err
-	}
 	params := make(map[string]uint64, 1)
-	if err := json.Unmarshal(str, &params); err != nil {
-		log.Error(err)
+	accounts := make(map[string]Account, 1)
+
+	if str, err := json.Marshal(s.Params); err != nil {
 		return nil, err
+	} else {
+		if err := json.Unmarshal(str, &params); err != nil {
+			return nil, err
+		}
+	}
+	if str, err := json.Marshal(s.Accounts); err != nil {
+		return nil, err
+	} else {
+		if err := json.Unmarshal(str, &accounts); err != nil {
+			return nil, err
+		}
 	}
 	return &State{
-		path:   s.path,
-		trie:   s.db.CopyTrie(s.trie),
-		Params: params,
+		path:     s.path,
+		trie:     s.db.CopyTrie(s.trie),
+		Accounts: accounts,
+		Params:   params,
 	}, nil
 }
 
@@ -84,26 +94,27 @@ func (s *State) CopyState() (*State, error) {
  */
 func (s *State) AddAccount(index common.AccountName, addr common.Address) (*Account, error) {
 	key := common.IndexToBytes(index)
-	acc, err := s.trie.TryGet(key)
+	data, err := s.trie.TryGet(key)
 	if err != nil {
 		return nil, err
 	}
-	if acc != nil {
+	if data != nil {
 		return nil, errors.New("reduplicate name")
 	}
-	obj, err := NewAccount(s.path, index, addr)
+	acc, err := NewAccount(s.path, index, addr)
 	if err != nil {
 		return nil, err
 	}
-	if err := s.CommitAccount(obj); err != nil {
+	if err := s.CommitAccount(acc); err != nil {
 		return nil, err
 	}
 	//save the mapping of addr and index
-	if err := s.trie.TryUpdate(addr.Bytes(), common.IndexToBytes(obj.Index)); err != nil {
+	if err := s.trie.TryUpdate(addr.Bytes(), common.IndexToBytes(acc.Index)); err != nil {
 		return nil, err
 	}
-	log.Debug(s.trie.Hash().HexString())
-	return obj, nil
+	s.Accounts[common.IndexToName(index)] = *acc
+	s.Params[addr.HexString()] = uint64(index)
+	return acc, nil
 }
 
 /**
@@ -158,6 +169,10 @@ func (s *State) StoreGet(index common.AccountName, key []byte) (value []byte, er
  *  @param index - the account index
  */
 func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
+	acc, ok := s.Accounts[common.IndexToName(index)]
+	if ok {
+		return &acc, nil
+	}
 	key := common.IndexToBytes(index)
 	fData, err := s.trie.TryGet(key)
 	if err != nil {
@@ -166,11 +181,11 @@ func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
 	if fData == nil {
 		return nil, errors.New(fmt.Sprintf("no this account named:%s", common.IndexToName(index)))
 	}
-	acc := new(Account)
+	acc = Account{}
 	if err := acc.Deserialize(fData); err != nil {
 		return nil, err
 	}
-	return acc, nil
+	return &acc, nil
 }
 
 /**
@@ -178,6 +193,10 @@ func (s *State) GetAccountByName(index common.AccountName) (*Account, error) {
  *  @param addr - the account address
  */
 func (s *State) GetAccountByAddr(addr common.Address) (*Account, error) {
+	index, ok := s.Params[addr.HexString()]
+	if ok {
+		return s.GetAccountByName(common.AccountName(index))
+	}
 	if fData, err := s.trie.TryGet(addr.Bytes()); err != nil {
 		return nil, err
 	} else {
@@ -206,6 +225,7 @@ func (s *State) CommitAccount(acc *Account) error {
 		return err
 	}
 	s.RecoverResources(acc)
+	s.Accounts[common.IndexToName(acc.Index)] = *acc
 	return nil
 }
 func (s *State) CommitParam(key string, value uint64) error {

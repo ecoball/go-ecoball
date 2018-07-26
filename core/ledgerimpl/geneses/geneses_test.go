@@ -2,6 +2,7 @@ package geneses_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/ecoball/go-ecoball/common"
 	"github.com/ecoball/go-ecoball/common/config"
 	"github.com/ecoball/go-ecoball/common/elog"
@@ -13,7 +14,6 @@ import (
 	"math/big"
 	"testing"
 	"time"
-	"fmt"
 )
 
 var log = elog.NewLogger("worker2", elog.InfoLog)
@@ -69,7 +69,7 @@ func CreateAccountBlock(ledger ledger.Ledger, con *types.ConsensusData, t *testi
 	}
 	txs = append(txs, tokenContract)
 
-	invoke, err := types.NewInvokeContract(index, index, state.Owner,"new_account",
+	invoke, err := types.NewInvokeContract(index, index, state.Owner, "new_account",
 		[]string{"worker1", common.AddressFromPubKey(config.Worker1.PublicKey).HexString()}, 0, time.Now().Unix())
 	invoke.SetSignature(&config.Root)
 	txs = append(txs, invoke)
@@ -321,4 +321,3 @@ func CancelPledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *tes
 		t.Fatal(err)
 	}
 }
-

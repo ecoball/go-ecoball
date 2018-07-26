@@ -1,10 +1,10 @@
 package state
 
 import (
-	"math/big"
-	"github.com/ecoball/go-ecoball/common"
 	"errors"
 	"fmt"
+	"github.com/ecoball/go-ecoball/common"
+	"math/big"
 )
 
 type Token struct {

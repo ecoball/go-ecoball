@@ -55,7 +55,7 @@ func NewAccount(path string, index common.AccountName, addr common.Address) (acc
 	fmt.Printf("index:%d\n", index)
 	acc = &Account{
 		Index:       index,
-		TimeStamp:   time.Now().Unix(),
+		TimeStamp:   time.Now().UnixNano() / (1000 * 1000),
 		Tokens:      make(map[string]Token, 1),
 		Permissions: make(map[string]Permission, 1),
 	}

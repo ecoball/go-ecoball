@@ -15,6 +15,7 @@ const VirtualBlockCpuLimit float32 = 200000000.0
 const VirtualBlockNetLimit float32 = 1048576000.0
 const BlockCpuLimit float32 = 200000.0
 const BlockNetLimit float32 = 1048576.0
+
 var BlockCpu = BlockCpuLimit
 var BlockNet = BlockNetLimit
 
@@ -24,8 +25,8 @@ type Resource struct {
 		Used  float32 `json:"used"`
 	}
 	Net struct {
-		Staked    uint64  `json:"staked_aba"`    //total stake delegated from account to self, uint ABA
-		Delegated uint64  `json:"delegated_aba"` //total stake delegated to account from others, uint ABA
+		Staked    uint64  `json:"staked_aba"`     //total stake delegated from account to self, uint ABA
+		Delegated uint64  `json:"delegated_aba"`  //total stake delegated to account from others, uint ABA
 		Used      float32 `json:"used_byte"`      //uint Byte
 		Available float32 `json:"available_byte"` //uint Byte
 		Limit     float32 `json:"limit_byte"`     //uint Byte
@@ -286,31 +287,26 @@ func (a *Account) SetDelegateInfo(index common.AccountName, cpuStaked, netStaked
 	return nil
 }
 func (a *Account) UpdateResource(cpuStakedSum, netStakedSum uint64) error {
-	a.Cpu.Limit = float32(a.Cpu.Staked + a.Cpu.Delegated) / float32(cpuStakedSum) * BlockCpu
+	a.Cpu.Limit = float32(a.Cpu.Staked+a.Cpu.Delegated) / float32(cpuStakedSum) * BlockCpu
 	a.Cpu.Available = a.Cpu.Limit - a.Cpu.Used
-	a.Net.Limit = float32(a.Cpu.Staked + a.Net.Delegated) / float32(netStakedSum) * BlockNet
+	a.Net.Limit = float32(a.Cpu.Staked+a.Net.Delegated) / float32(netStakedSum) * BlockNet
 	a.Net.Available = a.Net.Limit - a.Net.Used
 	return nil
 }
 func (a *Account) RecoverResources(cpuStakedSum, netStakedSum uint64) error {
-	t := time.Now().Unix()
-	interval := 100.0 * float32(t - a.TimeStamp) / (24.0 * 60.0 * 60.0 * 1000)
-	if a.Cpu.Used != 0{
+	t := time.Now().UnixNano() / (1000 * 1000)
+	interval := 100.0 * float32(t-a.TimeStamp) / (24.0 * 60.0 * 60.0 * 1000)
+	if interval >= 100 {
+		a.Cpu.Used = 0
+		a.Net.Used = 0
+	}
+	if a.Cpu.Used != 0 {
 		a.Cpu.Used -= a.Cpu.Used * interval
-		if a.Cpu.Used < 0 {
-			a.Cpu.Used = 0
-		}
-
 	}
 	if a.Net.Used != 0 {
 		a.Net.Used -= a.Net.Used * interval
-		if a.Net.Used < 0 {
-			a.Net.Used = 0
-		}
 	}
-	if a.Cpu.Used != 0 || a.Net.Used != 0 {
-		a.UpdateResource(cpuStakedSum, netStakedSum)
-	}
+	a.UpdateResource(cpuStakedSum, netStakedSum)
 	a.TimeStamp = t
 	return nil
 }
