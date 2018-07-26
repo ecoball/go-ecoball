@@ -29,14 +29,13 @@ import (
 	"github.com/ecoball/go-ecoball/http/rpc"
 	"github.com/ecoball/go-ecoball/net"
 	"github.com/ecoball/go-ecoball/txpool"
-	"github.com/ecoball/go-ecoball/webserver"
 	"github.com/urfave/cli"
 
 	"github.com/ecoball/go-ecoball/consensus/dpos"
 
 	"github.com/ecoball/go-ecoball/account"
 	"github.com/ecoball/go-ecoball/consensus/ababft"
-
+	"github.com/ecoball/go-ecoball/spectator"
 )
 
 var (
@@ -88,11 +87,12 @@ func runNode(c *cli.Context) error {
 	}
 
 	net.StartNetWork(l)
+
+	//start explorer
+	go spectator.Bystander(l)
+
 	//start http server
 	go rpc.StartRPCServer()
-
-	//start web server
-	go webserver.StartWebServer()
 
 	//wait single to exit
 	wait()
