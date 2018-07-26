@@ -27,17 +27,12 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"math/big"
 	"sort"
+	"time"
 )
-
-type Token struct {
-	Name    string   `json:"index"`
-	Balance *big.Int `json:"balance"`
-}
-
 
 type Account struct {
 	Index       common.AccountName    `json:"index"`
-	Nonce       uint64                `json:"nonce"`
+	TimeStamp   int64                 `json:"timestamp"`
 	Tokens      map[string]Token      `json:"token"`
 	Permissions map[string]Permission `json:"permissions"`
 	Contract    types.DeployInfo      `json:"contract"`
@@ -60,7 +55,7 @@ func NewAccount(path string, index common.AccountName, addr common.Address) (acc
 	fmt.Printf("index:%d\n", index)
 	acc = &Account{
 		Index:       index,
-		Nonce:       0,
+		TimeStamp:   time.Now().Unix(),
 		Tokens:      make(map[string]Token, 1),
 		Permissions: make(map[string]Permission, 1),
 	}
@@ -148,141 +143,6 @@ func (a *Account) StoreGet(path string, key []byte) (value []byte, err error) {
 }
 
 /**
- *  @brief set the permission into account, if the permission existed, will be to overwrite
- *  @param name - the permission name
- */
-func (a *Account) AddPermission(perm Permission) {
-	a.Permissions[perm.PermName] = perm
-}
-
-/**
- *  @brief check that the signatures meets the permission requirement
- *  @param state - the mpt trie, used to search account
- *  @param name - the permission name
- *  @param signatures - the transaction's signatures list
- */
-func (a *Account) CheckPermission(state *State, name string, signatures []common.Signature) error {
-	if perm, ok := a.Permissions[name]; !ok {
-		return errors.New(fmt.Sprintf("can't find this permission in account:%s", name))
-	} else {
-		if "" != perm.Parent {
-			if err := a.CheckPermission(state, perm.Parent, signatures); err == nil {
-				return nil
-			}
-		}
-		if err := perm.CheckPermission(state, signatures); err != nil {
-			return errors.New(fmt.Sprintf("account:%s %s", common.IndexToName(a.Index), err.Error()))
-		}
-	}
-	return nil
-}
-
-/**
- *  @brief get the permission information by name, return json string
- *  @param name - the permission name
- */
-func (a *Account) FindPermission(name string) (str string, err error) {
-	perm, ok := a.Permissions[name]
-	if !ok {
-		return "", errors.New(fmt.Sprintf("can't find this permission:%s", name))
-	}
-	b, err := json.Marshal(perm)
-	if err != nil {
-		return "", err
-	}
-	str += string(b)
-	if "" != perm.Parent {
-		if s, err := a.FindPermission(perm.Parent); err == nil {
-			str += "," + s
-		}
-	}
-	return string(str), nil
-}
-
-/**
- *  @brief create a new token in account
- *  @param index - the unique id of token name created by common.NameToIndex()
- */
-func (a *Account) AddToken(name string) error {
-	log.Info("add token:", name)
-	ac := Token{Name: name, Balance: new(big.Int).SetUint64(0)}
-	a.Tokens[name] = ac
-	return nil
-}
-
-/**
- *  @brief check the token for existence, return true if existed
- *  @param index - the unique id of token name created by common.NameToIndex()
- */
-func (a *Account) TokenExisted(token string) bool {
-	_, ok := a.Tokens[token]
-	if ok {
-		return true
-	}
-	return false
-}
-
-/**
- *  @brief add balance into account
- *  @param index - the unique id of token name created by common.NameToIndex()
- *  @param amount - value of token
- */
-func (a *Account) AddBalance(name string, amount *big.Int) error {
-	log.Info("add token", name, "balance:", amount, a.Index)
-	if amount.Sign() == 0 {
-		return errors.New("amount is zero")
-	}
-	ac, ok := a.Tokens[name]
-	if !ok {
-		if err := a.AddToken(name); err != nil {
-			return err
-		}
-		ac, _ = a.Tokens[name]
-	}
-	ac.SetBalance(new(big.Int).Add(ac.GetBalance(), amount))
-	a.Nonce++
-	a.Tokens[name] = ac
-	return nil
-}
-
-/**
- *  @brief sub balance into account
- *  @param index - the unique id of token name created by common.NameToIndex()
- *  @param amount - value of token
- */
-func (a *Account) SubBalance(token string, amount *big.Int) error {
-	if amount.Sign() == 0 {
-		return errors.New("amount is zero")
-	}
-	t, ok := a.Tokens[token]
-	if !ok {
-		return errors.New("not sufficient funds")
-	}
-	balance := t.GetBalance()
-	value := new(big.Int).Sub(balance, amount)
-	if value.Sign() < 0 {
-		return errors.New("the balance is not enough")
-	}
-	t.SetBalance(value)
-	a.Nonce++
-	a.Tokens[token] = t
-	return nil
-}
-
-/**
- *  @brief get the balance of account
- *  @param index - the unique id of token name created by common.NameToIndex()
- *  @return big.int - value of token
- */
-func (a *Account) Balance(token string) (*big.Int, error) {
-	t, ok := a.Tokens[token]
-	if !ok {
-		return nil, errors.New(fmt.Sprintf("can't find token account:%s, in account:%s", token, common.IndexToName(a.Index)))
-	}
-	return t.GetBalance(), nil
-}
-
-/**
  *  @brief converts a structure into a sequence of characters
  *  @return []byte - a sequence of characters
  */
@@ -365,7 +225,7 @@ func (a *Account) ProtoBuf() (*pb.Account, error) {
 	}
 	pbAcc := pb.Account{
 		Index:       uint64(a.Index),
-		Nonce:       a.Nonce,
+		TimeStamp:   a.TimeStamp,
 		Tokens:      tokens,
 		Permissions: perms,
 		Contract: &pb.DeployInfo{
@@ -411,7 +271,7 @@ func (a *Account) Deserialize(data []byte) error {
 		return err
 	}
 	a.Index = common.AccountName(pbAcc.Index)
-	a.Nonce = pbAcc.Nonce
+	a.TimeStamp = pbAcc.TimeStamp
 
 	a.Ram.Quota = pbAcc.Ram.Quota
 	a.Ram.Used = pbAcc.Ram.Used
@@ -479,19 +339,4 @@ func (a *Account) JsonString() string {
 func (a *Account) Show() {
 	fmt.Println("----------------" + common.IndexToName(a.Index) + ":")
 	fmt.Println(a.JsonString())
-}
-
-/**
- *  @brief set balance of account
- *  @param amount - value of token
- */
-func (t *Token) SetBalance(amount *big.Int) {
-	//TODO:将变动记录存到日志文件
-	t.setBalance(amount)
-}
-func (t *Token) setBalance(amount *big.Int) {
-	t.Balance = amount
-}
-func (t *Token) GetBalance() *big.Int {
-	return t.Balance
 }

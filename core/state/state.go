@@ -155,51 +155,6 @@ func (s *State) StoreGet(index common.AccountName, key []byte) (value []byte, er
 }
 
 /**
- *  @brief add a permission object into account, then update to mpt trie
- *  @param perm - the permission object
- */
-func (s *State) AddPermission(index common.AccountName, perm Permission) error {
-	acc, err := s.GetAccountByName(index)
-	if err != nil {
-		return err
-	}
-	acc.AddPermission(perm)
-	return s.CommitAccount(acc)
-}
-
-/**
- *  @brief check the permission's validity, this method will not modified mpt trie
- *  @param index - the account index
- *  @param state - the world state tree
- *  @param name - the permission names
- *  @param signatures - the signatures list
- */
-func (s *State) CheckPermission(index common.AccountName, name string, signatures []common.Signature) error {
-	acc, err := s.GetAccountByName(index)
-	if err != nil {
-		return err
-	}
-	return acc.CheckPermission(s, name, signatures)
-}
-
-/**
- *  @brief search the permission by name, return json array string
- *  @param index - the account index
- *  @param name - the permission names
- */
-func (s *State) FindPermission(index common.AccountName, name string) (string, error) {
-	acc, err := s.GetAccountByName(index)
-	if err != nil {
-		return "", err
-	}
-	if str, err := acc.FindPermission(name); err != nil {
-		return "", err
-	} else {
-		return "[" + str + "]", nil
-	}
-}
-
-/**
  *  @brief search the account by name index
  *  @param index - the account index
  */
@@ -252,6 +207,7 @@ func (s *State) CommitAccount(acc *Account) error {
 	if err := s.trie.TryUpdate(common.IndexToBytes(acc.Index), d); err != nil {
 		return err
 	}
+	s.RecoverResources(acc)
 	return nil
 }
 func (s *State) CommitParam(key string, value uint64) error {
@@ -277,79 +233,6 @@ func (s *State) GetParam(key string) (uint64, error) {
 	value = common.Uint64SetBytes(data)
 	s.Params[key] = value
 	return value, nil
-}
-func (s *State) AccountGetBalance(index common.AccountName, token string) (*big.Int, error) {
-	acc, err := s.GetAccountByName(index)
-	if err != nil {
-		return nil, err
-	}
-
-	return acc.Balance(token)
-}
-func (s *State) AccountSubBalance(index common.AccountName, token string, value *big.Int) error {
-	acc, err := s.GetAccountByName(index)
-	if err != nil {
-		return err
-	}
-
-	balance, err := acc.Balance(token)
-	if err != nil {
-		return err
-	}
-	if balance.Cmp(value) == -1 {
-		return errors.New("no enough balance")
-	}
-	if err := acc.SubBalance(AbaToken, value); err != nil {
-		return err
-	}
-	if err := s.CommitAccount(acc); err != nil {
-		return err
-	}
-	return nil
-}
-func (s *State) AccountAddBalance(index common.AccountName, token string, value *big.Int) error {
-	acc, err := s.GetAccountByName(index)
-	if err != nil {
-		return err
-	}
-	if err := acc.AddBalance(AbaToken, value); err != nil {
-		return err
-	}
-	if err := s.CommitAccount(acc); err != nil {
-		return err
-	}
-
-	return nil
-}
-func (s *State) CreateToken(token string, value *big.Int) error {
-	//add token into trie
-	data, err := value.GobEncode()
-	if err != nil {
-		return err
-	}
-	if err := s.trie.TryUpdate([]byte(token), data); err != nil {
-		return err
-	}
-	return nil
-}
-func (s *State) GetToken(token string) (*big.Int, error) {
-	if data, err := s.trie.TryGet([]byte(token)); err != nil {
-		return nil, err
-	} else {
-		value := new(big.Int)
-		if err := value.GobDecode(data); err != nil {
-			return nil, err
-		}
-		return value, nil
-	}
-}
-func (s *State) TokenExisted(name string) bool {
-	data, err := s.trie.TryGet([]byte(name))
-	if err != nil {
-		log.Error(err)
-		return false
-	}
-	return string(data) == name
 }
 
 func (s *State) GetHashRoot() common.Hash {

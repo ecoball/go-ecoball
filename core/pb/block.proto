@@ -165,7 +165,7 @@ message Delegate {
 */
 message Account {
     uint64      Index               = 4;
-    uint64      nonce               = 5;
+    int64       TimeStamp               = 5;
     repeated    Token      Tokens   = 3;
     repeated    Permission Permissions = 1;
     DeployInfo  Contract            = 2;
