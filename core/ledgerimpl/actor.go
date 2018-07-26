@@ -17,18 +17,20 @@
 package ledgerimpl
 
 import (
+	"reflect"
+
 	"github.com/AsynkronIT/protoactor-go/actor"
 	"github.com/ecoball/go-ecoball/common/event"
 	"github.com/ecoball/go-ecoball/common/message"
 	"github.com/ecoball/go-ecoball/consensus/dpos"
 	"github.com/ecoball/go-ecoball/core/types"
-	"reflect"
+	"github.com/ecoball/go-ecoball/spectator/info"
 )
 
 type LedActor struct {
 	ledger *LedgerImpl
 
-	pid    *actor.PID //保存自身的pid，用于和其他Actor交互
+	pid *actor.PID //保存自身的pid，用于和其他Actor交互
 }
 
 /**
@@ -81,14 +83,17 @@ func (l *LedActor) Receive(ctx actor.Context) {
 		}
 		if err := event.Send(event.ActorLedger, event.ActorTxPool, msg); err != nil {
 			log.Error("send block to tx pool error:", err)
+			break
 		}
+		//notify explorer
+		info.Notify(info.InfoBlock, msg)
 	case *dpos.DposBlock:
 		//TODO
 		/*if err := l.ledger.bc.SaveBlock(msg); err != nil {
 			log.Error("save block error", err)
 			break
 		}*/
-		
+
 		if err := event.Send(event.ActorLedger, event.ActorTxPool, msg.Block); err != nil {
 			log.Error("send block to tx pool error:", err)
 		}
