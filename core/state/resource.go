@@ -120,6 +120,7 @@ func (s *State) SubResourceLimits(index common.AccountName, cpu, net float32) er
 	if err != nil {
 		return err
 	}
+	acc.RecoverResources(cpuStakedSum, netStakedSum)
 	if err := acc.SubResourceLimits(cpu, net, cpuStakedSum, netStakedSum); err != nil {
 		return err
 	}
