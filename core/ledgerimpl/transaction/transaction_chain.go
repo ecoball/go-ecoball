@@ -85,26 +85,26 @@ func NewTransactionChain(path string, ledger ledger.Ledger) (c *ChainTx, err err
 *  @param  consensusData - the data of consensus module set
  */
 func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, consensusData types.ConsensusData) (*types.Block, error) {
-	var cpu float32
+	/*var cpu float32
 	cpuFlag := true
 	var net float32
-	netFlag := true
+	netFlag := true*/
 	s, err := c.StateDB.CopyState()
 	if err != nil {
 		return nil, err
 	}
 	for i := 0; i < len(txs); i++ {
-		if ret, c, n, err := c.HandleTransaction(s, txs[i]); err != nil {
+		if ret, _, _, err := c.HandleTransaction(s, txs[i]); err != nil {
 			log.Error("Handle Transaction Error:", err)
 			txs[i].Show()
 			return nil, err
 		} else {
-			cpu += c
-			net += n
+			//cpu += c
+			//net += n
 			log.Debug("Handle Transaction Result:", ret)
 		}
 	}
-	if cpu < (state.BlockCpuLimit / 10) {
+	/*if cpu < (state.BlockCpuLimit / 10) {
 		cpuFlag = true
 	} else {
 		cpuFlag = false
@@ -114,7 +114,7 @@ func (c *ChainTx) NewBlock(ledger ledger.Ledger, txs []*types.Transaction, conse
 	} else {
 		netFlag = false
 	}
-	c.StateDB.SetBlockLimits(cpuFlag, netFlag)
+	c.StateDB.SetBlockLimits(cpuFlag, netFlag)*/
 	return types.NewBlock(c.CurrentHeader, s.GetHashRoot(), consensusData, txs)
 }
 
@@ -156,13 +156,30 @@ func (c *ChainTx) SaveBlock(block *types.Block) error {
 	if block == nil {
 		return errors.New("block is nil")
 	}
-
+	var cpu float32
+	cpuFlag := true
+	var net float32
+	netFlag := true
 	for i := 0; i < len(block.Transactions); i++ {
-		if _, _, _, err := c.HandleTransaction(c.StateDB, block.Transactions[i]); err != nil {
+		if _, c, n, err := c.HandleTransaction(c.StateDB, block.Transactions[i]); err != nil {
 			log.Error("Handle Transaction Error:", err)
 			return err
+		} else {
+			cpu += c
+			net += n
 		}
 	}
+	if cpu < (state.BlockCpuLimit / 10) {
+		cpuFlag = true
+	} else {
+		cpuFlag = false
+	}
+	if net < (state.BlockNetLimit / 10) {
+		netFlag = true
+	} else {
+		netFlag = false
+	}
+	c.StateDB.SetBlockLimits(cpuFlag, netFlag)
 	if err := event.Publish(event.ActorLedger, block, event.ActorTxPool, event.ActorP2P); err != nil {
 		log.Warn(err)
 	}
