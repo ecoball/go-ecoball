@@ -308,10 +308,10 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 					}
 				}
 				conData := types.ConsensusData{Type: types.ConABFT, Payload: &types.AbaBftData{uint32(current_round_num),signpre_send}}
-				fmt.Println("conData for blk firstround",conData)
+				// fmt.Println("conData for blk firstround",conData)
 				// prepare the tx list
 				value, err := event.SendSync(event.ActorTxPool, message.GetTxs{}, time.Second*1)
-				log.Debug("tx value:",value)
+				// log.Debug("tx value:",value)
 				if err != nil {
 					log.Error("AbaBFT Consensus error:", err)
 					return
@@ -326,7 +326,7 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				for _, v := range txList.Txs {
 					txs = append(txs, v)
 				}
-				log.Debug("obtained tx list", txs)
+				// log.Debug("obtained tx list", txs[0])
 				// generate the first-round block
 				var block_first *types.Block
 				block_first,err = actor_c.service_ababft.ledger.NewTxBlock(txs,conData)

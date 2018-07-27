@@ -38,7 +38,7 @@ func TestABABFTPros(t *testing.T) {
 	}
 	log.Debug("ledger build ok")
 	fmt.Println("config:",config.ConsensusAlgorithm)
-
+	fmt.Println("config.delegate:",config.Delegate)
 	//start transaction pool
 	if _, err := txpool.Start(); err != nil {
 		log.Fatal("start txpool error, ", err.Error())
@@ -85,6 +85,7 @@ func TestABABFTPros(t *testing.T) {
 
 	// 3. genesis block, to create accounts and bind them with permissions
 	CreateAccountBlock(l, con, t)
+	PledgeContract(l, con, t)
 
 	ShowAccountInfo(l, t)
 
@@ -120,7 +121,7 @@ func TestABABFTPros(t *testing.T) {
 
 
 	// AddTokenAccount(l, con, t)
-	// PledgeContract(l, con, t)
+
 
 
 
@@ -175,6 +176,7 @@ func ShowAccountInfo(l ledger.Ledger, t *testing.T) {
 func CreateAccountBlock(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T) {
 	//TODO
 	var txs []*types.Transaction
+
 	index := common.NameToIndex("root")
 	if err := ledger.AccountAddBalance(index, state.AbaToken, 10000); err != nil {
 		t.Fatal(err)
@@ -242,6 +244,51 @@ func CreateAccountBlock(ledger ledger.Ledger, con *types.ConsensusData, t *testi
 	if err := ledger.SaveTxBlock(block); err != nil {
 		t.Fatal(err)
 	}
+
+	/*
+	var txs1 []*types.Transaction
+		tokenContract1, err := types.NewDeployContract(delegate, delegate, "active", types.VmNative, "system control", nil, 0, time.Now().Unix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	tokenContract.SetSignature(&config.Delegate)
+	txs1 = append(txs1, tokenContract1)
+	fmt.Println("aa")
+	// add cpu and net resource for worker1
+	invoke, err = types.NewInvokeContract(root, delegate, "owner", "pledge", []string{"root", "worker1", "100", "100"}, 10, time.Now().Unix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	invoke.SetSignature(&config.Root)
+	txs1 = append(txs1, invoke)
+	// add cpu and net resource for worker2
+	invoke, err = types.NewInvokeContract(root, delegate, "owner", "pledge", []string{"root", "worker2", "100", "100"}, 20, time.Now().Unix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	invoke.SetSignature(&config.Root)
+	txs1 = append(txs1, invoke)
+	// add cpu and net resource for worker3
+	invoke, err = types.NewInvokeContract(root, delegate, "owner", "pledge", []string{"root", "worker3", "100", "100"}, 30, time.Now().Unix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	invoke.SetSignature(&config.Root)
+	txs1 = append(txs1, invoke)
+
+	block, err = ledger.NewTxBlock(txs1, *con)
+	if err != nil {
+		t.Fatal(err)
+	}
+	block.SetSignature(&config.Root)
+	if err := ledger.VerifyTxBlock(block); err != nil {
+		t.Fatal(err)
+	}
+	if err := ledger.SaveTxBlock(block); err != nil {
+		t.Fatal(err)
+	}
+	 */
+
 }
 
 func AddTokenAccount(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T) {
@@ -291,10 +338,23 @@ func PledgeContract(ledger ledger.Ledger, con *types.ConsensusData, t *testing.T
 	if err != nil {
 		t.Fatal(err)
 	}
+	log.Debug("delegate account",config.Delegate)
 	tokenContract.SetSignature(&config.Delegate)
 	txs = append(txs, tokenContract)
 
-	invoke, err := types.NewInvokeContract(root, delegate, "owner", "pledge", []string{"root", "worker2", "10", "10"}, 0, time.Now().Unix())
+	invoke, err := types.NewInvokeContract(root, delegate, "owner", "pledge", []string{"root", "worker1", "100", "100"}, 10, time.Now().Unix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	invoke.SetSignature(&config.Root)
+	txs = append(txs, invoke)
+	invoke, err = types.NewInvokeContract(root, delegate, "owner", "pledge", []string{"root", "worker2", "200", "200"}, 20, time.Now().Unix())
+	if err != nil {
+		t.Fatal(err)
+	}
+	invoke.SetSignature(&config.Root)
+	txs = append(txs, invoke)
+	invoke, err = types.NewInvokeContract(root, delegate, "owner", "pledge", []string{"root", "worker3", "300", "300"}, 30, time.Now().Unix())
 	if err != nil {
 		t.Fatal(err)
 	}
