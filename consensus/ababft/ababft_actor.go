@@ -294,6 +294,8 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 			// clean the cache_signature_preblk
 			cache_signature_preblk = make([]pb.SignaturePreblock,len(Peers_list)*2)
 			fmt.Println("valid sign_pre:",received_signpre_num)
+			fmt.Println("current status root hash:",currentheader.StateHash)
+
 			// 2. check the number of the preblock signature
 			if received_signpre_num >= int(len(Peers_list)/3+1) {
 				// enough preblock signature, so generate the first-round block, only including the preblock signatures and
@@ -334,6 +336,19 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 				// broadcast the first-round block to peers for them to verify the transactions and wait for the corresponding signatures back
 				block_firstround.Blockfirst = *block_first
 				event.Send(event.ActorConsensus, event.ActorP2P, block_firstround)
+				//log.Debug("first round block:",block_firstround.Blockfirst)
+				fmt.Println("first round block status root hash:",block_first.StateHash)
+
+				// for test 2018.07.27
+				event.Send(event.ActorNil,event.ActorConsensus,block_firstround)
+				var block_first1 *types.Block
+				// err = actor_c.service_ababft.ledger.ResetStateDB(currentheader.Hash)
+				block_first1,err = actor_c.service_ababft.ledger.NewTxBlock(txs,conData)
+				block_first1.SetSignature(actor_c.service_ababft.account)
+				fmt.Println("first round block1 status root hash:",block_first1.StateHash)
+				// test end
+
+
 				// change the statue
 				actor_c.status = 4
 				// initial the received_signblkf_num to count the signatures for txs (i.e. the first round block)
@@ -366,6 +381,13 @@ func (actor_c *Actor_ababft) Receive(ctx actor.Context) {
 		}
 
 	case Block_FirstRound:
+		// for test 2018.07.27
+		primary_tag = 0
+		actor_c.status = 5
+		// log.Debug("debug for first round block")
+		// end of test
+
+
 		if primary_tag == 0 && (actor_c.status == 2 || actor_c.status == 5) {
 			// to verify the first round block
 			blockfirst_received := msg.Blockfirst
@@ -879,15 +901,15 @@ func (actor_c *Actor_ababft) verify_header(block_in *types.Block, current_round_
 	signpre_send := data_preblk_received.PerBlockSignatures
 	condata_c := types.ConsensusData{Type:types.ConABFT, Payload:&types.AbaBftData{uint32(current_round_num_in),signpre_send}}
 
-	fmt.Println("before reset")
+	// fmt.Println("before reset")
 	// reset the stateDB
+	fmt.Println("cur_header state hash:",cur_header.Height,cur_header.StateHash)
 	err = actor_c.service_ababft.ledger.ResetStateDB(cur_header.Hash)
 	// fmt.Println("after reset",err)
 
 	// generate the block_first_cal for comparison
 	block_first_cal,err = actor_c.service_ababft.ledger.NewTxBlock(txs,condata_c)
-
-	fmt.Println("block_first_cal:",block_first_cal)
+	fmt.Println("block_first_cal:",block_first_cal, block_first_cal.StateHash)
 
 	var num_txs int
 	num_txs = int(block_in.CountTxs)
