@@ -217,12 +217,13 @@ func (s *State) GetAccountByAddr(addr common.Address) (*Account, error) {
  *  @param acc - account object
  */
 func (s *State) CommitAccount(acc *Account) error {
+	if acc == nil {
+		return errors.New("param acc is nil")
+	}
 	d, err := acc.Serialize()
 	if err != nil {
 		return err
 	}
-	acc.mutex.Lock()
-	defer acc.mutex.Unlock()
 	if err := s.trie.TryUpdate(common.IndexToBytes(acc.Index), d); err != nil {
 		return err
 	}

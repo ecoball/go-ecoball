@@ -17,7 +17,6 @@ func (s *State) AccountGetBalance(index common.AccountName, token string) (*big.
 	if err != nil {
 		return nil, err
 	}
-
 	return acc.Balance(token)
 }
 func (s *State) AccountSubBalance(index common.AccountName, token string, value *big.Int) error {
@@ -55,28 +54,7 @@ func (s *State) AccountAddBalance(index common.AccountName, token string, value 
 
 	return nil
 }
-func (s *State) CreateToken(token string, value *big.Int) error {
-	//add token into trie
-	data, err := value.GobEncode()
-	if err != nil {
-		return err
-	}
-	if err := s.trie.TryUpdate([]byte(token), data); err != nil {
-		return err
-	}
-	return nil
-}
-func (s *State) GetToken(token string) (*big.Int, error) {
-	if data, err := s.trie.TryGet([]byte(token)); err != nil {
-		return nil, err
-	} else {
-		value := new(big.Int)
-		if err := value.GobDecode(data); err != nil {
-			return nil, err
-		}
-		return value, nil
-	}
-}
+
 func (s *State) TokenExisted(name string) bool {
 	data, err := s.trie.TryGet([]byte(name))
 	if err != nil {
