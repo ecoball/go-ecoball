@@ -14,40 +14,41 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the eballscan. If not, see <http://www.gnu.org/licenses/>.
 
-package database
+package main
 
 import (
-	"encoding/json"
-	"net"
+	"errors"
+	"html/template"
+	"net/http"
 
-	"github.com/ecoball/go-ecoball/spectator/info"
+	"github.com/ecoball/eballscan/data"
+	"github.com/ecoball/eballscan/onlooker"
 )
 
-type BlockHight int
+type WebHandle func(w http.ResponseWriter, r *http.Request)
 
-func (this *BlockHight) Serialize() ([]byte, error) {
-	return json.Marshal(*this)
+type webserver struct {
+	url2handle map[string]WebHandle
 }
 
-func (this *BlockHight) Deserialize(data []byte) error {
-	return json.Unmarshal(data, this)
+func (this *webserver) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	var err error = nil
+	path := r.URL.String()
+	switch path {
+	case "/":
+		t := template.Must(template.ParseFiles("./root.html"))
+		t.Execute(w, data.PrintBlock())
+
+	default:
+		err = errors.New("unrecognized transaction type")
+	}
+
+	if err != nil {
+		http.Error(w, "error 500: "+err.Error(), http.StatusInternalServerError)
+	}
 }
 
-func SynBlocks(conn net.Conn) {
-	hight := BlockHight(MaxHight)
-	oneNotify, err := info.NewOneNotify(info.SynBlock, &hight)
-	if nil != err {
-		log.Error("SynBlocks newOneNotify error: ", err)
-		return
-	}
-
-	info, err := oneNotify.Serialize()
-	if nil != err {
-		log.Error("SynBlocks Serialize error: ", err)
-		return
-	}
-
-	if _, err := conn.Write(info); nil != err {
-		log.Error("SynBlocks Write error: ", err)
-	}
+func main() {
+	go onlooker.Bystander()
+	http.ListenAndServe(":8080", &webserver{})
 }

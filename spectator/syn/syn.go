@@ -19,7 +19,7 @@ package syn
 import (
 	"net"
 
-	"github.com/ecoball/eballscan/database"
+	scanSyn "github.com/ecoball/eballscan/syn"
 	"github.com/ecoball/go-ecoball/common/elog"
 	"github.com/ecoball/go-ecoball/core/ledgerimpl/ledger"
 	"github.com/ecoball/go-ecoball/spectator/info"
@@ -42,7 +42,7 @@ func Dispatch(conn net.Conn, notify info.OneNotify) {
 }
 
 func handleSynBlock(conn net.Conn, msg []byte) error {
-	var blockHight database.BlockHight
+	var blockHight scanSyn.BlockHight
 	if err := blockHight.Deserialize(msg); nil != err {
 		return err
 	}

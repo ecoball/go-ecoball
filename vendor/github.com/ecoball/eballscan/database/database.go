@@ -22,6 +22,7 @@ import (
 	"sync"
 
 	"github.com/ecoball/eballscan/data"
+	"github.com/ecoball/eballscan/syn"
 	"github.com/ecoball/go-ecoball/common/elog"
 	_ "github.com/lib/pq"
 )
@@ -30,7 +31,6 @@ var (
 	CockroachDb *sql.DB
 	DbMutex     sync.Mutex
 	log         = elog.NewLogger("database", elog.DebugLog)
-	MaxHight    int
 )
 
 func init() {
@@ -67,8 +67,8 @@ func init() {
 
 		data.Blocks.Add(hight, data.BlockInfo{hash, prevHash, merkleHash, stateHash, countTxs})
 
-		if hight > MaxHight {
-			MaxHight = hight
+		if hight > syn.MaxHight {
+			syn.MaxHight = hight
 		}
 	}
 }
