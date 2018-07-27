@@ -28,6 +28,7 @@ import (
 	"math/big"
 	"sort"
 	"time"
+	"sync"
 )
 
 type Account struct {
@@ -43,6 +44,8 @@ type Account struct {
 	trie   Trie
 	db     Database
 	diskDb *store.LevelDBStore
+
+	mutex sync.RWMutex
 }
 
 /**

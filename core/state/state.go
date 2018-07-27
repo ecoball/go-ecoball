@@ -221,6 +221,8 @@ func (s *State) CommitAccount(acc *Account) error {
 	if err != nil {
 		return err
 	}
+	acc.mutex.Lock()
+	defer acc.mutex.Unlock()
 	if err := s.trie.TryUpdate(common.IndexToBytes(acc.Index), d); err != nil {
 		return err
 	}
