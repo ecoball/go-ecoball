@@ -1,6 +1,11 @@
 Go-Ecoball
 -------
 
+## Statement
+At present, the main branch is rapidly iterating and add servals new features, to avoid being copied, the main branch of code will be open source in stages.
+
+[目前主线版本代码正在快速迭代中，并添加了许多新特性，为规避被抄袭，因此主线代码将分步骤开源，敬请期待]
+
 ## Depends
 You need install [protoc](https://github.com/google/protobuf/blob/master/src/README.md) 
 
@@ -71,5 +76,4 @@ run ecoball
 $ ./ecoball --name=$WALLETFILE --password=$PASSWORD run
 ```
 
-## Statement
-At present, the main branch is rapidly iterating and add servals new features, to avoid being copied, the main branch of code will be open source in stages.
+
