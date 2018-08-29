@@ -71,3 +71,5 @@ run ecoball
 $ ./ecoball --name=$WALLETFILE --password=$PASSWORD run
 ```
 
+## Statement
+At present, the main branch is rapidly iterating and add servals new features, to avoid being copied, the main branch of code will be open source in stages.
