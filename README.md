@@ -2,7 +2,7 @@ Go-Ecoball
 -------
 
 ## Statement
-At present, the main branch is rapidly iterating and add servals new features, to avoid being copied, the main branch of code will be open source in stages.
+At present, the main branch is rapidly updating with many critical features. To avoid being copied, the whole code will be accessible later.
 
 [目前主线版本代码正在快速迭代中，并添加了许多新特性，为规避被抄袭，因此主线代码将分步骤开源，敬请期待]
 
